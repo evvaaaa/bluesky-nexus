@@ -326,14 +326,12 @@ def add_preprocessors(re: RunEngine, devices_dictionary: dict, baseline: list[ob
     # Add Nexus metadata
     metadata = SupplementalMetadata()
     metadata.devices_dictionary = devices_dictionary
-    metadata.baseline = baseline
     metadata.md_type = SupplementalMetadata.MetadataType.NEXUS_MD
     re.preprocessors.append(metadata)
 
     # Add device metadata
     metadata = SupplementalMetadata()
     metadata.devices_dictionary = devices_dictionary
-    metadata.baseline = baseline
     metadata.md_type = SupplementalMetadata.MetadataType.DEVICE_MD
     re.preprocessors.append(metadata)
 
@@ -604,7 +602,7 @@ def test_1(
     _scan_step_number,
     request,
 ) -> None:
-    """Integration test for generating and varyfing a Nexus file.
+    """Integration test for generating and verifying a Nexus file.
 
     - Configures metadata and baseline devices.
     - Executes a plan and verifies the resulting Nexus file's structure and data.
