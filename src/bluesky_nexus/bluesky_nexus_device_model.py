@@ -150,7 +150,7 @@ def create_model_instance(
         f"Class with name {model_name} not found in "
         f"MODEL_NAME_TO_CLASS_MAPPING! Check the content "
         f" of 'MODEL_NAME_TO_CLASS_MAPPING' in the file: "
-        f"'bluesky_nexus.models.pydantic_models_hzb'"
+        f"'bluesky_nexus.models.nx_models'"
     )
 
 
