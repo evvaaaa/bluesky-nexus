@@ -6,8 +6,8 @@ Issues
 Marketplace
 Explore
 
- 
-@whs92 
+
+@whs92
 NSLS-II-HXN
 /
 hxntools
@@ -30,7 +30,7 @@ Latest commit d5e42c6 on Apr 17, 2015
  History
  0 contributors
 94 lines (75 sloc)  1011 Bytes
-  
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -142,4 +142,3 @@ Loading complete
 
 # vscode related files
 .vscode/
-

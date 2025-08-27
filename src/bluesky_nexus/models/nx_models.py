@@ -1,5 +1,5 @@
 """
-Module: nx_models
+Module: nx_models.
 
 Defines and maps models used in the NeXus data format within the
 Bluesky Nexus framework.

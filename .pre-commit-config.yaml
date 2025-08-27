@@ -1,0 +1,60 @@
+repos:
+  # 🧹 Basic cleanup:
+  #   - removes trailing whitespace,
+  #   - ensures newline at EOF,
+  #   - blocks large files
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-added-large-files
+
+  # 🧾 Auto-formatting of docstrings to follow PEP 257 and wrap text neatly
+  - repo: https://github.com/PyCQA/docformatter
+    rev: v1.7.7
+    hooks:
+      - id: docformatter
+        args: ["--in-place", "--wrap-summaries=72", "--wrap-descriptions=72"]
+
+  # 🎨 Code formatting with Black to enforce consistent style (PEP 8 compliant)
+  - repo: https://github.com/psf/black
+    rev: 25.1.0
+    hooks:
+      - id: black
+        language_version: python3.10
+
+  # 🕵️ Fast Python linter and fixer (combines features of many other tools)
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.12.0
+    hooks:
+      - id: ruff
+        language_version: python3.10
+
+  # 🔒 Security scanner for Python code to catch common vulnerabilities
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.8
+    hooks:
+      - id: bandit
+        args: ["-ll"] # 'low' severity threshold; adjust as needed
+
+  # 🧪 Static type checker for Python (enforces type hints via mypy)
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.15.0
+    hooks:
+      - id: mypy
+        additional_dependencies:
+          - types-PyYAML
+        language_version: python3.10
+        exclude: ^ioc/
+
+  # Pylint (optional if keeping for deeper checks)
+  - repo: https://github.com/pycqa/pylint
+    rev: v3.3.7
+    hooks:
+      - id: pylint
+        language: system
+        # h5py, numpy, or bluesky are not installed in the environment where pylint runs
+        # 'system' : this tells pre-commit to use the Python environment
+        # you're running in
+        args: []

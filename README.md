@@ -73,7 +73,7 @@ nxclass: NXmonochromator # group: NXmonochromator
 
 energy: # field: "energy" belongs to NXmonochromator group
   nxclass: NX_FLOAT
-  value: $post-run:en # fetch it from the device component 
+  value: $post-run:en # fetch it from the device component
   dtype: float64
   attrs:  # attrs belong to field: "energy"
     units: "keV"
@@ -266,7 +266,7 @@ Here, the nx_model field (e.g., NXmonochromatorModel) explicitly defines the mod
 
 ```python
 class NXmonochromatorModel(NXgroupModel):
-    
+
     default: NXattrModel = Field(NXattrModel(value="energy"), description='Default.')
     wavelength: Optional[NXfieldModelWithPrePostRunString] = Field(None, description="Wavelength selected.")
     wavelegth_errors: Optional[NXfieldModelWithPrePostRunString] = Field(None, description="Wavelength standard deviation.")
@@ -288,10 +288,10 @@ class NXmonochromatorModel(NXgroupModel):
 
 The schema supports defining units for device components. The strategy for defining units in the schema yml file is as follows:
 
-1. **Device provides units**:  
+1. **Device provides units**:
    If the device natively returns units, the units provided by the device are used directly. In such a case do not define any `units` under `attrs`, otherwise the `units` defined under `attrs` will be used.
 
-2. **Device does not provide units**:  
+2. **Device does not provide units**:
    If the device does not return any units, define the corresponding unit value in the `units` under `attrs`. This ensures that the correct units are explicitly defined for this specific device.
 
 ---
@@ -315,30 +315,30 @@ The **bluesky_nexus** library uses placeholders to manage and organize data fetc
 
 ### Placeholder syntax
 
-1. **Pre-run metadata**:  
+1. **Pre-run metadata**:
    - Fetch metadata associated with a device instance.
-   - Syntax: `$pre-run-md:<metadata_name>`  
-   - Details:  
-     - The separation between the prefix `$pre-run-md` and metadata name is made by applying the colon sign (`:`).  
-     - The separation between items of the `<metadata_name>` is also made by applying the colon sign (`:`).  
-     - **Examples**:  
-       - `$pre-run-md:grating_substrate_material`  
+   - Syntax: `$pre-run-md:<metadata_name>`
+   - Details:
+     - The separation between the prefix `$pre-run-md` and metadata name is made by applying the colon sign (`:`).
+     - The separation between items of the `<metadata_name>` is also made by applying the colon sign (`:`).
+     - **Examples**:
+       - `$pre-run-md:grating_substrate_material`
        - `$pre-run-md:worldPosition:x`
 
-2. **Pre-run component values**:  
+2. **Pre-run component values**:
    - Fetch values from components before the run.
-   - Syntax: `$pre-run-cpt:<component_name>`  
+   - Syntax: `$pre-run-cpt:<component_name>`
    - Details:
-     - The separation between the prefix `$pre-run-cpt` and component name is made by applying the colon sign (`:`).  
+     - The separation between the prefix `$pre-run-cpt` and component name is made by applying the colon sign (`:`).
      - The separation between items of the `<component_name>` is also made by applying the colon sign (`:`).
-     - **Examples**:  
+     - **Examples**:
        - `$pre-run-cpt:grat:diffraction_order`
        - `$pre-run-cpt:en:readback`
 
-3. **Post-run component values**:  
+3. **Post-run component values**:
    - Retrieve values of components after the run from event documents or descriptor document.
    - Syntax: `$post-run:<component_name>`
-   - Details:  
+   - Details:
      - The separation between the prefix `$post-run` and component name is made by applying the colon sign (`:`).
      - The separation between items of the `<component_name>` is made by applying the underscore sign (`_`) (as per the ophyd naming style).
      - If in the class definition of the component its name is “reduced” to the name of the instance that contains this component, e.g.: `self.readback.name = self.name`, this must be taken into account when defining the character string that appears after `$post-run`.
@@ -354,7 +354,7 @@ The **bluesky_nexus** library uses placeholders to manage and organize data fetc
 ---
 
 ## Subscription of devices in the baseline
-  
+
   If only some but not all of the components of a device used in the schema yml file are used in a plan, subscribe the device in the baseline so that the device components not used in the plan can be found in the baseline descriptor, allowing replacement of all the placeholders defined in the schema yml file associated with the device.
 
 ---
@@ -388,8 +388,8 @@ from .base import *
 from .beamline import *
 
 from bluesky_nexus.preprocessors.supplemental_metadata import SupplementalMetadata
-from bluesky_nexus.callbacks.nexus_writer import NexusWriter
-from bluesky_nexus.common.logging_utils import setup_nx_logger, logging
+from bluesky_nexus.callbacks.nexus_writer.writer_core import NexusWriter
+from bluesky_nexus.common.logging_utils import setup_nx_logger, LogLevel
 from bluesky_nexus.bluesky_nexus_paths import (
     get_nx_file_dir_path,
     get_nx_log_file_dir_path,
@@ -413,15 +413,26 @@ cpt_name_delimiter: str = "_" # Optionally specify a delimiter used in Bluesky d
 nexus_writer = NexusWriter(nx_file_dir_path=nx_file_dir_path, cpt_name_delimiter = cpt_name_delimiter)
 RE.subscribe(nexus_writer)
 
-# This is an optional setting of the NeXus logger. If the setting is not defined, logging to a log file is deactivated.
+# This is an optional setup for the NeXus logger. If not configured, logging to a file
+# is disabled by default. The logger supports separate configuration for console and
+# file output, with options for log rotation, formatting, and enabling/disabling handlers.
 nx_log_file_dir_path: str = get_nx_log_file_dir_path()
 setup_nx_logger(
-    level=logging.INFO,
+    console_level=LogLevel.ERROR,
+    file_level=LogLevel.DEBUG,
     log_file_dir_path=nx_log_file_dir_path,
-    max_file_size=2 * 1024 * 1024,
+    log_file_name="nx_log.log",
+    log_format=None,  # Uses default format if None
+    max_file_size=10 * 1024 * 1024,  # 10 MB
     backup_count=5,
+    enable_console=True,
+    enable_file=True,
 )
 ```
+
+See the section [Explanations on the optional NeXus logger](#explanations-on-the-optional-nexus-logger)
+on the optional NeXus logger below for detailed information on each parameter
+of the optional NeXus logger setup.
 
 Make sure that the file `__init__.py` in the “beamline_config” directory contains the following import:
 
@@ -455,30 +466,40 @@ from .nexus import *
 
   ```python
   from bluesky_nexus.preprocessors.supplemental_metadata import SupplementalMetadata
-  from bluesky_nexus.callbacks.nexus_writer import NexusWriter
-  from bluesky_nexus.common.logging_utils import setup_nx_logger, logging
+  from bluesky_nexus.callbacks.nexus_writer.writer_core import NexusWriter
+  from bluesky_nexus.common.logging_utils import setup_nx_logger, LogLevel
   ```
 
 Add the following NeXus logging setup, preprocessor, and callback subscriptions to your script:
 
 ### NeXus logging setup
 
-This is an optional setting of the NeXus logger. If the setting is not defined, logging to a log file is deactivated.
+This is an optional setup for the NeXus logger. If not configured, logging to a file
+is disabled by default. The logger supports separate configuration for console and
+file output, with options for log rotation, formatting, and enabling/disabling handlers.
+
+See the section [Explanations on the optional NeXus logger](#explanations-on-the-optional-nexus-logger)
+on the optional NeXus logger below for detailed information on each parameter
+of the optional NeXus logger setup.
 
 ```python
 nx_log_file_dir_path: str = "Your path to the NeXus log file directory"
 setup_nx_logger(
-    level=logging.DEBUG,
+    console_level=LogLevel.ERROR,
+    file_level=LogLevel.DEBUG,
     log_file_dir_path=nx_log_file_dir_path,
-    log_format=None,
-    max_file_size=10 * 1024 * 1024,
+    log_file_name="nx_log.log",
+    log_format=None,  # Uses default format if None
+    max_file_size=10 * 1024 * 1024,  # 10 MB
     backup_count=5,
+    enable_console=True,
+    enable_file=True,
 )
 ```
 
-In your script subscribe to the preprocessor and the callback:
-
 ### Let the preprocessor append ```NeXus metadata``` to the start document
+
+In you script subscribe to the preprocessor
 
   ```python
   metadata = SupplementalMetadata()
@@ -488,6 +509,8 @@ In your script subscribe to the preprocessor and the callback:
   ```
 
 ### Let the preprocessor append ```devices metadata``` to the start document
+
+In you script subscribe to the preprocessor
 
   ```python
   metadata = (
@@ -500,6 +523,8 @@ In your script subscribe to the preprocessor and the callback:
 
 ### Subscribe the callback: NexusWriter
 
+In you script subscribe to the callback
+
   ```python
   nx_file_dir_path: str = "Your path to nx_file directory"
   cpt_name_delimiter: str = "_" # Optionally specify a delimiter used in Bluesky documents to separate device components. If not specified, the default is "_".
@@ -511,14 +536,36 @@ In your script subscribe to the preprocessor and the callback:
 
 ## Explanations on the optional NeXus logger
 
-- Adjust the log level using `level` if necessary, e.g. logging.INFO, logging.WARNING
-  - Default value: `level`=`logging.DEBUG`
-- Adjust custom log format using `log_format` if necessary.
-  - Default value defined in the body of the `setup_logger` function: `log_format` = `"%(asctime)s - %(name)s - %(levelname)s - %(module)s - %(funcName)s  %(message)s"`
-- Adjust the maximum size of a log file in bytes before rotation occurs using `max_file_size` if necessary.
-  - Default value: `max_file_size`=`10 * 1024 * 1024`
-- "Adjust the number of backup log files to keep using `backup_count` if necessary."
-  - Default value: `backup_count`=`5`
+- Adjust the log levels for console and file output using `console_level` and `file_level` if necessary.
+  - These accept values from the `LogLevel` enum:
+    - `LogLevel.DEBUG`
+    - `LogLevel.INFO`
+    - `LogLevel.WARNING`
+    - `LogLevel.ERROR`
+    - `LogLevel.CRITICAL`
+  - Default values:
+    - `console_level` = `LogLevel.ERROR`
+    - `file_level` = `LogLevel.DEBUG`
+
+- Adjust the custom log format using `log_format` if necessary.
+  - If not specified, the default format is used:
+
+    ```python
+    "%(asctime)s - %(name)s - %(levelname)s - %(module)s - %(funcName)s  %(message)s"
+    ```
+
+- Adjust the maximum size of a log file (in bytes) before rotation occurs using `max_file_size` if necessary.
+  - Default value: `max_file_size` = `10 * 1024 * 1024` (10 MB)
+
+- Adjust the number of backup log files to keep after rotation using `backup_count`.
+  - Default value: `backup_count` = `5`
+
+- Enable or disable logging to the console or file using `enable_console` and `enable_file`.
+  - Both default to `True`.
+
+- File logging requires a valid path in `log_file_dir_path` **and a defined `log_file_name`.**
+  - If `log_file_dir_path` is `None` or `enable_file=False`, file logging is disabled.
+  - Default value for `log_file_name` is `"nx_log.log"`, but it must be explicitly provided when customizing file logging behavior.
 
 ---
 
