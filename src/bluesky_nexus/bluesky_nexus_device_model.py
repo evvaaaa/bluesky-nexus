@@ -1,5 +1,5 @@
 """
-Module: bluesky_nexus_device_model
+Module: bluesky_nexus_device_model.
 
 Handles the instantiation and assignment of Pydantic models to device
 instances within the Bluesky Nexus framework.
@@ -54,11 +54,10 @@ from bluesky_nexus.models.nx_models import (
 def assign_pydantic_model_instance(
     devices_dictionary: dict,
 ):
-    """
-    Assign a Pydantic model instance to each device
-    in the dictionary.
-    """
+    """assign_pydantic_model_instance.
 
+    Assign a Pydantic model instance to each device in the dictionary.
+    """
     if not devices_dictionary:
         logger.warning(
             "Assignment of pydantic model instances to devices "
@@ -85,15 +84,17 @@ def assign_pydantic_model_instance(
             # Convert dictionary to JSON string
             schema_content_str: str = json.dumps(schema_content)
             logger.warning(
-                f"Pydantic NeXus schema content for device: "
-                f"'{dev_instance.name}' was None or empty. "
-                f" Defaulting to: {schema_content_str}"
+                "Pydantic NeXus schema content for device: '%s' was None or empty. "
+                "Defaulting to: %s",
+                dev_instance.name,
+                schema_content_str,
             )
+
         else:
             logger.debug(
-                f"Pydantic NeXus schema content for device: "
-                f"'{dev_instance.name}' found as expected "
-                f" (it is not None or not empty)."
+                "Pydantic NeXus schema content for device: '%s' found as expected "
+                "(it is not None or not empty).",
+                dev_instance.name,
             )
 
         # Read model name from the schema content
@@ -124,16 +125,16 @@ def create_model_instance(
     model_name,
     schema_content,
 ) -> object:
-    """
-    Create a model instance based on the model name
-    and schema content.
+    """create_model_instance.
+
+    Create a model instance based on the model name and schema
+    content.
 
     Returns
     -------
     object
         The instantiated model.
     """
-
     # Check if the model_name corresponds to one of the classes in the mapping
     if model_name in MODEL_NAME_TO_CLASS_MAPPING:
         # Instantiate the model class.
@@ -144,21 +145,20 @@ def create_model_instance(
             **schema_content
         )
         return model_instance
-    else:
-        raise ValueError(
-            f"Class with name {model_name} not found in "
-            f"MODEL_NAME_TO_CLASS_MAPPING! Check the content "
-            f" of 'MODEL_NAME_TO_CLASS_MAPPING' in the file: "
-            f"'bluesky_nexus.models.pydantic_models_hzb'"
-        )
+
+    raise ValueError(
+        f"Class with name {model_name} not found in "
+        f"MODEL_NAME_TO_CLASS_MAPPING! Check the content "
+        f" of 'MODEL_NAME_TO_CLASS_MAPPING' in the file: "
+        f"'bluesky_nexus.models.pydantic_models_hzb'"
+    )
 
 
 def read_attribute(
     device,
     attribute_name,
 ):
-    """
-    Read the value of a specified attribute from a device instance.
+    """Read the value of a specified attribute from a device instance.
 
     Parameters
     ----------
@@ -182,7 +182,8 @@ def read_attribute(
     except AttributeError:
         # Handle case where the attribute does not exist
         logger.exception(
-            f"Attribute '{attribute_name}' does not "
-            f"exist on the device {device.name}."
+            "Attribute '%s' does not exist on the device %s.",
+            attribute_name,
+            device.name,
         )
         return None

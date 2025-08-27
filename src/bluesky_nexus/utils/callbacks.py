@@ -1,15 +1,28 @@
-"""
-This module is not used operationally in the bluesky_nexus package.
-This module is provided just as a tool for debug purposes.
-This module provides three callback classes to write or display Bluesky documents for debugging.
+"""callbacks.py — Debugging callbacks for Bluesky document streams.
+
+This module is not used operationally in the `bluesky_nexus` package.
+It is only used in tests. It is intended purely as a debugging and development aid.
+
+It defines three callback classes that subscribe to Bluesky's RunEngine
+and handle documents (e.g., 'start', 'event', 'stop') in different ways
+for inspection or offline storage.
 
 Classes:
-    WriteToFileCallback: Writes Bluesky documents to a file as JSON strings, one per line.
-    WriteToFileFormattedCallback: Writes Bluesky documents to a file in a nicely formatted JSON array.
-    WriteToTerminalCallback: Prints Bluesky documents to the terminal in a human-readable format.
+    WriteToFileCallback:
+        Writes Bluesky documents as newline-delimited JSON objects (one per line),
+        suitable for streaming or large-scale logging.
+
+    WriteToFileFormattedCallback:
+        Collects all Bluesky documents and writes them at once as a formatted
+        JSON array, making it more readable for humans.
+
+    WriteToTerminalCallback:
+        Prints Bluesky documents to the terminal in a human-readable format
+        using `pprint`, useful for real-time inspection.
 
 Usage:
-    These callbacks can be used with the Bluesky RunEngine to process, save, or display documents emitted during a run.
+    These callbacks can be passed to the `RunEngine.subscribe()` method
+    to process and debug document streams during Bluesky runs.
 
 Example:
     from bluesky import RunEngine
@@ -21,81 +34,188 @@ Example:
         WriteToTerminalCallback
     )
 
-    # Initialize the RunEngine
     RE = RunEngine({})
 
-    # Example 1: Write documents as JSON strings, one per line
-    file_callback = WriteToFileCallback("bluesky_documents.json")
-    RE.subscribe(file_callback)
-    RE(count([det], num=5))
-    file_callback.close()  # Ensure the file is properly closed after the run
+    # Example 1: Write documents as JSON lines
+    with WriteToFileCallback("stream_output.json") as file_callback:
+        RE.subscribe(file_callback)
+        RE(count([det], num=5))
 
-    # Example 2: Write documents in a nicely formatted JSON array
-    file_formatted_callback = WriteToFileFormattedCallback("formatted_bluesky_documents.json")
-    RE.subscribe(file_formatted_callback)
-    RE(count([det], num=5))
-    file_formatted_callback.close()  # Ensure the file is properly closed after the run
+    # Example 2: Write all documents as a pretty-printed JSON array
+    with WriteToFileFormattedCallback("formatted_output.json") as formatted_callback:
+        RE.subscribe(formatted_callback)
+        RE(count([det], num=5))
 
-    # Example 3: Display documents in the terminal
+    # Example 3: Print documents to the terminal
     terminal_callback = WriteToTerminalCallback()
     RE.subscribe(terminal_callback)
     RE(count([det], num=5))
 
 Notes:
-    - `WriteToFileCallback` is better suited for streaming-style writing (e.g., large data sets).
-    - `WriteToFileFormattedCallback` is ideal for human-readable outputs or debugging.
-    - `WriteToTerminalCallback` is primarily for debugging, printing documents as they are emitted.
+    - `WriteToFileCallback` is suitable for large, streaming data.
+    - `WriteToFileFormattedCallback` is ideal for compact, human-readable snapshots.
+    - `WriteToTerminalCallback` is best for real-time debugging output.
 """
 
 import json
-from bluesky.callbacks import CallbackBase
 from pprint import pprint
+
+from bluesky.callbacks import CallbackBase
 
 
 class WriteToFileCallback:
+    """WriteToFileCallback.
+
+    A context manager and callable class for writing JSON-formatted
+    name-documentation pairs to a file, one per line.
+
+    This class opens the specified file on entering the context and ensures the file
+    is properly closed on exit. It can be called like a function to write a dictionary
+    entry to the file in JSON format.
+
+    Attributes:
+        file_path (str): Path to the file where data will be written.
+        file (file object): File handle used for writing.
+    """
+
     def __init__(self, file_path):
+        """Initialize the WriteToFileCallback with the path to the file.
+
+        Args:
+            file_path (str): The path to the file where entries will be written.
+        """
         self.file_path = file_path
-        self.file = open(file_path, "w")
+        self.file = None
+
+    def __enter__(self):
+        """Enter the runtime context related to the file resource.
+
+        Returns:
+            WriteToFileCallback: The instance itself, with the file opened.
+        """
+        self.file = open(self.file_path, "w", encoding="utf-8")
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        """Exit the runtime context and close the file if it was opened.
+
+        Args:
+            exc_type (type): Exception type, if raised.
+            exc_value (Exception): Exception value, if raised.
+            traceback (traceback): Traceback object, if an exception was raised.
+        """
+        if self.file:
+            self.file.close()
 
     def __call__(self, name, doc):
-        # Write each document as a JSON string, one per line
-        self.file.write(json.dumps({name: doc}) + "\n")
-        self.file.flush()  # Ensure data is written to disk
+        """Write a JSON-formatted line.
 
-    def close(self):
-        self.file.close()
+        to the file with a name-documentation pair.
+
+        Args:
+            name (str): The key name for the documentation entry.
+            doc (str): The documentation content to associate with the name.
+        """
+        self.file.write(json.dumps({name: doc}) + "\n")
+        self.file.flush()
 
 
 class WriteToFileFormattedCallback:
+    """WriteToFileFormattedCallback.
+
+    A callback class that collects all documents and writes them to a
+    file as a single pretty-printed JSON array.
+
+    Useful for cases where you want a more human-readable, structured
+    output instead of streaming line-by-line.
+    """
+
     def __init__(self, file_path):
+        """Initialize the WriteToFileFormattedCallback.
+
+        Parameters:
+        ----------
+        file_path : str
+            Path to the file where the formatted JSON output will be written.
+        """
         self.file_path = file_path
-        self.file = open(file_path, "w")
-        self.documents = []  # Store all documents in a list
+        self.file = None
+        self.documents = []
+
+    def __enter__(self):
+        """Open the file on entering the context."""
+        self.file = open(self.file_path, "w", encoding="utf-8")
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Write documents and close the file on exiting the context."""
+        json.dump(self.documents, self.file, indent=4)
+        self.file.flush()
 
     def __call__(self, name, doc):
-        # Append each document (as a dictionary) to the list
-        self.documents.append({name: doc})
+        """Collect a document for later formatted output.
 
-    def close(self):
-        # Write all documents to the file in a nicely formatted way
-        json.dump(self.documents, self.file, indent=4)  # Pretty-print with indentation
-        self.file.close()
+        Parameters:
+        ----------
+        name : str
+            The name/type of the document (e.g., 'start', 'event', 'stop').
+        doc : dict
+            The document content to be collected.
+        """
+        self.documents.append({name: doc})
 
 
 class WriteToTerminalCallback(CallbackBase):
+    """WriteToTerminalCallback.
+
+    A callback class that prints streaming documents to the terminal in
+    a human-readable format.
+
+    Each type of document (start, descriptor, event, stop) is printed
+    with a header and content. Useful for debugging and development to
+    inspect live data.
+    """
 
     def start(self, doc):
+        """Handle the 'start' document.
+
+        Parameters:
+        ----------
+        doc : dict
+            The start document containing metadata about the run.
+        """
         print("/n# I got a new 'start' document:/n")
         pprint(doc)
 
     def descriptor(self, doc):
+        """Handle the 'descriptor' document.
+
+        Parameters:
+        ----------
+        doc : dict
+            The descriptor document describing the data schema for subsequent events.
+        """
         print("/n# I got a new 'descriptor' document:/n")
         pprint(doc)
 
     def event(self, doc):
+        """Handle an 'event' document.
+
+        Parameters:
+        ----------
+        doc : dict
+            The event document containing measured data.
+        """
         print("/n# I got a new 'event' document:/n")
         pprint(doc)
 
     def stop(self, doc):
+        """Handle the 'stop' document.
+
+        Parameters:
+        ----------
+        doc : dict
+            The stop document signaling the end of a run.
+        """
         print("/n# I got a new 'stop' document:/n")
         pprint(doc)

@@ -1,6 +1,10 @@
-## Purpose of this file:
-## Helps to understand the structure of the descriptor and event document
-## generated in some bluesky run
+"""Example descriptor and event documents for reference.
+
+This file contains example structures of Bluesky 'descriptor' and
+'event' documents. It is used for documentation and educational purposes
+only. Helps to understand the structure of the descriptor and event
+document ## generated in some bluesky run
+"""
 
 # -------------- DESCRIPTOR --------------
 
@@ -127,7 +131,8 @@
 #     "time": 1734080102.7931254,
 #     "uid": "14401337-c517-4e9d-829d-9c911c8417b4",
 #     "hints": {
-#         "test_mono_with_grating_cpt": {"fields": ["test_mono_with_grating_cpt_engry"]},
+#         "test_mono_with_grating_cpt": {"fields": ["test_mono_with_grating_cpt_engry"]
+#              },
 #         "test_mono": {"fields": ["test_mono_en"]},
 #     },
 # }
