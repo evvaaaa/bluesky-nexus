@@ -32,6 +32,7 @@ import os
 from types import GeneratorType
 from typing import Any, Dict, Union
 
+# import unittest
 # Activate for Debuging only
 # import sys
 # sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -174,12 +175,18 @@ def _devices_dictionary() -> Dict[str, Union[Mono, MonoWithGratingCpt, SimMotor]
     This includes monochromators with and without grating components.
     """
     mono: Mono = Mono(name="mono")
+    mono_2: Mono = Mono(name="mono_2")  # Not in use in any plan
+    mono_2_: Mono = Mono(name="mono_2_")  # Not in use in any plan
+    mono2: Mono = Mono(name="mono2")  # Not in use in any plan
     mono_with_grating_cpt: MonoWithGratingCpt = MonoWithGratingCpt(
         name="mono_with_grating_cpt"
     )
     sim_motor: SimMotor = SimMotor(name="sim_motor")
     return {
         "mono": mono,
+        "mono_2": mono_2,
+        "mono_2_": mono_2_,
+        "mono2": mono2,
         "mono_with_grating_cpt": mono_with_grating_cpt,
         "sim_motor": sim_motor,
     }
