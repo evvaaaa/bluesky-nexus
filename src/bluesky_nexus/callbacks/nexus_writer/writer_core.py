@@ -50,6 +50,7 @@ Notes:
 
 import copy
 import os
+from collections import deque
 from functools import partial
 from typing import Any, Deque, Dict
 
@@ -58,6 +59,7 @@ import numpy as np
 from bluesky.callbacks.core import CollectThenCompute
 
 from bluesky_nexus.bluesky_nexus_const import (
+    DEVICE_MD_KEY,
     NX_FILE_EXTENSION,
     NX_MD_KEY,
 )
@@ -236,6 +238,75 @@ class NexusWriter(CollectThenCompute):
             - The method processes placeholders within the NeXus
             metadata using the associated events and descriptors.
         """
+
+        def collect_descriptor_keys(descriptors: deque) -> set:
+            """Find out devices/objects of a run.
+
+            Collects all unique keys from 'configuration' and
+            'object_keys' in a deque of Bluesky descriptors.
+
+            Args:
+                descriptors (deque): deque containing descriptor dictionaries
+
+            Returns:
+                set: a set of unique keys found under 'configuration' and 'object_keys'
+            """
+            keys_set = set()
+
+            for descriptor in descriptors:
+                # Collect keys under 'configuration'
+                configuration = descriptor.get("configuration", {})
+                keys_set.update(configuration.keys())
+
+                # Collect keys under 'object_keys'
+                object_keys = descriptor.get("object_keys", {})
+                keys_set.update(object_keys.keys())
+
+            return keys_set
+
+        def filter_start_doc(
+            start_doc_cpy: dict, keys_set: set, delimiter: str = "_"
+        ) -> dict:
+            """Remove device names not taking part in run.
+
+            Filters 'device_md' and 'nexus_md' in start_doc_cpy,
+            keeping only those entries whose keys either:
+            1. exactly match a key in keys_set, or
+            2. are a prefix of some key in keys_set, followed by the delimiter.
+
+            Args:
+                start_doc_cpy (dict): dictionary with at least
+                    'device_md' and 'nexus_md'
+                keys_set (set): set of valid keys from descriptors
+                delimiter (str): string that separates a prefix from
+                    the rest of a key (default "_")
+
+            Returns:
+                dict: the filtered start_doc_cpy, with invalid devices removed
+            """
+
+            def is_valid_key(key: str) -> bool:
+                # exact match
+                if key in keys_set:
+                    return True
+                # prefix match with delimiter
+                for k in keys_set:
+                    if k.startswith(f"{key}{delimiter}"):
+                        return True
+                return False
+
+            for section in [DEVICE_MD_KEY, NX_MD_KEY]:
+                if section in start_doc_cpy and isinstance(
+                    start_doc_cpy[section], dict
+                ):
+                    keys_to_remove = [
+                        k for k in start_doc_cpy[section].keys() if not is_valid_key(k)
+                    ]
+                    for k in keys_to_remove:
+                        del start_doc_cpy[section][k]
+
+            return start_doc_cpy
+
         # Check if NEXUS_MD_KEY is contained in the start document
         if NX_MD_KEY not in self._start_doc:
             logger.error(
@@ -252,13 +323,6 @@ class NexusWriter(CollectThenCompute):
         # Create nexus file path
         nx_file_path: str = self.create_nx_file_path(nx_dir_path, nx_file_name)
 
-        # Create 'run_info' dict by extraction of data from the
-        # start and stop document
-        run_info: dict = extract_run_info(self._start_doc, self._stop_doc)
-
-        # Define a dict "data" that is to be passed to 'create_nexus_file()'
-        data: dict = {"run_info": run_info}
-
         # Copy the start document to be able to modify it.
         # Reason: Documents are immutable.
         try:
@@ -266,6 +330,23 @@ class NexusWriter(CollectThenCompute):
         except Exception as e:  # pylint: disable=broad-exception-caught
             logger.exception("Error during deepcopy of the start document: '%s'", e)
             return
+
+        ###  --- Clean  start_doc_cpy from device names not used in the plan ---
+        # Collect from all descriptors unique keys of 'configuration' and 'object_keys'
+        keys_set: set = collect_descriptor_keys(self._descriptors)
+        # Remove under NX_MD_KEY: str = 'nexus_md' and DEVICE_MD_KEY: str = 'device_md'
+        # contained in the start_doc_cpy all the device names
+        # that are not used in the plan. They are not listed in the descriptors.
+        delimiter: str = self.cpt_name_delimiter
+        start_doc_cpy = filter_start_doc(start_doc_cpy, keys_set, delimiter)
+        ###  --- End of Clean  start_doc_cpy from device names not used in the plan ---
+
+        # Create 'run_info' dict by extraction of data from the
+        # start and stop document
+        run_info: dict = extract_run_info(start_doc_cpy, self._stop_doc)
+
+        # Define a dict "data" that is to be passed to 'create_nexus_file()'
+        data: dict = {"run_info": run_info}
 
         # If there is NX_MD_KEY in the start_doc_cpy
         if start_doc_cpy[NX_MD_KEY]:
