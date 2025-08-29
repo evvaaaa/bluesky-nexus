@@ -4,7 +4,9 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "bluesky_nexus"
-version = "1.0.0"
+dynamic = [
+    "version",
+] # declare that version is dynamically provided by setuptools_scm
 description = "Generation of the NeXus file from a blusky run using pydantic schema-model approach."
 keywords = ["bluesky", "nexus", "hdf5", "data-science", "pydantic"]
 authors = [
@@ -59,3 +61,8 @@ extend-select = [
 
 [tool.ruff.lint.pydocstyle]
 convention = "pep257"
+
+[tool.setuptools_scm]
+write_to = "src/bluesky_nexus/_version.py"
+version_scheme = "post-release"
+local_scheme = "dirty-tag"
