@@ -70,6 +70,7 @@ from bluesky_nexus.callbacks.nexus_writer.placeholder_helpers import (
 )
 from bluesky_nexus.common.decorator_utils import measure_time
 from bluesky_nexus.common.logging_utils import logger
+from bluesky_nexus.common.version_utils import log_package_info
 
 
 class NexusWriter(CollectThenCompute):
@@ -99,6 +100,9 @@ class NexusWriter(CollectThenCompute):
         - compute(): Entry point to trigger NeXus file generation.
         - generate_nexus_file(): Extracts metadata and writes the NeXus file.
     """
+
+    # Log the version of the package
+    log_package_info()
 
     def __init__(self, nx_file_dir_path: str, cpt_name_delimiter: str = "_") -> None:
         """Init.
