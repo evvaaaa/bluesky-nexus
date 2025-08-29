@@ -304,7 +304,14 @@ class NexusWriter(CollectThenCompute):
                     ]
                     for k in keys_to_remove:
                         del start_doc_cpy[section][k]
-
+                        logger.debug(
+                            (
+                                "Device '%s' removed from '%s' of the start document "
+                                "(not participating in plan)"
+                            ),
+                            k,
+                            section,
+                        )
             return start_doc_cpy
 
         # Check if NEXUS_MD_KEY is contained in the start document
