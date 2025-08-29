@@ -266,6 +266,7 @@ class NexusWriter(CollectThenCompute):
                 object_keys = descriptor.get("object_keys", {})
                 keys_set.update(object_keys.keys())
 
+            logger.debug("Collected unique descriptor keys: %s", keys_set)
             return keys_set
 
         def filter_start_doc(
@@ -306,6 +307,17 @@ class NexusWriter(CollectThenCompute):
                     keys_to_remove = [
                         k for k in start_doc_cpy[section].keys() if not is_valid_key(k)
                     ]
+
+                    # Log what will be removed (or if nothing to remove)
+                    if keys_to_remove:
+                        logger.debug(
+                            "Keys to remove from '%s': %s",
+                            section,
+                            ", ".join(keys_to_remove),
+                        )
+                    else:
+                        logger.debug("No keys to remove from '%s'", section)
+
                     for k in keys_to_remove:
                         del start_doc_cpy[section][k]
                         logger.debug(
