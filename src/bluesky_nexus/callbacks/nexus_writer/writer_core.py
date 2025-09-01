@@ -101,9 +101,6 @@ class NexusWriter(CollectThenCompute):
         - generate_nexus_file(): Extracts metadata and writes the NeXus file.
     """
 
-    # Log the version of the package
-    log_package_info()
-
     def __init__(self, nx_file_dir_path: str, cpt_name_delimiter: str = "_") -> None:
         """Init.
 
@@ -112,6 +109,9 @@ class NexusWriter(CollectThenCompute):
         super().__init__()  # Initialize the parent class
         self.nx_file_dir_path = nx_file_dir_path
         self.cpt_name_delimiter = cpt_name_delimiter
+
+        # Log the version of the package
+        log_package_info()
 
     # pylint: disable=signature-differs
     def __call__(self, name: str, doc: dict) -> None:
