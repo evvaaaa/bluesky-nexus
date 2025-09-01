@@ -395,6 +395,22 @@ from bluesky_nexus.bluesky_nexus_paths import (
     get_nx_log_file_dir_path,
 )
 
+# This is an optional setup for the NeXus logger. If not configured, logging to a file
+# is disabled by default. The logger supports separate configuration for console and
+# file output, with options for log rotation, formatting, and enabling/disabling handlers.
+nx_log_file_dir_path: str = get_nx_log_file_dir_path()
+setup_nx_logger(
+    console_level=LogLevel.ERROR,
+    file_level=LogLevel.DEBUG,
+    log_file_dir_path=nx_log_file_dir_path,
+    log_file_name="nx_log.log",
+    log_format=None,  # Uses default format if None
+    max_file_size=10 * 1024 * 1024,  # 10 MB
+    backup_count=5,
+    enable_console=True,
+    enable_file=True,
+)
+
 # Let the preprocessor append NeXus metadata to the start document
 metadata = SupplementalMetadata()
 metadata.devices_dictionary: dict = devices_dictionary
@@ -412,22 +428,6 @@ nx_file_dir_path: str = get_nx_file_dir_path()
 cpt_name_delimiter: str = "_" # Optionally specify a delimiter used in Bluesky documents to separate device components. If not specified, the default is "_".
 nexus_writer = NexusWriter(nx_file_dir_path=nx_file_dir_path, cpt_name_delimiter = cpt_name_delimiter)
 RE.subscribe(nexus_writer)
-
-# This is an optional setup for the NeXus logger. If not configured, logging to a file
-# is disabled by default. The logger supports separate configuration for console and
-# file output, with options for log rotation, formatting, and enabling/disabling handlers.
-nx_log_file_dir_path: str = get_nx_log_file_dir_path()
-setup_nx_logger(
-    console_level=LogLevel.ERROR,
-    file_level=LogLevel.DEBUG,
-    log_file_dir_path=nx_log_file_dir_path,
-    log_file_name="nx_log.log",
-    log_format=None,  # Uses default format if None
-    max_file_size=10 * 1024 * 1024,  # 10 MB
-    backup_count=5,
-    enable_console=True,
-    enable_file=True,
-)
 ```
 
 See the section [Explanations on the optional NeXus logger](#explanations-on-the-optional-nexus-logger)
