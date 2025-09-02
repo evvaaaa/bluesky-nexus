@@ -375,8 +375,8 @@ class NexusWriter(CollectThenCompute):
             data.update({"run_info": run_info})
         else:
             logger.warning(
-                "'run_info' is an empty dict. 'NXcollection' group will not appear in "
-                "the resulting NeXus file."
+                "'run_info' is an empty dict. The 'NXcollection' group will not be "
+                "included in the resulting NeXus file."
             )
 
         # If there is NX_MD_KEY in the start_doc_cpy
@@ -395,8 +395,9 @@ class NexusWriter(CollectThenCompute):
             data.update({"instrument": instrument_data})
         else:
             logger.warning(
-                "After filtering the start document the '%s' is an empty dict. "
-                "'NXinstrument' group will not appear in resulting NeXus file.",
+                "After filtering the start document, 'start_doc_cpy[%s]' is"
+                "an empty dict. The 'NXinstrument' group will not be included"
+                "in the resulting NeXus file.",
                 NX_MD_KEY,
             )
 
