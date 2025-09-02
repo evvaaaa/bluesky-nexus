@@ -369,7 +369,15 @@ class NexusWriter(CollectThenCompute):
         run_info: dict = extract_run_info(start_doc_cpy, self._stop_doc)
 
         # Define a dict "data" that is to be passed to 'create_nexus_file()'
-        data: dict = {"run_info": run_info}
+        data: dict = {}
+
+        if run_info:
+            data.update({"run_info": run_info})
+        else:
+            logger.warning(
+                "'run_info' is an empty dict. 'NXcollection' group will not appear in "
+                "the resulting NeXus file."
+            )
 
         # If there is NX_MD_KEY in the start_doc_cpy
         if start_doc_cpy[NX_MD_KEY]:
@@ -385,6 +393,12 @@ class NexusWriter(CollectThenCompute):
             # Update the dict data with instrument_data
             instrument_data: dict = start_doc_cpy[NX_MD_KEY]
             data.update({"instrument": instrument_data})
+        else:
+            logger.warning(
+                "After filtering the start document the '%s' is an empty dict. "
+                "'NXinstrument' group will not appear in resulting NeXus file.",
+                NX_MD_KEY,
+            )
 
         # Create nexus file from the data
         create_nexus_file(nx_file_path, data)
