@@ -181,7 +181,7 @@ def read_attribute(
         return value
     except AttributeError:
         # Handle case where the attribute does not exist
-        logger.exception(
+        logger.warning(
             "Attribute '%s' does not exist on the device %s.",
             attribute_name,
             device.name,
