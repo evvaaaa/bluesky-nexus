@@ -143,4 +143,4 @@ Loading complete
 # vscode related files
 .vscode/
 
-/src/bluesky_nexus/_version.py
+src/bluesky_nexus/_version.py
