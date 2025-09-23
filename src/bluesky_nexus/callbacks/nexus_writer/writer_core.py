@@ -113,6 +113,14 @@ class NexusWriter(CollectThenCompute):
         # Log the version of the package
         log_package_info()
 
+    def descriptor(self, doc: dict) -> None:
+        if doc["name"] in ("primary", "baseline"):
+            super().descriptor(doc)
+
+    def event(self, doc: dict) -> None:
+        if doc["descriptor"] in (d["uid"] for d in self._descriptors):
+            super().event(doc)
+
     # pylint: disable=signature-differs
     def __call__(self, name: str, doc: dict) -> None:
         """Call.
