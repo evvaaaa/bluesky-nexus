@@ -15,6 +15,7 @@ The `MockFlyer` simulates a measurement that starts immediately
 produces a synthetic data event (`collect`).
 """
 
+from dataclasses import dataclass
 from threading import Thread
 from time import sleep, time_ns
 
@@ -22,6 +23,29 @@ from bluesky.protocols import Flyable
 from event_model import DataKey, PartialEvent
 from ophyd import Device
 from ophyd.status import DeviceStatus, Status
+
+
+@dataclass
+class MetadataMockFlyer:
+    """Class simulating metadata for a monochromator.
+
+    Attributes:
+        description (str): Description of the monochromator.
+    """
+
+    description: str = "I am the best flyer"
+
+    def get_attributes(self):
+        """Return all metadata attributes of the flayer.
+
+        Returns:
+            dict: A dictionary containing all metadata attributes.
+        """
+        attributes = {
+            "description": self.description,
+        }
+        return attributes
+
 
 _WAIT_SECONDS = 10.0
 
@@ -48,6 +72,8 @@ class MockFlyer(Device, Flyable):
         Additional keyword arguments passed to the `Device`
         base class.
     """
+
+    md = MetadataMockFlyer()
 
     def __init__(self, *args, wait_seconds: float = _WAIT_SECONDS, **kwargs):
         """Initialize the mock flyer.
