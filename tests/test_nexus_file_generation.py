@@ -29,10 +29,12 @@ Example usage:
 
 import ast
 import os
+from time import sleep
 from types import GeneratorType
 from typing import Any, Dict, Union
 
-# import unittest
+import bluesky.plan_stubs as bps
+
 # Activate for Debuging only
 # import sys
 # sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -48,6 +50,7 @@ from bluesky_nexus.bluesky_nexus_const import CALLBACK_FILE_EXTENSION, NX_FILE_E
 from bluesky_nexus.callbacks.nexus_writer.writer_core import NexusWriter
 from bluesky_nexus.preprocessors.supplemental_metadata import SupplementalMetadata
 from bluesky_nexus.utils.callbacks import WriteToFileFormattedCallback
+from tests.devices.mock_flyer import MockFlyer
 from tests.devices.mono import Mono
 from tests.devices.mono_with_grating_cpt import MonoWithGratingCpt
 from tests.devices.sim_motor import SimMotor
@@ -169,7 +172,9 @@ def test_expected_files_exist_in_nx_schema(_nx_schema_dir_path) -> None:
 
 # Fixture: Create a dictionary of devices for reuse in tests
 @pytest.fixture
-def _devices_dictionary() -> Dict[str, Union[Mono, MonoWithGratingCpt, SimMotor]]:
+def _devices_dictionary() -> (
+    Dict[str, Union[Mono, MonoWithGratingCpt, SimMotor, MockFlyer]]
+):
     """Create and return a dictionary of test devices.
 
     This includes monochromators with and without grating components.
@@ -182,6 +187,8 @@ def _devices_dictionary() -> Dict[str, Union[Mono, MonoWithGratingCpt, SimMotor]
         name="mono_with_grating_cpt"
     )
     sim_motor: SimMotor = SimMotor(name="sim_motor")
+    mock_flyer: MockFlyer = MockFlyer(name="mock_flyer", wait_seconds=3)
+
     return {
         "mono": mono,
         "mono_2": mono_2,
@@ -189,6 +196,7 @@ def _devices_dictionary() -> Dict[str, Union[Mono, MonoWithGratingCpt, SimMotor]
         "mono2": mono2,
         "mono_with_grating_cpt": mono_with_grating_cpt,
         "sim_motor": sim_motor,
+        "mock_flyer": mock_flyer,
     }
 
 
@@ -246,6 +254,18 @@ def _baseline_4():
     return []
 
 
+# Fixture: Baseline configuration for test 6
+@pytest.fixture
+def _baseline_5(_devices_dictionary):
+    """Return baseline configuration.
+
+    Participating devices: 'mono_with_grating_cpt'.
+    """
+    return [_devices_dictionary["mono"], _devices_dictionary["mock_flyer"]]  # WORKS
+    # return [_devices_dictionary["mono"]]  # WORKS
+    # return [_devices_dictionary["mock_flyer"]]  # DOES NOT WORK, WHY ??
+
+
 # Fixture: Initialize a plain Bluesky RunEngine
 @pytest.fixture
 def _run_engine():
@@ -274,6 +294,25 @@ def _run_eng(_run_engine: RunEngine, _nx_file_dir_path: str):
 def _my_motor():
     """Return motor object."""
     return motor  # Return the motor object for use in tests
+
+
+# Helper: Execute a fly plan on the RunEngine
+def execute_fly_plan(_run_eng: RunEngine, md: dict, mock_flyer):
+    """Define and execute a plan on the RunEngine."""
+
+    def mock_fly():
+        yield from bps.open_run()
+        yield from bps.kickoff(mock_flyer)
+        x = yield from bps.complete(mock_flyer)
+        while not x.done:
+            sleep(0.1)
+        yield from bps.collect(mock_flyer)
+        yield from bps.close_run()
+
+    plan = mock_fly()
+    assert isinstance(plan, GeneratorType), "mock_fly() is not returning a generator!"
+    _run_eng.md = md
+    _run_eng(plan)
 
 
 # Helper: Execute a scan plan on the RunEngine
@@ -2644,6 +2683,58 @@ def test_5(
     # Remove the nexus file after successful validation
     clean_up(nx_file_path)
     # Remove the callback file after successful creation
+    clean_up(callback_file_path)
+
+
+# Test function
+# @unittest.skip("Temporarily disabling this test_6")
+def test_6(
+    _run_eng,
+    _devices_dictionary,
+    _baseline_5,
+    _callback_file_dir_path,
+    _nx_file_dir_path,
+    request,
+) -> None:
+    """Integration test for generating and verifying a Nexus file.
+
+    - Configures metadata and baseline devices.
+    - Executes a plan and verifies the resulting Nexus file's structure and data.
+    """
+    # Add preprocessors to the RunEngine
+    add_preprocessors(_run_eng, _devices_dictionary, _baseline_5)
+
+    # Generate metadata
+    nx_file_name: str = f"hzb_nexus_file_{request.node.name}"
+
+    md: dict = generate_md(
+        nx_file_name,
+        "bluesky run test 6",
+        "NX_fly",
+        {"a": 35, "b": 36, "c": {"d": 37, "e": 38}},
+    )
+    callback_file_path = get_callback_file_path(
+        _callback_file_dir_path, f"callback_file_{request.node.name}.json"
+    )
+
+    # Execute plan and write generated documents to a json file
+    # using 'WriteToFileFormattedCallback'
+    with WriteToFileFormattedCallback(callback_file_path) as callback_writer:
+        _run_eng.subscribe(callback_writer)
+        execute_fly_plan(_run_eng, md, _devices_dictionary["mock_flyer"])
+
+    # Define Nexus file path
+    nx_file_path: str = get_nx_file_path(_nx_file_dir_path, nx_file_name)
+
+    # Assert file creation
+    assert os.path.exists(nx_file_path), (
+        f"Nexus file: {nx_file_path} was not created while executing "
+        f"test: {request.node.name}."
+    )
+
+    # # Remove the nexus file after successful validation
+    clean_up(nx_file_path)
+    # # Remove the callback file after successful creation
     clean_up(callback_file_path)
 
 
