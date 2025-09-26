@@ -1,10 +1,7 @@
-"""
-MockFlyer module.
+"""MockFlyer module.
 
----
---- MockFlyer written by Eva: OP 5811 -> 22.09.2025 09:47 AM
---- All docsstrings added by me (chatgpt generation) to satisfy the pre-commits
----
+MockFlyer written by Eva: OP 5811
+All docsstrings added by me (chatgpt generation) to satisfy the pre-commits
 
 This module defines a mock implementation of a Bluesky-compatible
 `Flyable` device. It can be used for testing workflows that
@@ -93,6 +90,73 @@ class MockFlyer(Device, Flyable):
         self._wait_seconds = wait_seconds
         super().__init__(*args, **kwargs)
 
+    def describe(self):
+        """Describe the static data keys for this device.
+
+        Returns
+        -------
+        dict
+            A dictionary mapping field names to `DataKey` objects,
+            here advertising a scalar field "time-taken".
+        """
+        return {
+            "time-taken": DataKey(
+                source="meh",
+                dtype="number",
+                shape=[],
+            )
+        }
+
+    def read(self):
+        """Read the current state of the device.
+
+        Returns
+        -------
+        dict
+            A dictionary with the key "time-taken", containing a
+            zero value and a current timestamp.
+        """
+        return {"time-taken": {"value": 0, "timestamp": time_ns()}}
+
+    def describe_collect(self):
+        """Describe the data stream produced by `collect`.
+
+        Returns metadata in the form of a dictionary mapping
+        data keys to `DataKey` objects. Here, a single scalar
+        field "time-taken" is advertised.
+
+        Returns
+        -------
+        dict
+            A description of the collected data fields.
+        """
+        return {
+            self.name: {
+                "time-taken": DataKey(
+                    source="meh",
+                    dtype="number",
+                    shape=[],
+                )
+            }
+        }
+
+    def collect(self):
+        """Yield a synthetic event representing the flyer result.
+
+        The event contains a single field, "time-taken", which
+        is the elapsed nanoseconds between kickoff and collection.
+
+        Yields
+        ------
+        PartialEvent
+            A single synthetic event with timing information.
+        """
+        yield PartialEvent(
+            time=time_ns(),
+            data={"time-taken": time_ns() - self.time_start},
+            timestamps={"time-taken": 0.0},
+        )
+
     def kickoff(self):
         """Start the flyer measurement.
 
@@ -133,42 +197,3 @@ class MockFlyer(Device, Flyable):
             target=check_time_passed, args=(self.time_start, status), daemon=True
         ).start()
         return status
-
-    def describe_collect(self):
-        """Describe the data stream produced by `collect`.
-
-        Returns metadata in the form of a dictionary mapping
-        data keys to `DataKey` objects. Here, a single scalar
-        field "time-taken" is advertised.
-
-        Returns
-        -------
-        dict
-            A description of the collected data fields.
-        """
-        return {
-            self.name: {
-                "time-taken": DataKey(
-                    source="meh",
-                    dtype="number",
-                    shape=[],
-                )
-            }
-        }
-
-    def collect(self):
-        """Yield a synthetic event representing the flyer result.
-
-        The event contains a single field, "time-taken", which
-        is the elapsed nanoseconds between kickoff and collection.
-
-        Yields
-        ------
-        PartialEvent
-            A single synthetic event with timing information.
-        """
-        yield PartialEvent(
-            time=time_ns(),
-            data={"time-taken": time_ns() - self.time_start},
-            timestamps={"time-taken": 0.0},
-        )
