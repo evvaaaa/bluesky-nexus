@@ -70,7 +70,7 @@ from bluesky_nexus.callbacks.nexus_writer.placeholder_helpers import (
 )
 from bluesky_nexus.common.decorator_utils import measure_time
 from bluesky_nexus.common.logging_utils import logger
-from bluesky_nexus.common.version_utils import log_package_info
+from bluesky_nexus.common.version_utils import log_package_version
 
 
 class NexusWriter(CollectThenCompute):
@@ -111,13 +111,15 @@ class NexusWriter(CollectThenCompute):
         self.cpt_name_delimiter = cpt_name_delimiter
 
         # Log the version of the package
-        log_package_info()
+        log_package_version()
 
     def descriptor(self, doc: dict) -> None:
+        """Handle descriptors for selected streams."""
         if doc["name"] in ("primary", "baseline"):
             super().descriptor(doc)
 
     def event(self, doc: dict) -> None:
+        """Handle events corresponding to accepted descriptors."""
         if doc["descriptor"] in (d["uid"] for d in self._descriptors):
             super().event(doc)
 
