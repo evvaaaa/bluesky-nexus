@@ -2913,25 +2913,6 @@ def test_6(
     clean_up(callback_file_path)
 
 
-# ---------- DEBUG ONLY
-# Aux function
-def print_array_info(arr: np.ndarray, arr_name: str) -> None:
-    """Print array info."""
-    print(f"{arr_name} dtype: {arr.dtype}")
-    print(f"{arr_name} value: {arr}")
-
-
-# Aux function
-def print_arrays_comparison_info(
-    arr1: np.ndarray, arr1_name: str, arr2: np.ndarray, arr2_name: str
-) -> None:
-    """Print arrays info."""
-    print(f"Is {arr1_name} equal to {arr2_name}: {np.array_equal(arr1, arr2)}")
-    print(f"Is {arr1_name} close to {arr2_name}: {np.allclose(arr1, arr2, atol=1e-8)}")
-
-
-# ---------- END OF DEBUG ONLY
-
 if __name__ == "__main__":
     # Execute all test cases in the script when run directly.
     # import pytest
