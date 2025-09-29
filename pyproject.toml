@@ -22,11 +22,6 @@ dev = [
   "ruff",
   "pylint",
 
-  # For docs
-  "mkdocs",
-  "mkdocs-drawio-file",
-  "mkdocs-material",
-
   # For tests
   "ophyd",
   "pytest",
