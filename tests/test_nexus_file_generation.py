@@ -543,77 +543,60 @@ def _verify_dataset(f: h5py.File, dataset_path: str, expected: Any) -> None:
             f"Expected {expected_shape}, Found {actual_value.shape}"
         )
 
-    if expected_value is not None:
-        expected_value = np.array(
-            expected_value, dtype=object if actual_value.dtype.kind == "O" else None
+    if expected_value is None:
+        return
+
+    expected_value = np.array(
+        expected_value, dtype=object if actual_value.dtype.kind == "O" else None
+    )
+    if actual_value.dtype.kind in ("f", "i"):
+        assert np.allclose(actual_value, expected_value, atol=1e-8), (
+            f"Mismatch in dataset: {dataset_path}: Expected {expected_value}, "
+            f"Found {actual_value}"
         )
-        if actual_value.dtype.kind in ("f", "i"):
-            assert np.allclose(actual_value, expected_value, atol=1e-8), (
-                f"Mismatch in dataset: {dataset_path}: Expected {expected_value}, "
-                f"Found {actual_value}"
-            )
-        else:
-            assert np.array_equal(actual_value, expected_value), (
-                f"Mismatch in dataset: {dataset_path}: Expected {expected_value}, "
-                f"Found {actual_value}"
-            )
-
-    # Verify value
-    if expected_value is not None:
-
-        # Convert expected_value in np array
-
-        ### ---------- DEBUG ONLY
-        # Print array info
-        # print_array_info(actual_value, "actual_value")
-        # print_array_info(expected_value, "expected_value")
-
-        # Print array comparison info
-        # print_arrays_comparison_info(
-        #     actual_value,
-        #     "actual_value",
-        #     expected_value,
-        #     "expected_value",
-        # )
-        ### ---------- END OF DEBUG ONLY
-
-        # Determine the data type kind of the actual array
-        dtype_kind = actual_value.dtype.kind
-        # Define the error message
-        error_msg = (
+    else:
+        assert np.array_equal(actual_value, expected_value), (
             f"Mismatch in dataset: {dataset_path}: Expected {expected_value}, "
             f"Found {actual_value}"
         )
 
-        # Check if the array contains objects/string values
-        if "O" == dtype_kind:
-            expected_value = np.array(expected_value, dtype=object)
-            assert np.array_equal(
-                actual_value,
-                expected_value,
-            ), error_msg
+    # Determine the data type kind of the actual array
+    dtype_kind = actual_value.dtype.kind
+    # Define the error message
+    error_msg = (
+        f"Mismatch in dataset: {dataset_path}: Expected {expected_value}, "
+        f"Found {actual_value}"
+    )
 
-        # Check if the array contains numeric values
-        elif dtype_kind in ("f", "i"):  # 'f' for float, 'i' for integer
-            expected_value = np.array(expected_value)
-            assert np.allclose(
-                actual_value,
-                expected_value,
-                atol=1e-8,  # Use tolerance of 1e-8 (adjust as needed)
-            ), error_msg
+    # Check if the array contains objects/string values
+    if "O" == dtype_kind:
+        expected_value = np.array(expected_value, dtype=object)
+        assert np.array_equal(
+            actual_value,
+            expected_value,
+        ), error_msg
 
-        # Check if the array contains boolean values
-        elif "b" == dtype_kind:
-            expected_value = np.array(expected_value)
-            assert np.array_equal(
-                actual_value,
-                expected_value,
-            ), error_msg
+    # Check if the array contains numeric values
+    elif dtype_kind in ("f", "i"):  # 'f' for float, 'i' for integer
+        expected_value = np.array(expected_value)
+        assert np.allclose(
+            actual_value,
+            expected_value,
+            atol=1e-8,  # Use tolerance of 1e-8 (adjust as needed)
+        ), error_msg
 
-        else:
-            raise ValueError(
-                f"Dataset {dataset_path} has a unsupported datatype: " f"{dtype_kind}"
-            )
+    # Check if the array contains boolean values
+    elif "b" == dtype_kind:
+        expected_value = np.array(expected_value)
+        assert np.array_equal(
+            actual_value,
+            expected_value,
+        ), error_msg
+
+    else:
+        raise ValueError(
+            f"Dataset {dataset_path} has a unsupported datatype: " f"{dtype_kind}"
+        )
 
 
 def verify_nexus_file(
