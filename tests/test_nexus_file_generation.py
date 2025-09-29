@@ -28,13 +28,10 @@ Example usage:
 # pylint: disable=line-too-long
 
 import ast
-import copy
 
 # Activate for Debuging only
 # import sys
 # sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-import functools
-import inspect
 import os
 from types import GeneratorType
 from typing import Any, Dict, Union
@@ -298,97 +295,6 @@ def _my_motor():
     return motor  # Return the motor object for use in tests
 
 
-def mock_parameter_annotation_decorator(annotation: dict):
-    """Attache custom parameter annotations to functions.
-
-    This decorator allows you to associate a custom
-    annotation dictionary with a function, after verifying that the
-    declared parameters exist in the function's signature.
-
-    The annotation is deep-copied to avoid accidental reuse or
-    modification across multiple decorated functions.
-
-    Validation
-    ----------
-    - If the `annotation` contains a "parameters" dictionary, each key
-      must match an argument name in the function's signature.
-    - If unknown parameters are found, a `ValueError` is raised.
-
-    The decorated function is returned unchanged in behavior, but
-    gains an additional attribute:
-    `_custom_parameter_annotation_` storing the provided annotation.
-
-    Parameters
-    ----------
-    annotation : dict
-        A dictionary describing parameter annotations. Typically includes
-        a "parameters" key mapping parameter names to metadata.
-
-    Returns
-    -------
-    function
-        A decorator that can be applied to any function or generator
-        function. The decorated function will behave normally but
-        will also carry the `_custom_parameter_annotation_` attribute.
-
-    Raises
-    ------
-    ValueError
-        If the annotation refers to parameters not present in the
-        function's signature.
-
-    Examples
-    --------
-    >>> @mock_parameter_annotation_decorator({"parameters": {"x": {"min": 0}}})
-    ... def f(x):
-    ...     return x + 1
-    ...
-    >>> f._custom_parameter_annotation_
-    {'parameters': {'x': {'min': 0}}}
-    """
-
-    def function_wrap(func):
-        if inspect.isgeneratorfunction(func):
-
-            @functools.wraps(func)
-            def wrapper(*args, **kwargs):
-                return (yield from func(*args, **kwargs))
-
-        else:
-
-            @functools.wraps(func)
-            def wrapper(*args, **kwargs):
-                return func(*args, **kwargs)
-
-        # Always create the copy (annotation dictionary may be reused)
-        nonlocal annotation
-        annotation = copy.deepcopy(annotation)
-
-        # Here is where queueserver client does validation
-        sig = inspect.signature(func)
-        parameters = sig.parameters
-
-        param_unknown = []
-        if "parameters" in annotation:
-            for p in annotation["parameters"]:
-                if p not in parameters:
-                    param_unknown.append(p)
-        if param_unknown:
-            msg = (
-                f"Custom annotation parameters {param_unknown} are not "
-                f"in the signature of function '{func.__name__}'."
-            )
-            raise ValueError(msg)
-
-        # pylint: disable=protected-access
-        wrapper._custom_parameter_annotation_ = annotation
-        return wrapper
-
-    return function_wrap
-
-
-# Helper: Execute a fly plan on the RunEngine
-@mock_parameter_annotation_decorator({"parameters": {}})
 def execute_fly_plan(_run_eng: RunEngine, md: dict, device: MockFlyer):
     """Define and execute a fly plan on the RunEngine."""
 
