@@ -2824,6 +2824,208 @@ def test_6(
         f"test: {request.node.name}."
     )
 
+    ###
+    ### Verify existence of the groups/fields and their attributes
+    ###
+    expected_structure: dict = {
+        # ---
+        # --- group: entry and its attributes ---
+        # ---
+        "entry": {
+            "NX_class": "NXentry",
+            "Application name": "bluesky_nexus",
+            "Content": "'NXinstrument' group and 'NXcollection' group",
+        },
+        # ---
+        # --- group: entry/instrument and its attributes---
+        # ---
+        "entry/instrument": {
+            "NX_class": "NXinstrument",
+            "description": "Instruments involved in the bluesky plan",
+        },
+        # ---
+        # --- group: entry/instrument/mock_flyer and its attributes ---
+        # ---
+        "entry/instrument/mock_flyer": {
+            "NX_class": "NXmockflyer",
+            "nx_model": "NXgeneralModel",
+        },
+        # ---
+        # --- group: entry/run_info and its attributes---
+        # ---
+        "entry/run_info": {
+            "NX_class": "NXcollection",
+            "description": "Copy of the start and stop document from the bluesky run",
+        },
+        # ---
+        # --- groups of: entry/run_info/start ---
+        # ---
+        "entry/run_info/start": {},
+        "entry/run_info/start/device_md/mock_flyer": {},
+        "entry/run_info/start/test_dict": {},
+        # ---
+        # --- groups of: entry/run_info/stop ---
+        # ---
+        "entry/run_info/stop": {},
+        "entry/run_info/stop/num_events": {},
+    }
+
+    ###
+    ### Verify expected data in datasets. I.e. verify: value, dtype, shape
+    ###
+    expected_data: dict = {
+        # ---
+        # --- dataset: entry/run_info/start/device_md/mock_flyer/description ---
+        # ---
+        "entry/run_info/start/device_md/mock_flyer/description": {
+            "value": [b"I am the best flyer"],
+            "shape": (1,),
+            "dtype": "O",
+        },
+        # ---
+        # --- dataset: entry/run_info/start/definition ---
+        # ---
+        "entry/run_info/start/definition": {
+            "value": [b"NX_fly"],
+            "shape": (1,),
+            "dtype": "O",
+        },
+        # ---
+        # --- dataset: entry/run_info/start/nx_file_name ---
+        # ---
+        "entry/run_info/start/nx_file_name": {
+            "value": [b"hzb_nexus_file_test_6"],
+            "shape": (1,),
+            "dtype": "O",
+        },
+        # ---
+        # --- dataset: entry/run_info/start/plan_name ---
+        # ---
+        "entry/run_info/start/plan_name": {
+            "value": [b"mock_fly"],
+            "shape": (1,),
+            "dtype": "O",
+        },
+        # ---
+        # --- dataset: entry/run_info/start/plan_type ---
+        # ---
+        "entry/run_info/start/plan_type": {
+            "value": [b"generator"],
+            "shape": (1,),
+            "dtype": "O",
+        },
+        # ---
+        # --- dataset: entry/run_info/start/scan_id ---
+        # ---
+        "entry/run_info/start/scan_id": {
+            "value": 1,
+            "shape": (1,),
+            "dtype": "int64",
+        },
+        # ---
+        # --- dataset: entry/run_info/start/test_dict/a ---
+        # ---
+        "entry/run_info/start/test_dict/a": {
+            "value": 35,
+            "shape": (1,),
+            "dtype": "int64",
+        },
+        # ---
+        # --- dataset: entry/run_info/start/test_dict/b ---
+        # ---
+        "entry/run_info/start/test_dict/b": {
+            "value": 36,
+            "shape": (1,),
+            "dtype": "int64",
+        },
+        # ---
+        # --- dataset: entry/run_info/start/test_dict/c/d ---
+        # ---
+        "entry/run_info/start/test_dict/c/d": {
+            "value": 37,
+            "shape": (1,),
+            "dtype": "int64",
+        },
+        # ---
+        # --- dataset: entry/run_info/start/test_dict/c/e ---
+        # ---
+        "entry/run_info/start/test_dict/c/e": {
+            "value": 38,
+            "shape": (1,),
+            "dtype": "int64",
+        },
+        # ---
+        # --- dataset: entry/run_info/start/time ---
+        # ---
+        "entry/run_info/start/time": {
+            "shape": (1,),
+            "dtype": "float64",
+        },
+        # ---
+        # --- dataset: entry/run_info/start/title ---
+        # ---
+        "entry/run_info/start/title": {
+            "value": [b"bluesky run test 6"],
+            "shape": (1,),
+            "dtype": "O",
+        },
+        # ---
+        # --- dataset: entry/run_info/start/uid ---
+        # ---
+        "entry/run_info/start/uid": {
+            "shape": (1,),
+            "dtype": "O",
+        },
+        # ---
+        # --- dataset: entry/run_info/stop/exit_status ---
+        # ---
+        "entry/run_info/stop/exit_status": {
+            "value": [b"success"],
+            "shape": (1,),
+            "dtype": "O",
+        },
+        # ---
+        # --- dataset: entry/run_info/stop/num_events/baseline ---
+        # ---
+        "entry/run_info/stop/num_events/baseline": {
+            "value": 3,
+            "shape": (1,),
+            "dtype": "int64",
+        },
+        # ---
+        # --- dataset: entry/run_info/stop/reason ---
+        # ---
+        "entry/run_info/stop/reason": {
+            "value": [b""],
+            "shape": (1,),
+            "dtype": "O",
+        },
+        # ---
+        # --- dataset: entry/run_info/stop/run_start ---
+        # ---
+        "entry/run_info/stop/run_start": {
+            "shape": (1,),
+            "dtype": "O",
+        },
+        # ---
+        # --- dataset: entry/run_info/stop/time ---
+        # ---
+        "entry/run_info/stop/time": {
+            "shape": (1,),
+            "dtype": "float64",
+        },
+        # ---
+        # --- dataset: entry/run_info/stop/uid ---
+        # ---
+        "entry/run_info/stop/uid": {
+            "shape": (1,),
+            "dtype": "O",
+        },
+    }
+
+    # Verify file contents
+    verify_nexus_file(nx_file_path, expected_structure, expected_data)
+
     # Remove the nexus file after successful validation
     clean_up(nx_file_path)
     # Remove the callback file after successful creation
