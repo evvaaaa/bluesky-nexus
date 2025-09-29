@@ -39,8 +39,6 @@ from typing import Any, Dict, Union
 import bluesky.plan_stubs as bps
 import h5py
 import numpy as np
-
-# from pprint import pformat
 import pytest
 from bluesky import RunEngine
 from bluesky.plans import count, scan
