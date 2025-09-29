@@ -470,7 +470,7 @@ def resolve_pre_run_placeholder_value(placeholder: str, device_obj: Device) -> A
 
 
 def get_nested_dict_value(
-    data: dict[str, Any], key_path: list[str]
+    current_level: dict[str, Any], key_path: list[str]
 ) -> Union[Any, None]:
     """Get nested dict value.
 
@@ -478,7 +478,7 @@ def get_nested_dict_value(
     representing the path.
 
     Args:
-        data (dict): The nested dictionary to search.
+        current_level (dict): The nested dictionary to search.
         key_path (list): A list of keys representing the path to the desired
             value. Each key corresponds to a level in the nested dictionary.
 
@@ -487,7 +487,7 @@ def get_nested_dict_value(
         valid, or `None` if any key is missing.
 
     Example:
-        data = {
+        current_level = {
             "a": {
                 "b": {
                     "c": 42
@@ -496,9 +496,8 @@ def get_nested_dict_value(
         }
 
         key_path = ["a", "b", "c"]
-        result = get_nested_value(data, key_path)  # Returns 42
+        result = get_nested_value(current_level, key_path)  # Returns 42
     """
-    current_level = data
     for key in key_path:
         if isinstance(current_level, dict) and key in current_level:
             current_level = current_level[key]
