@@ -181,9 +181,6 @@ def _devices_dictionary() -> (
     This includes monochromators with and without grating components.
     """
     mono: Mono = Mono(name="mono")
-    mono_2: Mono = Mono(name="mono_2")  # Not in use in any plan
-    mono_2_: Mono = Mono(name="mono_2_")  # Not in use in any plan
-    mono2: Mono = Mono(name="mono2")  # Not in use in any plan
     mono_with_grating_cpt: MonoWithGratingCpt = MonoWithGratingCpt(
         name="mono_with_grating_cpt"
     )
@@ -192,9 +189,6 @@ def _devices_dictionary() -> (
 
     return {
         "mono": mono,
-        "mono_2": mono_2,
-        "mono_2_": mono_2_,
-        "mono2": mono2,
         "mono_with_grating_cpt": mono_with_grating_cpt,
         "sim_motor": sim_motor,
         "mock_flyer": mock_flyer,
