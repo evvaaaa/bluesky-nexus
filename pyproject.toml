@@ -20,8 +20,6 @@ version_file = "src/bluesky_nexus/_version.py"
 [project.optional-dependencies]
 dev = [
   "ruff",
-  "pylint",
-
   # For tests
   "ophyd",
   "pytest",
