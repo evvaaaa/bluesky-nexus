@@ -411,16 +411,24 @@ setup_nx_logger(
     enable_file=True,
 )
 
+# Note: `SupplementalMetadata` accepts `devices_dictionary` and `md_type` either as positional or keyword arguments.
+# For clarity, keyword arguments are recommended.
+
 # Let the preprocessor append NeXus metadata to the start document
-metadata = SupplementalMetadata()
-metadata.devices_dictionary: dict = devices_dictionary
-metadata.md_type = SupplementalMetadata.MetadataType.NEXUS_MD
+
+# using keyword arguments (recommended)
+metadata = SupplementalMetadata(devices_dictionary=devices_dictionary, md_type=SupplementalMetadata.MetadataType.NEXUS_MD)
+# or using positional arguments
+metadata = SupplementalMetadata(devices_dictionary, SupplementalMetadata.MetadataType.NEXUS_MD)
 RE.preprocessors.append(metadata)
 
+
 # Let the preprocessor append devices metadata to the start document
-metadata = SupplementalMetadata()
-metadata.devices_dictionary: dict = devices_dictionary
-metadata.md_type = SupplementalMetadata.MetadataType.DEVICE_MD
+
+# using keyword arguments (recommended)
+metadata = SupplementalMetadata(devices_dictionary=devices_dictionary, md_type=SupplementalMetadata.MetadataType.DEVICE_MD)
+# or using positional arguments
+metadata = SupplementalMetadata(devices_dictionary, SupplementalMetadata.MetadataType.DEVICE_MD)
 RE.preprocessors.append(metadata)
 
 # Subscribe the callback: 'NexusWriter'
@@ -499,12 +507,18 @@ setup_nx_logger(
 
 ### Let the preprocessor append ```NeXus metadata``` to the start document
 
+**Note:** `SupplementalMetadata` accepts `devices_dictionary` and `md_type` either as positional or keyword arguments.
+For clarity, keyword arguments are recommended.
+
 In you script subscribe to the preprocessor
 
   ```python
-  metadata = SupplementalMetadata()
-  metadata.devices_dictionary: dict = devices_dictionary
-  metadata.md_type = SupplementalMetadata.MetadataType.NEXUS_MD
+  # Let the preprocessor append NeXus metadata to the start document
+
+  # using keyword arguments (recommended)
+  metadata = SupplementalMetadata(devices_dictionary=devices_dictionary, md_type=SupplementalMetadata.MetadataType.NEXUS_MD)
+  # or using positional arguments
+  metadata = SupplementalMetadata(devices_dictionary, SupplementalMetadata.MetadataType.NEXUS_MD)
   RE.preprocessors.append(metadata)
   ```
 
@@ -513,11 +527,12 @@ In you script subscribe to the preprocessor
 In you script subscribe to the preprocessor
 
   ```python
-  metadata = (
-      SupplementalMetadata()
-  )  # No need to pass "nx_schema_dir_path" in case of DEVICE_MD
-  metadata.devices_dictionary: dict = devices_dictionary
-  metadata.md_type = SupplementalMetadata.MetadataType.DEVICE_MD
+  # Let the preprocessor append devices metadata to the start document
+
+  # using keyword arguments (recommended)
+  metadata = SupplementalMetadata(devices_dictionary=devices_dictionary, md_type=SupplementalMetadata.MetadataType.DEVICE_MD)
+  # or using positional arguments
+  metadata = SupplementalMetadata(devices_dictionary, SupplementalMetadata.MetadataType.DEVICE_MD)
   RE.preprocessors.append(metadata)
   ```
 
