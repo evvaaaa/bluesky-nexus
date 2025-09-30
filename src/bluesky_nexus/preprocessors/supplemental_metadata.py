@@ -89,13 +89,13 @@ class SupplementalMetadata(SupplementalData):
         DEVICE_MD = auto()
         NEXUS_MD = auto()
 
-    # Class annotations for md_type and devices_dictionary are provided to satisfy
-    # static checkers, as both attributes are assigned dynamically
-    # before use in the preprocessor.
-    md_type: MetadataType
-    devices_dictionary: dict
-
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(
+        self,
+        devices_dictionary: dict | None = None,
+        md_type: MetadataType | None = None,
+        *args,
+        **kwargs,
+    ) -> None:
         """Initialize the SupplementalMetadata instance.
 
         This constructor accepts both positional and keyword arguments,
@@ -103,9 +103,14 @@ class SupplementalMetadata(SupplementalData):
 
         Args:
             *args: Positional arguments passed to the parent constructor.
+            devices_dictionary: Dictionary of devices for metadata injection.
+            Defaults to None.
+            md_type: Metadata type (DEVICE_MD or NEXUS_MD). Defaults to None.
             **kwargs: Keyword arguments passed to the parent constructor.
         """
         super().__init__(*args, **kwargs)
+        self.devices_dictionary: dict | None = devices_dictionary
+        self.md_type: SupplementalMetadata.MetadataType | None = md_type
 
     def __call__(self, plan: Any):
         """Call.
@@ -135,15 +140,14 @@ class SupplementalMetadata(SupplementalData):
             AttributeError: If required attributes are missing.
             ValueError: If the metadata type is invalid.
         """
-        if not hasattr(self, "devices_dictionary"):
+        if self.devices_dictionary is None:
             raise AttributeError(
-                "The 'devices_dictionary' attribute must be set "
-                "before calling the instance."
+                "'devices_dictionary' must not be None when calling the instance."
             )
 
-        if not hasattr(self, "md_type"):
+        if self.md_type is None:
             raise AttributeError(
-                "The 'md_type' attribute must be set before calling the instance."
+                "'md_type' must not be None when calling the instance."
             )
 
         # Dictionary to map MetadataType to their respective

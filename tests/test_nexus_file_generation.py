@@ -360,16 +360,17 @@ def add_preprocessors(re: RunEngine, devices_dictionary: dict, baseline: list[ob
     sdd = SupplementalDataBaseline(baseline=baseline)
     re.preprocessors.append(sdd)
 
-    # Add Nexus metadata
-    metadata = SupplementalMetadata()
-    metadata.devices_dictionary = devices_dictionary
-    metadata.md_type = SupplementalMetadata.MetadataType.NEXUS_MD
+    # Add Nexus metadata, pass arguments as *args
+    metadata = SupplementalMetadata(
+        devices_dictionary, SupplementalMetadata.MetadataType.NEXUS_MD
+    )
     re.preprocessors.append(metadata)
 
-    # Add device metadata
-    metadata = SupplementalMetadata()
-    metadata.devices_dictionary = devices_dictionary
-    metadata.md_type = SupplementalMetadata.MetadataType.DEVICE_MD
+    # Add device metadata, pass arguments as *kwargs
+    metadata = SupplementalMetadata(
+        devices_dictionary=devices_dictionary,
+        md_type=SupplementalMetadata.MetadataType.DEVICE_MD,
+    )
     re.preprocessors.append(metadata)
 
 
