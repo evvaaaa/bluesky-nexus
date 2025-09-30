@@ -10,7 +10,6 @@ metadata integration.
 
 # pylint: disable=duplicate-code
 
-
 from dataclasses import dataclass, field
 
 from ophyd import Component as Cpt

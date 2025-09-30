@@ -171,11 +171,11 @@ class NXobjectModel(BaseModel):
     """
 
     nxclass: Optional[str] = Field("NXobject", description="The class of the NXobject.")
-    nx_model: Optional[str] = Field(None, description="The name of " "the model.")
+    nx_model: Optional[str] = Field(None, description="The name of the model.")
     nxname: Optional[str] = Field(None, description="The name of the NXobject.")
     nxgroup: Optional["NXgroupModel"] = Field(
         None,
-        description="The parent group containing this object within " "a NeXus tree.",
+        description="The parent group containing this object within a NeXus tree.",
     )
     nxpath: Optional[str] = Field(
         None,
@@ -184,7 +184,7 @@ class NXobjectModel(BaseModel):
     )
     nxroot: Optional["NXgroupModel"] = Field(
         None,
-        description="The root object of the NeXus" " tree containing this " "object.",
+        description="The root object of the NeXus tree containing this object.",
     )
     nxfile: Optional["NXFileModel"] = Field(
         None,
@@ -193,12 +193,11 @@ class NXobjectModel(BaseModel):
     )
     nxfilename: Optional[str] = Field(
         None,
-        description="The file name of NeXus object's " "tree file handle.",
+        description="The file name of NeXus object's tree file handle.",
     )
     attrs: Optional[Dict[str, Any]] = Field(
         default={},
-        description="Arbitrary attributes belonging to a dataset assigned "
-        "by a user.",
+        description="Arbitrary attributes belonging to a dataset assigned by a user.",
     )
     description: Optional[Any] = Field(
         None, description="Optional description of the object"

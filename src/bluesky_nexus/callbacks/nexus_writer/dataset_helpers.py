@@ -68,7 +68,6 @@ def create_dataset_with_value(
 
     # If val is a numpy array
     if isinstance(val, np.ndarray):
-
         # If the numpy array is of dtype 'object':
         # This is a case when the data coming from events or descriptor is:
         #  - a list of elements having different data types
@@ -76,7 +75,6 @@ def create_dataset_with_value(
         #  - a string, in this case we deal with numpy array of ndim=0 (scalar)
 
         if val.dtype == object:
-
             # Check if the numpy array is a scalar (ndim=0) or has more dimensions
             if val.ndim == 0:
                 # If it's a scalar, convert it to a 1D array with a single element
@@ -92,8 +90,7 @@ def create_dataset_with_value(
             dtype = h5py.string_dtype(encoding="utf-8")
             ds = group.create_dataset(key, data=val, dtype=dtype)
             logger.debug(
-                "New dataset: encoding: utf8, dtype: %s, key: %s,"
-                " group: %s, value: %s",
+                "New dataset: encoding: utf8, dtype: %s, key: %s, group: %s, value: %s",
                 dtype,
                 key,
                 group.name,
@@ -123,7 +120,6 @@ def create_dataset_with_value(
 
     # If val is an instance of str
     elif isinstance(val, str):
-
         # Convert it to a 1D array with a single element
         val = np.array([val], dtype=object)
 
@@ -142,7 +138,6 @@ def create_dataset_with_value(
 
     # If val is an instance of int, double, bool
     elif isinstance(val, (int, float, bool)):
-
         # Convert it to a 1D array with a single element
         val = np.array([val])
 
@@ -157,7 +152,6 @@ def create_dataset_with_value(
         )
 
     elif isinstance(val, list):
-
         # There is a string in the list
         if any(isinstance(v, (str, np.str_)) for v in val):
             # Convert all elements to string (including numbers, None, etc.)
@@ -170,8 +164,7 @@ def create_dataset_with_value(
             dtype = h5py.string_dtype(encoding="utf-8")
             ds = group.create_dataset(key, data=val, dtype=dtype)
             logger.debug(
-                "New dataset: encoding: utf8, dtype: %s, key: %s,"
-                " group: %s, value: %s",
+                "New dataset: encoding: utf8, dtype: %s, key: %s, group: %s, value: %s",
                 dtype,
                 key,
                 group.name,
@@ -190,7 +183,6 @@ def create_dataset_with_value(
             )
 
     elif isinstance(val, dict):
-
         # Convert dictionary to JSON string
         val = json.dumps(val)
 

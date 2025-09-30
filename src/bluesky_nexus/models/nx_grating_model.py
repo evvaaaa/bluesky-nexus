@@ -72,8 +72,7 @@ class NXgratingModel(NXgroupModel):
     )
     deflection_angle: Optional[NXfieldModelWithPrePostRunString] = Field(
         None,
-        description="Angle between the incident beam and the utilised "
-        "outgoing beam.",
+        description="Angle between the incident beam and the utilised outgoing beam.",
     )
     interior_atmoshpere: Optional[NXfieldModelWithPrePostRunString] = Field(
         None, description="Any of these values: vacuum | helium | argon."
@@ -107,11 +106,11 @@ class NXgratingModel(NXgroupModel):
     )
     figure_data: Optional[NXdataModel] = Field(
         None,
-        description="Numerical description of the surface figure " "of the mirror.",
+        description="Numerical description of the surface figure of the mirror.",
     )
     OFF_GEOMETRY: Optional[NXoff_geometryModel] = Field(
         None,
-        description="This group describes the shape of the beam line " "component.",
+        description="This group describes the shape of the beam line component.",
     )
     TRANSFORMATIONS: Optional[NXtransformationsModel] = Field(
         None,

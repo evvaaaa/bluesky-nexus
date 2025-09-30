@@ -115,8 +115,7 @@ def NxSchemaLoader(yaml_string: str) -> Callable[[Type], Type]:
             ) from e
         except Exception as e:
             raise RuntimeError(
-                f"Unexpected error in class `{cls.__name__}` "
-                f"during YAML parsing: {e}"
+                f"Unexpected error in class `{cls.__name__}` during YAML parsing: {e}"
             ) from e
 
         cls.nx_schema = parsed_data

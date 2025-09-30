@@ -148,7 +148,7 @@ class NXtransformationsModel(NXgroupModel):
             # Custom additions
             description: Optional[NXfieldModelForAttribute] = Field(
                 None,
-                description="A textual description of the axis and its " "purpose.",
+                description="A textual description of the axis and its purpose.",
             )
             units: Optional[NXfieldModelForAttribute] = Field(
                 None,
@@ -162,7 +162,7 @@ class NXtransformationsModel(NXgroupModel):
 
     alpha: Optional[AXISNAMEModel] = Field(
         None,
-        description="Units need to be appropriate for translation or " "rotation.",
+        description="Units need to be appropriate for translation or rotation.",
     )
     alpha_end: Optional[NXfieldModelWithPrePostRunString] = Field(
         None,
@@ -178,7 +178,7 @@ class NXtransformationsModel(NXgroupModel):
 
     beta: Optional[AXISNAMEModel] = Field(
         None,
-        description="Units need to be appropriate for translation or " "rotation.",
+        description="Units need to be appropriate for translation or rotation.",
     )
     beta_end: Optional[NXfieldModelWithPrePostRunString] = Field(
         None,
@@ -194,7 +194,7 @@ class NXtransformationsModel(NXgroupModel):
 
     theta: Optional[AXISNAMEModel] = Field(
         None,
-        description="Units need to be appropriate for translation or " "rotation.",
+        description="Units need to be appropriate for translation or rotation.",
     )
     theta_end: Optional[NXfieldModelWithPrePostRunString] = Field(
         None,

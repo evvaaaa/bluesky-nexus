@@ -98,7 +98,7 @@ class NXmonochromatorModel(NXgroupModel):
     distribution: Optional[NXdataModel] = Field(None, description="Distribution.")
     OFF_GEOMETRY: Optional[NXoff_geometryModel] = Field(
         None,
-        description="This group describes the shape of the beam line " "component.",
+        description="This group describes the shape of the beam line component.",
     )
     CRYSTAL: Optional[NXcrystalModel] = Field(
         None, description="Use as many crystals as necessary to describe."

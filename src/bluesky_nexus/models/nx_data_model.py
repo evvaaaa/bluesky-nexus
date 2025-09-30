@@ -166,7 +166,7 @@ class NXdataModel(NXgroupModel):
             )
             units: Optional[NXfieldModelForAttribute] = Field(
                 None,
-                description="Unit in which the coordinate values are " "expressed",
+                description="Unit in which the coordinate values are expressed",
             )
             distribution: Optional[NXfieldModelForAttribute] = Field(
                 None,
@@ -226,7 +226,7 @@ class NXdataModel(NXgroupModel):
             signal: Optional[NXfieldModelForAttribute] = Field(
                 None,
                 gt=0,
-                description="Plottable (independent) axis, indicate index " "number.",
+                description="Plottable (independent) axis, indicate index number.",
             )
             axes: Optional[NXfieldModelForAttribute] = Field(
                 None,
@@ -245,7 +245,7 @@ class NXdataModel(NXgroupModel):
 
     DATA: Optional[DATAModel] = Field(
         None,
-        description="Data values to be used as the NeXus plottable " "data.",
+        description="Data values to be used as the NeXus plottable data.",
     )
     FIELDNAME_errors: Optional[NXfieldModelWithPrePostRunString] = Field(
         None,

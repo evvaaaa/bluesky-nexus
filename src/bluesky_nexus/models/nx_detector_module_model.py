@@ -98,14 +98,14 @@ class NXdetector_moduleModel(NXgroupModel):
     )
     fast_pixel_direction: Optional[CommonModel] = Field(
         None,
-        description="Values along the direction of fastest varying pixel " "direction.",
+        description="Values along the direction of fastest varying pixel direction.",
     )
     slow_pixel_direction: Optional[CommonModel] = Field(
         None,
-        description="Values along the direction of slowest varying pixel " "direction.",
+        description="Values along the direction of slowest varying pixel direction.",
     )
     depends_on: Optional[NXfieldModelWithPrePostRunString] = Field(
         None,
-        description="Points to the start of the dependency chain for this " "module.",
+        description="Points to the start of the dependency chain for this module.",
     )
     model_config = ConfigDict(arbitrary_types_allowed=True, extra="allow")

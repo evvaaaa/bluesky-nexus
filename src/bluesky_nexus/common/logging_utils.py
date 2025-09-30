@@ -130,7 +130,6 @@ def setup_nx_logger(
     file_level = _get_level_value(file_level)
 
     if log_format is None:
-
         log_format = DEFAULT_NX_LOG_FORMAT or (
             "%(asctime)s - %(name)s - %(levelname)s - %(module)s - "
             "%(funcName)s  %(message)s"
@@ -154,7 +153,6 @@ def setup_nx_logger(
 
     # Configure file logging if log_file_dir_path is provided
     if enable_file and log_file_dir_path:
-
         try:
             # Ensure the directory exists
             os.makedirs(log_file_dir_path, exist_ok=True)

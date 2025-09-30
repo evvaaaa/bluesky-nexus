@@ -24,7 +24,6 @@ Dependencies:
 
 # pylint: disable=duplicate-code
 
-
 from typing import Optional
 
 from bluesky_nexus.models.nx_core_models import (
@@ -137,8 +136,7 @@ class NXcrystalModel(NXgroupModel):
     )
     cut_angle: Optional[NXfieldModelWithPrePostRunString] = Field(
         None,
-        description="Cut angle of reflecting Bragg plane and plane of crystal "
-        "surface.",
+        description="Cut angle of reflecting Bragg plane and plane of crystal surface.",
     )
     space_group: Optional[NXfieldModelWithPrePostRunString] = Field(
         None, description="Space group of crystal structure."
@@ -247,7 +245,7 @@ class NXcrystalModel(NXgroupModel):
     )
     temperature_coefficient: Optional[NXfieldModelWithPrePostRunString] = Field(
         None,
-        description="how lattice parameter changes with " "temperature.",
+        description="how lattice parameter changes with temperature.",
     )
     depends_on: Optional[NXfieldModelWithPrePostRunString] = Field(
         None,
@@ -266,7 +264,7 @@ class NXcrystalModel(NXgroupModel):
     )
     OFF_GEOMETRY: Optional[NXoff_geometryModel] = Field(
         None,
-        description="This group describes the shape of the beam line " "component.",
+        description="This group describes the shape of the beam line component.",
     )
     TRANSFORMATIONS: Optional[NXtransformationsModel] = Field(
         None,

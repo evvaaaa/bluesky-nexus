@@ -228,7 +228,7 @@ class NXdetectorModel(NXgroupModel):
 
         attributes: Optional[AttributesModel] = Field(
             None,
-            description="Attributes specific to the 'raw_time_of_flight' " "field.",
+            description="Attributes specific to the 'raw_time_of_flight' field.",
         )
 
     raw_time_of_flight: Optional[raw_time_of_flightModel] = Field(
@@ -864,8 +864,7 @@ class NXdetectorModel(NXgroupModel):
 
     efficiency: Optional[efficiencyModel] = Field(
         None,
-        description="Spectral efficiency of detector with respect to e.g. "
-        "wavelength.",
+        description="Spectral efficiency of detector with respect to e.g. wavelength.",
     )
 
     calibration_method: Optional[NXnoteModel] = Field(

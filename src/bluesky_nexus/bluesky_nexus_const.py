@@ -72,7 +72,7 @@ NX_SCHEMA_MODEL_NAME_KEY: str = "nx_model"
 DEVICE_CLASS_NX_SCHEMA_ATTRIBUTE_NAME: str = "nx_schema"
 DEVICE_INSTANCE_NX_MODEL_ATTRIBUTE_NAME: str = "nx_model"
 DEFAULT_NX_LOG_FORMAT: str = (
-    "%(asctime)s - %(name)s - %(levelname)s - %(module)s - " "%(funcName)s  %(message)s"
+    "%(asctime)s - %(name)s - %(levelname)s - %(module)s - %(funcName)s  %(message)s"
 )
 
 VALID_NXFIELD_DTYPES: list[str] = [

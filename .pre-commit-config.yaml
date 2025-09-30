@@ -17,13 +17,6 @@ repos:
       - id: docformatter
         args: ["--in-place", "--wrap-summaries=72", "--wrap-descriptions=72"]
 
-  # 🎨 Code formatting with Black to enforce consistent style (PEP 8 compliant)
-  - repo: https://github.com/psf/black
-    rev: 25.1.0
-    hooks:
-      - id: black
-        language_version: python3.10
-
   # 🕵️ Fast Python linter and fixer (combines features of many other tools)
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.13.2

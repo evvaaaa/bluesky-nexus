@@ -129,9 +129,9 @@ def test_nx_schema_directory_exists() -> None:
     Test to ensure that the `nx_schema` directory exists in the same parent directory
     as this test file.
     """
-    assert os.path.isdir(
-        NX_SCHEMA_DIR_PATH
-    ), f"The directory `nx_schema` does not exist at {NX_SCHEMA_DIR_PATH}"
+    assert os.path.isdir(NX_SCHEMA_DIR_PATH), (
+        f"The directory `nx_schema` does not exist at {NX_SCHEMA_DIR_PATH}"
+    )
 
 
 # Fixture: Get the path to `nx_schema`
@@ -172,9 +172,9 @@ def test_expected_files_exist_in_nx_schema(_nx_schema_dir_path) -> None:
 
 # Fixture: Create a dictionary of devices for reuse in tests
 @pytest.fixture
-def _devices_dictionary() -> (
-    Dict[str, Union[Mono, MonoWithGratingCpt, SimMotor, MockFlyer]]
-):
+def _devices_dictionary() -> Dict[
+    str, Union[Mono, MonoWithGratingCpt, SimMotor, MockFlyer]
+]:
     """Create and return a dictionary of test devices.
 
     This includes monochromators with and without grating components.
@@ -420,16 +420,16 @@ def _assert_attribute_equal(
     attr_key: str, nexus_value: Any, expected_value: Any, item_path: str
 ) -> None:
     if isinstance(nexus_value, str) and isinstance(expected_value, str):
-        assert (
-            nexus_value == expected_value
-        ), f"Mismatch in string: Expected {expected_value}, Found {nexus_value}"
+        assert nexus_value == expected_value, (
+            f"Mismatch in string: Expected {expected_value}, Found {nexus_value}"
+        )
 
     elif isinstance(nexus_value, (int, float)) and isinstance(
         expected_value, (int, float)
     ):
-        assert np.isclose(
-            nexus_value, expected_value
-        ), f"Mismatch in float: Expected {expected_value}, Found {nexus_value}"
+        assert np.isclose(nexus_value, expected_value), (
+            f"Mismatch in float: Expected {expected_value}, Found {nexus_value}"
+        )
 
     elif isinstance(nexus_value, np.ndarray) or isinstance(expected_value, list):
         if isinstance(expected_value, list):
@@ -438,13 +438,13 @@ def _assert_attribute_equal(
         if np.issubdtype(nexus_value.dtype, np.number) and np.issubdtype(
             expected_value.dtype, np.number
         ):
-            assert np.allclose(
-                nexus_value, expected_value
-            ), f"Mismatch in array: Expected {expected_value}, Found {nexus_value}"
+            assert np.allclose(nexus_value, expected_value), (
+                f"Mismatch in array: Expected {expected_value}, Found {nexus_value}"
+            )
         else:
-            assert np.array_equal(
-                nexus_value, expected_value
-            ), f"Mismatch in array: Expected {expected_value}, Found {nexus_value}"
+            assert np.array_equal(nexus_value, expected_value), (
+                f"Mismatch in array: Expected {expected_value}, Found {nexus_value}"
+            )
 
     elif (
         isinstance(nexus_value, str)
@@ -468,14 +468,14 @@ def _assert_attribute_equal(
                 f"'{attr_key}' in group '{item_path}'"
             ) from err
 
-        assert (
-            nexus_dict == expected_dict
-        ), f"Mismatch in dictionary: Expected {expected_dict}, Found {nexus_dict}"
+        assert nexus_dict == expected_dict, (
+            f"Mismatch in dictionary: Expected {expected_dict}, Found {nexus_dict}"
+        )
 
     else:
-        assert (
-            nexus_value == expected_value
-        ), f"Mismatch in value: Expected {expected_value}, Found {nexus_value}"
+        assert nexus_value == expected_value, (
+            f"Mismatch in value: Expected {expected_value}, Found {nexus_value}"
+        )
 
 
 def _verify_structure(
@@ -491,9 +491,9 @@ def _verify_structure(
         for attr_key, attr_value in item_attrs.items():
             # print("attr_key:", attr_key) # Debug only
             # print("attr_value:", attr_value) # Debug only
-            assert (
-                attr_key in current.attrs
-            ), f"Missing attribute: {attr_key} in group: {item_path}"
+            assert attr_key in current.attrs, (
+                f"Missing attribute: {attr_key} in group: {item_path}"
+            )
             nexus_value = current.attrs[attr_key]
             _assert_attribute_equal(attr_key, nexus_value, attr_value, item_path)
 
@@ -502,9 +502,9 @@ def _verify_dataset(f: h5py.File, dataset_path: str, expected: Any) -> None:
     keys = dataset_path.split("/")
     current = f
     for key in keys:
-        assert (
-            key in current
-        ), f"Missing dataset key: {key} in dataset path: {dataset_path}"
+        assert key in current, (
+            f"Missing dataset key: {key} in dataset path: {dataset_path}"
+        )
         current = current[key]
 
     assert isinstance(current, h5py.Dataset), f"{dataset_path} is not a dataset"
@@ -527,15 +527,14 @@ def _verify_dataset(f: h5py.File, dataset_path: str, expected: Any) -> None:
         if actual_value.dtype.kind == "O":
             h5_type = current.id.get_type()
             assert (
-                h5_type.get_class()
-                == h5py.h5t.STRING  # pylint: disable=c-extension-no-member
+                h5_type.get_class() == h5py.h5t.STRING  # pylint: disable=c-extension-no-member
             ), f"Dataset {dataset_path} is not a string type"
-            assert (
-                h5_type.get_cset() == CSET_UTF8
-            ), f"Dataset {dataset_path} is not UTF-8 encoded"
-            assert (
-                h5_type.is_variable_str()
-            ), f"Dataset {dataset_path} does not use variable-length UTF-8 strings"
+            assert h5_type.get_cset() == CSET_UTF8, (
+                f"Dataset {dataset_path} is not UTF-8 encoded"
+            )
+            assert h5_type.is_variable_str(), (
+                f"Dataset {dataset_path} does not use variable-length UTF-8 strings"
+            )
 
     # Verify shape
     if expected_shape:
@@ -596,7 +595,7 @@ def _verify_dataset(f: h5py.File, dataset_path: str, expected: Any) -> None:
 
     else:
         raise ValueError(
-            f"Dataset {dataset_path} has a unsupported datatype: " f"{dtype_kind}"
+            f"Dataset {dataset_path} has a unsupported datatype: {dtype_kind}"
         )
 
 

@@ -88,8 +88,7 @@ def add_attrs(dataset: h5py.Dataset, attrs: dict) -> None:
                 dataset.attrs[key] = np.array(arr, dtype=dtype)
             else:
                 raise ValueError(
-                    f"Unsupported array data type for "
-                    f"attribute '{key}': {arr.dtype}"
+                    f"Unsupported array data type for attribute '{key}': {arr.dtype}"
                 )
             continue
 
