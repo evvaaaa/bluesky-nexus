@@ -23,6 +23,7 @@ dev = [
   # For tests
   "ophyd",
   "pytest",
+  "pre-commit",
 ]
 
 [tool.ruff]
