@@ -21,11 +21,12 @@ for discrepancies during test failures.
 Run this module with pytest to execute all included tests.
 
 Example usage:
-    pytest test_module.py
 
-    Call 'test_1' only and
-    let save the files created by 'test_1'  test under: /tmp/pytest
-        pytest --basetemp=/tmp/pytest ./tests/test_nexus_file_generation.py::test_1
+    1) Run only test_1 and save the files it creates under /tmp/pytest:
+            pytest --basetemp=/tmp/pytest ./tests/test_nexus_file_generation.py::test_1
+
+    2) Run only test_3 without saving any files it creates:
+        pytest ./tests/test_nexus_file_generation.py::test_3
 """
 
 import ast
