@@ -22,17 +22,17 @@ Run this module with pytest to execute all included tests.
 
 Example usage:
     pytest test_module.py
+
+    Call 'test_1' only and
+    let save the files created by 'test_1'  test under: /tmp/pytest
+        pytest --basetemp=/tmp/pytest ./tests/test_nexus_file_generation.py::test_1
 """
 
-# pylint: disable=too-many-lines
-# pylint: disable=line-too-long
-
 import ast
+import os
 
 # Activate for Debuging only
 # import sys
-import os
-
 # sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from types import GeneratorType
 from typing import Any, Dict, Union
@@ -44,7 +44,7 @@ import pytest
 from bluesky import RunEngine
 from bluesky.plans import count, scan
 from h5py.h5t import CSET_UTF8
-from ophyd.sim import motor  # pylint: disable=no-name-in-module
+from ophyd.sim import motor
 
 from bluesky_nexus.bluesky_nexus_const import CALLBACK_FILE_EXTENSION, NX_FILE_EXTENSION
 from bluesky_nexus.callbacks.nexus_writer.writer_core import NexusWriter
@@ -56,70 +56,21 @@ from tests.devices.mono_with_grating_cpt import MonoWithGratingCpt
 from tests.devices.sim_motor import SimMotor
 from tests.preprocessors.baseline import SupplementalDataBaseline
 
-# Constants: Define paths
-NX_FILE_DIR_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "nx_file"))
-CALLBACK_FILE_DIR_PATH = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "callback_file")
-)
-
 NX_SCHEMA_DIR_PATH = os.path.abspath(
     os.path.join(os.path.join(os.path.dirname(__file__), "devices"), "nx_schema")
 )
 
 
-# Fixture: Ensure the `nx_file` directory exists
 @pytest.fixture
-def create_nx_file_dir() -> None:
-    """Create nx_file_dir.
-
-    Creates the `nx_file` directory if it doesn't already exist and cleans up
-    after the tests.
-    """
-    if not os.path.exists(NX_FILE_DIR_PATH):
-        os.makedirs(NX_FILE_DIR_PATH)
+def _nx_file_dir_path(tmp_path_factory) -> str:
+    """Return temporary dir for nx_file outputs."""
+    return str(tmp_path_factory.mktemp("nx_file"))
 
 
-# Fixture: Ensure the `callback_file` directory exists
 @pytest.fixture
-def create_callback_file_dir() -> None:
-    """Create callback_file_dir.
-
-    Creates the `callback_file` directory if it doesn't already exist and cleans up
-    after the tests.
-    """
-    if not os.path.exists(CALLBACK_FILE_DIR_PATH):
-        os.makedirs(CALLBACK_FILE_DIR_PATH)
-
-
-# Fixture: Get the path to `nx_file` directory
-@pytest.fixture
-def _nx_file_dir_path() -> str:
-    """Return nx_file dir_path.
-
-    Returns the absolute path to the `nx_file` directory for storing output files.
-    """
-    return NX_FILE_DIR_PATH
-
-
-# Fixture: Get the path to `callback_file` directory
-@pytest.fixture
-def _callback_file_dir_path() -> str:
-    """Return callback file_dir_path.
-
-    Returns the absolute path to the `callback_file` directory for storing callback
-    files.
-    """
-    return CALLBACK_FILE_DIR_PATH
-
-
-# Test: Example test that writes to `nx_file`
-@pytest.mark.skip(reason="Temporarily disabling this test_write_to_nx_file_dir")
-def test_write_to_nx_file_dir() -> None:
-    """Create and write to a file in the NX file directory."""
-    test_file_path = os.path.join(NX_FILE_DIR_PATH, "test_output.txt")
-    with open(test_file_path, "w", encoding="utf-8") as f:
-        f.write("This is a test file.")
-    assert os.path.exists(test_file_path)
+def _callback_file_dir_path(tmp_path_factory) -> str:
+    """Return temporary dir for callback outputs."""
+    return str(tmp_path_factory.mktemp("callback_file"))
 
 
 # Test: Ensure the `nx_schema` directory exists
@@ -409,14 +360,6 @@ def get_callback_file_path(file_dir_path: str, file_name: str) -> str:
     return file_path
 
 
-# Helper: Remove a file
-def clean_up(file_path: str) -> None:
-    """Clean up file."""
-    if os.path.exists(file_path):
-        os.remove(file_path)
-    print(f"Proc info: Clean up of file: {file_path} finished.")
-
-
 def _assert_attribute_equal(
     attr_key: str, nexus_value: Any, expected_value: Any, item_path: str
 ) -> None:
@@ -527,9 +470,9 @@ def _verify_dataset(f: h5py.File, dataset_path: str, expected: Any) -> None:
 
         if actual_value.dtype.kind == "O":
             h5_type = current.id.get_type()
-            assert (
-                h5_type.get_class() == h5py.h5t.STRING  # pylint: disable=c-extension-no-member
-            ), f"Dataset {dataset_path} is not a string type"
+            assert h5_type.get_class() == h5py.h5t.STRING, (
+                f"Dataset {dataset_path} is not a string type"
+            )
             assert h5_type.get_cset() == CSET_UTF8, (
                 f"Dataset {dataset_path} is not UTF-8 encoded"
             )
@@ -1235,10 +1178,6 @@ def test_1(
 
     # Verify file contents
     verify_nexus_file(nx_file_path, expected_structure, expected_data)
-    # Remove the nexus file after successful validation
-    clean_up(nx_file_path)
-    # Remove the callback file after successful creation
-    clean_up(callback_file_path)
 
 
 # Test function
@@ -1712,10 +1651,6 @@ def test_2(
 
     # Verify file contents
     verify_nexus_file(nx_file_path, expected_structure, expected_data)
-    # Remove the nexus file after successful validation
-    clean_up(nx_file_path)
-    # Remove the callback file after successful creation
-    clean_up(callback_file_path)
 
 
 # Test function
@@ -2023,10 +1958,6 @@ def test_3(
 
     # Verify file contents
     verify_nexus_file(nx_file_path, expected_structure, expected_data)
-    # Remove the nexus file after successful validation
-    clean_up(nx_file_path)
-    # Remove the callback file after successful creation
-    clean_up(callback_file_path)
 
 
 # Test function
@@ -2499,10 +2430,6 @@ def test_4(
 
     # Verify file contents
     verify_nexus_file(nx_file_path, expected_structure, expected_data)
-    # Remove the nexus file after successful validation
-    clean_up(nx_file_path)
-    # Remove the callback file after successful creation
-    clean_up(callback_file_path)
 
 
 # Test function
@@ -2649,10 +2576,6 @@ def test_5(
 
     # Verify file contents
     verify_nexus_file(nx_file_path, expected_structure, expected_data)
-    # Remove the nexus file after successful validation
-    clean_up(nx_file_path)
-    # Remove the callback file after successful creation
-    clean_up(callback_file_path)
 
 
 # Test function
@@ -2901,11 +2824,6 @@ def test_6(
 
     # Verify file contents
     verify_nexus_file(nx_file_path, expected_structure, expected_data)
-
-    # Remove the nexus file after successful validation
-    clean_up(nx_file_path)
-    # Remove the callback file after successful creation
-    clean_up(callback_file_path)
 
 
 if __name__ == "__main__":
