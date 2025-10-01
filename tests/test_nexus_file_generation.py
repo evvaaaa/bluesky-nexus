@@ -31,10 +31,6 @@ Example usage:
 
 import ast
 import os
-
-# Activate for Debuging only
-# import sys
-# sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from types import GeneratorType
 from typing import Any, Dict, Union
 
