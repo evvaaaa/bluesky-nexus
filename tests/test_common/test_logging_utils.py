@@ -40,18 +40,6 @@ def test_logger_default_state():
     assert any(isinstance(h, logging.NullHandler) for h in handlers)
 
 
-# def test_console_logging_setup(caplog):
-#     """Verify that console logging outputs expected messages."""
-#     setup_nx_logger(console_level=LogLevel.DEBUG, enable_file=False)
-
-#     with caplog.at_level(logging.DEBUG, logger="bluesky_nexus"):
-#         logger.debug("Debug to console")
-#         logger.info("Info to console")
-
-#     assert "Debug to console" in caplog.text
-#     assert "Info to console" in caplog.text
-
-
 def test_console_logging_setup(capsys):
     """Verify that console handler actually prints to stderr/stdout."""
     setup_nx_logger(

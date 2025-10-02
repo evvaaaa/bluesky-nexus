@@ -42,8 +42,7 @@ def get_data_from_descriptor(descriptor: dict, cpt_name: str) -> Optional[dict]:
         )
         if data_keys and cpt_name in data_keys:
             logger.debug(
-                "Data for component: '%s' found in configuration"
-                " of descriptor: '%s'",
+                "Data for component: '%s' found in configuration of descriptor: '%s'",
                 cpt_name,
                 descriptor["name"],
             )

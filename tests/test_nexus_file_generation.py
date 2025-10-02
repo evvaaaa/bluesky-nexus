@@ -21,101 +21,53 @@ for discrepancies during test failures.
 Run this module with pytest to execute all included tests.
 
 Example usage:
-    pytest test_module.py
-"""
 
-# pylint: disable=too-many-lines
-# pylint: disable=line-too-long
+    1) Run only test_1 and save the files it creates under /tmp/pytest:
+            pytest --basetemp=/tmp/pytest ./tests/test_nexus_file_generation.py::test_1
+
+    2) Run only test_3 without saving any files it creates:
+        pytest ./tests/test_nexus_file_generation.py::test_3
+"""
 
 import ast
 import os
 from types import GeneratorType
 from typing import Any, Dict, Union
 
-# Activate for Debuging only
-# import sys
-# sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+import bluesky.plan_stubs as bps
 import h5py
 import numpy as np
 import pytest
 from bluesky import RunEngine
 from bluesky.plans import count, scan
 from h5py.h5t import CSET_UTF8
-from ophyd.sim import motor  # pylint: disable=no-name-in-module
+from ophyd.sim import motor
 
 from bluesky_nexus.bluesky_nexus_const import CALLBACK_FILE_EXTENSION, NX_FILE_EXTENSION
 from bluesky_nexus.callbacks.nexus_writer.writer_core import NexusWriter
 from bluesky_nexus.preprocessors.supplemental_metadata import SupplementalMetadata
 from bluesky_nexus.utils.callbacks import WriteToFileFormattedCallback
+from tests.devices.mock_flyer import MockFlyer
 from tests.devices.mono import Mono
 from tests.devices.mono_with_grating_cpt import MonoWithGratingCpt
 from tests.devices.sim_motor import SimMotor
 from tests.preprocessors.baseline import SupplementalDataBaseline
-
-# Constants: Define paths
-NX_FILE_DIR_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "nx_file"))
-CALLBACK_FILE_DIR_PATH = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "callback_file")
-)
 
 NX_SCHEMA_DIR_PATH = os.path.abspath(
     os.path.join(os.path.join(os.path.dirname(__file__), "devices"), "nx_schema")
 )
 
 
-# Fixture: Ensure the `nx_file` directory exists
 @pytest.fixture
-def create_nx_file_dir() -> None:
-    """Create nx_file_dir.
-
-    Creates the `nx_file` directory if it doesn't already exist and cleans up
-    after the tests.
-    """
-    if not os.path.exists(NX_FILE_DIR_PATH):
-        os.makedirs(NX_FILE_DIR_PATH)
+def _nx_file_dir_path(tmp_path_factory) -> str:
+    """Return temporary dir for nx_file outputs."""
+    return str(tmp_path_factory.mktemp("nx_file"))
 
 
-# Fixture: Ensure the `callback_file` directory exists
 @pytest.fixture
-def create_callback_file_dir() -> None:
-    """Create callback_file_dir.
-
-    Creates the `callback_file` directory if it doesn't already exist and cleans up
-    after the tests.
-    """
-    if not os.path.exists(CALLBACK_FILE_DIR_PATH):
-        os.makedirs(CALLBACK_FILE_DIR_PATH)
-
-
-# Fixture: Get the path to `nx_file` directory
-@pytest.fixture
-def _nx_file_dir_path() -> str:
-    """Return nx_file dir_path.
-
-    Returns the absolute path to the `nx_file` directory for storing output files.
-    """
-    return NX_FILE_DIR_PATH
-
-
-# Fixture: Get the path to `callback_file` directory
-@pytest.fixture
-def _callback_file_dir_path() -> str:
-    """Return callback file_dir_path.
-
-    Returns the absolute path to the `callback_file` directory for storing callback
-    files.
-    """
-    return CALLBACK_FILE_DIR_PATH
-
-
-# Test: Example test that writes to `nx_file`
-@pytest.mark.skip(reason="Temporarily disabling this test_write_to_nx_file_dir")
-def test_write_to_nx_file_dir() -> None:
-    """Create and write to a file in the NX file directory."""
-    test_file_path = os.path.join(NX_FILE_DIR_PATH, "test_output.txt")
-    with open(test_file_path, "w", encoding="utf-8") as f:
-        f.write("This is a test file.")
-    assert os.path.exists(test_file_path)
+def _callback_file_dir_path(tmp_path_factory) -> str:
+    """Return temporary dir for callback outputs."""
+    return str(tmp_path_factory.mktemp("callback_file"))
 
 
 # Test: Ensure the `nx_schema` directory exists
@@ -125,9 +77,9 @@ def test_nx_schema_directory_exists() -> None:
     Test to ensure that the `nx_schema` directory exists in the same parent directory
     as this test file.
     """
-    assert os.path.isdir(
-        NX_SCHEMA_DIR_PATH
-    ), f"The directory `nx_schema` does not exist at {NX_SCHEMA_DIR_PATH}"
+    assert os.path.isdir(NX_SCHEMA_DIR_PATH), (
+        f"The directory `nx_schema` does not exist at {NX_SCHEMA_DIR_PATH}"
+    )
 
 
 # Fixture: Get the path to `nx_schema`
@@ -168,7 +120,9 @@ def test_expected_files_exist_in_nx_schema(_nx_schema_dir_path) -> None:
 
 # Fixture: Create a dictionary of devices for reuse in tests
 @pytest.fixture
-def _devices_dictionary() -> Dict[str, Union[Mono, MonoWithGratingCpt, SimMotor]]:
+def _devices_dictionary() -> Dict[
+    str, Union[Mono, MonoWithGratingCpt, SimMotor, MockFlyer]
+]:
     """Create and return a dictionary of test devices.
 
     This includes monochromators with and without grating components.
@@ -178,10 +132,13 @@ def _devices_dictionary() -> Dict[str, Union[Mono, MonoWithGratingCpt, SimMotor]
         name="mono_with_grating_cpt"
     )
     sim_motor: SimMotor = SimMotor(name="sim_motor")
+    mock_flyer: MockFlyer = MockFlyer(name="mock_flyer", wait_seconds=3)
+
     return {
         "mono": mono,
         "mono_with_grating_cpt": mono_with_grating_cpt,
         "sim_motor": sim_motor,
+        "mock_flyer": mock_flyer,
     }
 
 
@@ -239,6 +196,16 @@ def _baseline_4():
     return []
 
 
+# Fixture: Baseline configuration for test 6
+@pytest.fixture
+def _baseline_5(_devices_dictionary):
+    """Return baseline configuration.
+
+    Participating devices: 'mono_with_grating_cpt'.
+    """
+    return [_devices_dictionary["mock_flyer"]]
+
+
 # Fixture: Initialize a plain Bluesky RunEngine
 @pytest.fixture
 def _run_engine():
@@ -269,6 +236,24 @@ def _my_motor():
     return motor  # Return the motor object for use in tests
 
 
+def execute_fly_plan(_run_eng: RunEngine, md: dict, device: MockFlyer):
+    """Define and execute a fly plan on the RunEngine."""
+
+    def mock_fly():
+        yield from bps.open_run()
+        yield from bps.kickoff(device)
+        yield from bps.complete(device, group="group")
+        yield from bps.wait(group="group", timeout=10)
+        yield from bps.collect(device)
+        yield from bps.close_run()
+
+    plan = mock_fly()
+    assert isinstance(plan, GeneratorType), "mock_fly() is not returning a generator!"
+    _run_eng.md = md
+    _run_eng(plan)
+    # _run_eng(plan, lambda n, d: print("===========\n", n, pformat(d)))
+
+
 # Helper: Execute a scan plan on the RunEngine
 def execute_scan_plan(
     _run_eng: RunEngine,
@@ -277,7 +262,7 @@ def execute_scan_plan(
     _my_motor: object,
     _scan_step_number: int,
 ):
-    """Define and execute a plan on the RunEngine.
+    """Define and execute a scan plan on the RunEngine.
 
     Scan detectors over a motor's range with given metadata.
     """
@@ -323,18 +308,17 @@ def add_preprocessors(re: RunEngine, devices_dictionary: dict, baseline: list[ob
     sdd = SupplementalDataBaseline(baseline=baseline)
     re.preprocessors.append(sdd)
 
-    # Add Nexus metadata
-    metadata = SupplementalMetadata()
-    metadata.devices_dictionary = devices_dictionary
-    metadata.baseline = baseline
-    metadata.md_type = SupplementalMetadata.MetadataType.NEXUS_MD
+    # Add Nexus metadata, pass arguments as *args
+    metadata = SupplementalMetadata(
+        devices_dictionary, SupplementalMetadata.MetadataType.NEXUS_MD
+    )
     re.preprocessors.append(metadata)
 
-    # Add device metadata
-    metadata = SupplementalMetadata()
-    metadata.devices_dictionary = devices_dictionary
-    metadata.baseline = baseline
-    metadata.md_type = SupplementalMetadata.MetadataType.DEVICE_MD
+    # Add device metadata, pass arguments as *kwargs
+    metadata = SupplementalMetadata(
+        devices_dictionary=devices_dictionary,
+        md_type=SupplementalMetadata.MetadataType.DEVICE_MD,
+    )
     re.preprocessors.append(metadata)
 
 
@@ -373,28 +357,20 @@ def get_callback_file_path(file_dir_path: str, file_name: str) -> str:
     return file_path
 
 
-# Helper: Remove a file
-def clean_up(file_path: str) -> None:
-    """Clean up file."""
-    if os.path.exists(file_path):
-        os.remove(file_path)
-    print(f"Proc info: Clean up of file: {file_path} finished.")
-
-
 def _assert_attribute_equal(
     attr_key: str, nexus_value: Any, expected_value: Any, item_path: str
 ) -> None:
     if isinstance(nexus_value, str) and isinstance(expected_value, str):
-        assert (
-            nexus_value == expected_value
-        ), f"Mismatch in string: Expected {expected_value}, Found {nexus_value}"
+        assert nexus_value == expected_value, (
+            f"Mismatch in string: Expected {expected_value}, Found {nexus_value}"
+        )
 
     elif isinstance(nexus_value, (int, float)) and isinstance(
         expected_value, (int, float)
     ):
-        assert np.isclose(
-            nexus_value, expected_value
-        ), f"Mismatch in float: Expected {expected_value}, Found {nexus_value}"
+        assert np.isclose(nexus_value, expected_value), (
+            f"Mismatch in float: Expected {expected_value}, Found {nexus_value}"
+        )
 
     elif isinstance(nexus_value, np.ndarray) or isinstance(expected_value, list):
         if isinstance(expected_value, list):
@@ -403,13 +379,13 @@ def _assert_attribute_equal(
         if np.issubdtype(nexus_value.dtype, np.number) and np.issubdtype(
             expected_value.dtype, np.number
         ):
-            assert np.allclose(
-                nexus_value, expected_value
-            ), f"Mismatch in array: Expected {expected_value}, Found {nexus_value}"
+            assert np.allclose(nexus_value, expected_value), (
+                f"Mismatch in array: Expected {expected_value}, Found {nexus_value}"
+            )
         else:
-            assert np.array_equal(
-                nexus_value, expected_value
-            ), f"Mismatch in array: Expected {expected_value}, Found {nexus_value}"
+            assert np.array_equal(nexus_value, expected_value), (
+                f"Mismatch in array: Expected {expected_value}, Found {nexus_value}"
+            )
 
     elif (
         isinstance(nexus_value, str)
@@ -433,14 +409,14 @@ def _assert_attribute_equal(
                 f"'{attr_key}' in group '{item_path}'"
             ) from err
 
-        assert (
-            nexus_dict == expected_dict
-        ), f"Mismatch in dictionary: Expected {expected_dict}, Found {nexus_dict}"
+        assert nexus_dict == expected_dict, (
+            f"Mismatch in dictionary: Expected {expected_dict}, Found {nexus_dict}"
+        )
 
     else:
-        assert (
-            nexus_value == expected_value
-        ), f"Mismatch in value: Expected {expected_value}, Found {nexus_value}"
+        assert nexus_value == expected_value, (
+            f"Mismatch in value: Expected {expected_value}, Found {nexus_value}"
+        )
 
 
 def _verify_structure(
@@ -456,9 +432,9 @@ def _verify_structure(
         for attr_key, attr_value in item_attrs.items():
             # print("attr_key:", attr_key) # Debug only
             # print("attr_value:", attr_value) # Debug only
-            assert (
-                attr_key in current.attrs
-            ), f"Missing attribute: {attr_key} in group: {item_path}"
+            assert attr_key in current.attrs, (
+                f"Missing attribute: {attr_key} in group: {item_path}"
+            )
             nexus_value = current.attrs[attr_key]
             _assert_attribute_equal(attr_key, nexus_value, attr_value, item_path)
 
@@ -467,9 +443,9 @@ def _verify_dataset(f: h5py.File, dataset_path: str, expected: Any) -> None:
     keys = dataset_path.split("/")
     current = f
     for key in keys:
-        assert (
-            key in current
-        ), f"Missing dataset key: {key} in dataset path: {dataset_path}"
+        assert key in current, (
+            f"Missing dataset key: {key} in dataset path: {dataset_path}"
+        )
         current = current[key]
 
     assert isinstance(current, h5py.Dataset), f"{dataset_path} is not a dataset"
@@ -491,16 +467,15 @@ def _verify_dataset(f: h5py.File, dataset_path: str, expected: Any) -> None:
 
         if actual_value.dtype.kind == "O":
             h5_type = current.id.get_type()
-            assert (
-                h5_type.get_class()
-                == h5py.h5t.STRING  # pylint: disable=c-extension-no-member
-            ), f"Dataset {dataset_path} is not a string type"
-            assert (
-                h5_type.get_cset() == CSET_UTF8
-            ), f"Dataset {dataset_path} is not UTF-8 encoded"
-            assert (
-                h5_type.is_variable_str()
-            ), f"Dataset {dataset_path} does not use variable-length UTF-8 strings"
+            assert h5_type.get_class() == h5py.h5t.STRING, (
+                f"Dataset {dataset_path} is not a string type"
+            )
+            assert h5_type.get_cset() == CSET_UTF8, (
+                f"Dataset {dataset_path} is not UTF-8 encoded"
+            )
+            assert h5_type.is_variable_str(), (
+                f"Dataset {dataset_path} does not use variable-length UTF-8 strings"
+            )
 
     # Verify shape
     if expected_shape:
@@ -509,77 +484,60 @@ def _verify_dataset(f: h5py.File, dataset_path: str, expected: Any) -> None:
             f"Expected {expected_shape}, Found {actual_value.shape}"
         )
 
-    if expected_value is not None:
-        expected_value = np.array(
-            expected_value, dtype=object if actual_value.dtype.kind == "O" else None
+    if expected_value is None:
+        return
+
+    expected_value = np.array(
+        expected_value, dtype=object if actual_value.dtype.kind == "O" else None
+    )
+    if actual_value.dtype.kind in ("f", "i"):
+        assert np.allclose(actual_value, expected_value, atol=1e-8), (
+            f"Mismatch in dataset: {dataset_path}: Expected {expected_value}, "
+            f"Found {actual_value}"
         )
-        if actual_value.dtype.kind in ("f", "i"):
-            assert np.allclose(actual_value, expected_value, atol=1e-8), (
-                f"Mismatch in dataset: {dataset_path}: Expected {expected_value}, "
-                f"Found {actual_value}"
-            )
-        else:
-            assert np.array_equal(actual_value, expected_value), (
-                f"Mismatch in dataset: {dataset_path}: Expected {expected_value}, "
-                f"Found {actual_value}"
-            )
-
-    # Verify value
-    if expected_value is not None:
-
-        # Convert expected_value in np array
-
-        ### ---------- DEBUG ONLY
-        # Print array info
-        # print_array_info(actual_value, "actual_value")
-        # print_array_info(expected_value, "expected_value")
-
-        # Print array comparison info
-        # print_arrays_comparison_info(
-        #     actual_value,
-        #     "actual_value",
-        #     expected_value,
-        #     "expected_value",
-        # )
-        ### ---------- END OF DEBUG ONLY
-
-        # Determine the data type kind of the actual array
-        dtype_kind = actual_value.dtype.kind
-        # Define the error message
-        error_msg = (
+    else:
+        assert np.array_equal(actual_value, expected_value), (
             f"Mismatch in dataset: {dataset_path}: Expected {expected_value}, "
             f"Found {actual_value}"
         )
 
-        # Check if the array contains objects/string values
-        if "O" == dtype_kind:
-            expected_value = np.array(expected_value, dtype=object)
-            assert np.array_equal(
-                actual_value,
-                expected_value,
-            ), error_msg
+    # Determine the data type kind of the actual array
+    dtype_kind = actual_value.dtype.kind
+    # Define the error message
+    error_msg = (
+        f"Mismatch in dataset: {dataset_path}: Expected {expected_value}, "
+        f"Found {actual_value}"
+    )
 
-        # Check if the array contains numeric values
-        elif dtype_kind in ("f", "i"):  # 'f' for float, 'i' for integer
-            expected_value = np.array(expected_value)
-            assert np.allclose(
-                actual_value,
-                expected_value,
-                atol=1e-8,  # Use tolerance of 1e-8 (adjust as needed)
-            ), error_msg
+    # Check if the array contains objects/string values
+    if "O" == dtype_kind:
+        expected_value = np.array(expected_value, dtype=object)
+        assert np.array_equal(
+            actual_value,
+            expected_value,
+        ), error_msg
 
-        # Check if the array contains boolean values
-        elif "b" == dtype_kind:
-            expected_value = np.array(expected_value)
-            assert np.array_equal(
-                actual_value,
-                expected_value,
-            ), error_msg
+    # Check if the array contains numeric values
+    elif dtype_kind in ("f", "i"):  # 'f' for float, 'i' for integer
+        expected_value = np.array(expected_value)
+        assert np.allclose(
+            actual_value,
+            expected_value,
+            atol=1e-8,  # Use tolerance of 1e-8 (adjust as needed)
+        ), error_msg
 
-        else:
-            raise ValueError(
-                f"Dataset {dataset_path} has a unsupported datatype: " f"{dtype_kind}"
-            )
+    # Check if the array contains boolean values
+    elif "b" == dtype_kind:
+        expected_value = np.array(expected_value)
+        assert np.array_equal(
+            actual_value,
+            expected_value,
+        ), error_msg
+
+    else:
+        raise ValueError(
+            f"Dataset {dataset_path} has a unsupported datatype: {dtype_kind}"
+        )
 
 
 def verify_nexus_file(
@@ -593,7 +551,6 @@ def verify_nexus_file(
 
 
 # Test function
-# @unittest.skip("Temporarily disabling this test_1")
 def test_1(
     _run_eng,
     _devices_dictionary,
@@ -604,7 +561,7 @@ def test_1(
     _scan_step_number,
     request,
 ) -> None:
-    """Integration test for generating and varyfing a Nexus file.
+    """Integration test for generating and verifying a Nexus file.
 
     - Configures metadata and baseline devices.
     - Executes a plan and verifies the resulting Nexus file's structure and data.
@@ -1218,14 +1175,9 @@ def test_1(
 
     # Verify file contents
     verify_nexus_file(nx_file_path, expected_structure, expected_data)
-    # Remove the nexus file after successful validation
-    clean_up(nx_file_path)
-    # Remove the callback file after successful creation
-    clean_up(callback_file_path)
 
 
 # Test function
-# @unittest.skip("Temporarily disabling this test_2")
 def test_2(
     _run_eng,
     _devices_dictionary,
@@ -1696,14 +1648,9 @@ def test_2(
 
     # Verify file contents
     verify_nexus_file(nx_file_path, expected_structure, expected_data)
-    # Remove the nexus file after successful validation
-    clean_up(nx_file_path)
-    # Remove the callback file after successful creation
-    clean_up(callback_file_path)
 
 
 # Test function
-# @unittest.skip("Temporarily disabling this test_3")
 def test_3(
     _run_eng,
     _devices_dictionary,
@@ -2008,14 +1955,9 @@ def test_3(
 
     # Verify file contents
     verify_nexus_file(nx_file_path, expected_structure, expected_data)
-    # Remove the nexus file after successful validation
-    clean_up(nx_file_path)
-    # Remove the callback file after successful creation
-    clean_up(callback_file_path)
 
 
 # Test function
-# @unittest.skip("Temporarily disabling this test_4")
 def test_4(
     _run_eng,
     _devices_dictionary,
@@ -2485,14 +2427,9 @@ def test_4(
 
     # Verify file contents
     verify_nexus_file(nx_file_path, expected_structure, expected_data)
-    # Remove the nexus file after successful validation
-    clean_up(nx_file_path)
-    # Remove the callback file after successful creation
-    clean_up(callback_file_path)
 
 
 # Test function
-# @unittest.skip("Temporarily disabling this test_5")
 def test_5(
     _run_eng,
     _devices_dictionary,
@@ -2636,30 +2573,255 @@ def test_5(
 
     # Verify file contents
     verify_nexus_file(nx_file_path, expected_structure, expected_data)
-    # Remove the nexus file after successful validation
-    clean_up(nx_file_path)
-    # Remove the callback file after successful creation
-    clean_up(callback_file_path)
 
 
-# ---------- DEBUG ONLY
-# Aux function
-def print_array_info(arr: np.ndarray, arr_name: str) -> None:
-    """Print array info."""
-    print(f"{arr_name} dtype: {arr.dtype}")
-    print(f"{arr_name} value: {arr}")
-
-
-# Aux function
-def print_arrays_comparison_info(
-    arr1: np.ndarray, arr1_name: str, arr2: np.ndarray, arr2_name: str
+# Test function
+def test_6(
+    _run_eng,
+    _devices_dictionary,
+    _baseline_5,
+    _callback_file_dir_path,
+    _nx_file_dir_path,
+    request,
 ) -> None:
-    """Print arrays info."""
-    print(f"Is {arr1_name} equal to {arr2_name}: {np.array_equal(arr1, arr2)}")
-    print(f"Is {arr1_name} close to {arr2_name}: {np.allclose(arr1, arr2, atol=1e-8)}")
+    """Integration test for generating and verifying a Nexus file.
 
+    - Configures metadata and baseline devices.
+    - Executes a plan and verifies the resulting Nexus file's structure and data.
+    """
+    # Add preprocessors to the RunEngine
+    add_preprocessors(_run_eng, _devices_dictionary, _baseline_5)
 
-# ---------- END OF DEBUG ONLY
+    # Generate metadata
+    nx_file_name: str = f"hzb_nexus_file_{request.node.name}"
+
+    md: dict = generate_md(
+        nx_file_name,
+        "bluesky run test 6",
+        "NX_fly",
+        {"a": 35, "b": 36, "c": {"d": 37, "e": 38}},
+    )
+    callback_file_path = get_callback_file_path(
+        _callback_file_dir_path, f"callback_file_{request.node.name}.json"
+    )
+
+    # Execute plan and write generated documents to a json file
+    # using 'WriteToFileFormattedCallback'
+    with WriteToFileFormattedCallback(callback_file_path) as callback_writer:
+        _run_eng.subscribe(callback_writer)
+        execute_fly_plan(_run_eng, md, _devices_dictionary["mock_flyer"])
+
+    # Define Nexus file path
+    nx_file_path: str = get_nx_file_path(_nx_file_dir_path, nx_file_name)
+
+    # Assert file creation
+    assert os.path.exists(nx_file_path), (
+        f"Nexus file: {nx_file_path} was not created while executing "
+        f"test: {request.node.name}."
+    )
+
+    ###
+    ### Verify existence of the groups/fields and their attributes
+    ###
+    expected_structure: dict = {
+        # ---
+        # --- group: entry and its attributes ---
+        # ---
+        "entry": {
+            "NX_class": "NXentry",
+            "Application name": "bluesky_nexus",
+            "Content": "'NXinstrument' group and 'NXcollection' group",
+        },
+        # ---
+        # --- group: entry/instrument and its attributes---
+        # ---
+        "entry/instrument": {
+            "NX_class": "NXinstrument",
+            "description": "Instruments involved in the bluesky plan",
+        },
+        # ---
+        # --- group: entry/instrument/mock_flyer and its attributes ---
+        # ---
+        "entry/instrument/mock_flyer": {
+            "NX_class": "NXmockflyer",
+            "nx_model": "NXgeneralModel",
+        },
+        # ---
+        # --- group: entry/run_info and its attributes---
+        # ---
+        "entry/run_info": {
+            "NX_class": "NXcollection",
+            "description": "Copy of the start and stop document from the bluesky run",
+        },
+        # ---
+        # --- groups of: entry/run_info/start ---
+        # ---
+        "entry/run_info/start": {},
+        "entry/run_info/start/device_md/mock_flyer": {},
+        "entry/run_info/start/test_dict": {},
+        # ---
+        # --- groups of: entry/run_info/stop ---
+        # ---
+        "entry/run_info/stop": {},
+        "entry/run_info/stop/num_events": {},
+    }
+
+    ###
+    ### Verify expected data in datasets. I.e. verify: value, dtype, shape
+    ###
+    expected_data: dict = {
+        # ---
+        # --- dataset: entry/run_info/start/device_md/mock_flyer/description ---
+        # ---
+        "entry/run_info/start/device_md/mock_flyer/description": {
+            "value": [b"I am the best flyer"],
+            "shape": (1,),
+            "dtype": "O",
+        },
+        # ---
+        # --- dataset: entry/run_info/start/definition ---
+        # ---
+        "entry/run_info/start/definition": {
+            "value": [b"NX_fly"],
+            "shape": (1,),
+            "dtype": "O",
+        },
+        # ---
+        # --- dataset: entry/run_info/start/nx_file_name ---
+        # ---
+        "entry/run_info/start/nx_file_name": {
+            "value": [b"hzb_nexus_file_test_6"],
+            "shape": (1,),
+            "dtype": "O",
+        },
+        # ---
+        # --- dataset: entry/run_info/start/plan_name ---
+        # ---
+        "entry/run_info/start/plan_name": {
+            "value": [b"mock_fly"],
+            "shape": (1,),
+            "dtype": "O",
+        },
+        # ---
+        # --- dataset: entry/run_info/start/plan_type ---
+        # ---
+        "entry/run_info/start/plan_type": {
+            "value": [b"generator"],
+            "shape": (1,),
+            "dtype": "O",
+        },
+        # ---
+        # --- dataset: entry/run_info/start/scan_id ---
+        # ---
+        "entry/run_info/start/scan_id": {
+            "value": 1,
+            "shape": (1,),
+            "dtype": "int64",
+        },
+        # ---
+        # --- dataset: entry/run_info/start/test_dict/a ---
+        # ---
+        "entry/run_info/start/test_dict/a": {
+            "value": 35,
+            "shape": (1,),
+            "dtype": "int64",
+        },
+        # ---
+        # --- dataset: entry/run_info/start/test_dict/b ---
+        # ---
+        "entry/run_info/start/test_dict/b": {
+            "value": 36,
+            "shape": (1,),
+            "dtype": "int64",
+        },
+        # ---
+        # --- dataset: entry/run_info/start/test_dict/c/d ---
+        # ---
+        "entry/run_info/start/test_dict/c/d": {
+            "value": 37,
+            "shape": (1,),
+            "dtype": "int64",
+        },
+        # ---
+        # --- dataset: entry/run_info/start/test_dict/c/e ---
+        # ---
+        "entry/run_info/start/test_dict/c/e": {
+            "value": 38,
+            "shape": (1,),
+            "dtype": "int64",
+        },
+        # ---
+        # --- dataset: entry/run_info/start/time ---
+        # ---
+        "entry/run_info/start/time": {
+            "shape": (1,),
+            "dtype": "float64",
+        },
+        # ---
+        # --- dataset: entry/run_info/start/title ---
+        # ---
+        "entry/run_info/start/title": {
+            "value": [b"bluesky run test 6"],
+            "shape": (1,),
+            "dtype": "O",
+        },
+        # ---
+        # --- dataset: entry/run_info/start/uid ---
+        # ---
+        "entry/run_info/start/uid": {
+            "shape": (1,),
+            "dtype": "O",
+        },
+        # ---
+        # --- dataset: entry/run_info/stop/exit_status ---
+        # ---
+        "entry/run_info/stop/exit_status": {
+            "value": [b"success"],
+            "shape": (1,),
+            "dtype": "O",
+        },
+        # ---
+        # --- dataset: entry/run_info/stop/num_events/baseline ---
+        # ---
+        "entry/run_info/stop/num_events/baseline": {
+            "value": 3,
+            "shape": (1,),
+            "dtype": "int64",
+        },
+        # ---
+        # --- dataset: entry/run_info/stop/reason ---
+        # ---
+        "entry/run_info/stop/reason": {
+            "value": [b""],
+            "shape": (1,),
+            "dtype": "O",
+        },
+        # ---
+        # --- dataset: entry/run_info/stop/run_start ---
+        # ---
+        "entry/run_info/stop/run_start": {
+            "shape": (1,),
+            "dtype": "O",
+        },
+        # ---
+        # --- dataset: entry/run_info/stop/time ---
+        # ---
+        "entry/run_info/stop/time": {
+            "shape": (1,),
+            "dtype": "float64",
+        },
+        # ---
+        # --- dataset: entry/run_info/stop/uid ---
+        # ---
+        "entry/run_info/stop/uid": {
+            "shape": (1,),
+            "dtype": "O",
+        },
+    }
+
+    # Verify file contents
+    verify_nexus_file(nx_file_path, expected_structure, expected_data)
+
 
 if __name__ == "__main__":
     # Execute all test cases in the script when run directly.

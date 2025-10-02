@@ -76,6 +76,6 @@ class NXoff_geometryModel(NXgroupModel):
     )
     detector_faces: Optional[NXfieldModelWithPrePostRunString] = Field(
         None,
-        description="List of pairs of index in the 'faces' dataset and " "detector id.",
+        description="List of pairs of index in the 'faces' dataset and detector id.",
     )
     model_config = ConfigDict(arbitrary_types_allowed=True, extra="allow")

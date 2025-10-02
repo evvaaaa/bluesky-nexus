@@ -395,24 +395,6 @@ from bluesky_nexus.bluesky_nexus_paths import (
     get_nx_log_file_dir_path,
 )
 
-# Let the preprocessor append NeXus metadata to the start document
-metadata = SupplementalMetadata()
-metadata.devices_dictionary: dict = devices_dictionary
-metadata.md_type = SupplementalMetadata.MetadataType.NEXUS_MD
-RE.preprocessors.append(metadata)
-
-# Let the preprocessor append devices metadata to the start document
-metadata = SupplementalMetadata()
-metadata.devices_dictionary: dict = devices_dictionary
-metadata.md_type = SupplementalMetadata.MetadataType.DEVICE_MD
-RE.preprocessors.append(metadata)
-
-# Subscribe the callback: 'NexusWriter'
-nx_file_dir_path: str = get_nx_file_dir_path()
-cpt_name_delimiter: str = "_" # Optionally specify a delimiter used in Bluesky documents to separate device components. If not specified, the default is "_".
-nexus_writer = NexusWriter(nx_file_dir_path=nx_file_dir_path, cpt_name_delimiter = cpt_name_delimiter)
-RE.subscribe(nexus_writer)
-
 # This is an optional setup for the NeXus logger. If not configured, logging to a file
 # is disabled by default. The logger supports separate configuration for console and
 # file output, with options for log rotation, formatting, and enabling/disabling handlers.
@@ -428,6 +410,32 @@ setup_nx_logger(
     enable_console=True,
     enable_file=True,
 )
+
+# Note: `SupplementalMetadata` accepts `devices_dictionary` and `md_type` either as positional or keyword arguments.
+# For clarity, keyword arguments are recommended.
+
+# Let the preprocessor append NeXus metadata to the start document
+
+# using keyword arguments (recommended)
+metadata = SupplementalMetadata(devices_dictionary=devices_dictionary, md_type=SupplementalMetadata.MetadataType.NEXUS_MD)
+# or using positional arguments
+metadata = SupplementalMetadata(devices_dictionary, SupplementalMetadata.MetadataType.NEXUS_MD)
+RE.preprocessors.append(metadata)
+
+
+# Let the preprocessor append devices metadata to the start document
+
+# using keyword arguments (recommended)
+metadata = SupplementalMetadata(devices_dictionary=devices_dictionary, md_type=SupplementalMetadata.MetadataType.DEVICE_MD)
+# or using positional arguments
+metadata = SupplementalMetadata(devices_dictionary, SupplementalMetadata.MetadataType.DEVICE_MD)
+RE.preprocessors.append(metadata)
+
+# Subscribe the callback: 'NexusWriter'
+nx_file_dir_path: str = get_nx_file_dir_path()
+cpt_name_delimiter: str = "_" # Optionally specify a delimiter used in Bluesky documents to separate device components. If not specified, the default is "_".
+nexus_writer = NexusWriter(nx_file_dir_path=nx_file_dir_path, cpt_name_delimiter = cpt_name_delimiter)
+RE.subscribe(nexus_writer)
 ```
 
 See the section [Explanations on the optional NeXus logger](#explanations-on-the-optional-nexus-logger)
@@ -499,12 +507,18 @@ setup_nx_logger(
 
 ### Let the preprocessor append ```NeXus metadata``` to the start document
 
+**Note:** `SupplementalMetadata` accepts `devices_dictionary` and `md_type` either as positional or keyword arguments.
+For clarity, keyword arguments are recommended.
+
 In you script subscribe to the preprocessor
 
   ```python
-  metadata = SupplementalMetadata()
-  metadata.devices_dictionary: dict = devices_dictionary
-  metadata.md_type = SupplementalMetadata.MetadataType.NEXUS_MD
+  # Let the preprocessor append NeXus metadata to the start document
+
+  # using keyword arguments (recommended)
+  metadata = SupplementalMetadata(devices_dictionary=devices_dictionary, md_type=SupplementalMetadata.MetadataType.NEXUS_MD)
+  # or using positional arguments
+  metadata = SupplementalMetadata(devices_dictionary, SupplementalMetadata.MetadataType.NEXUS_MD)
   RE.preprocessors.append(metadata)
   ```
 
@@ -513,11 +527,12 @@ In you script subscribe to the preprocessor
 In you script subscribe to the preprocessor
 
   ```python
-  metadata = (
-      SupplementalMetadata()
-  )  # No need to pass "nx_schema_dir_path" in case of DEVICE_MD
-  metadata.devices_dictionary: dict = devices_dictionary
-  metadata.md_type = SupplementalMetadata.MetadataType.DEVICE_MD
+  # Let the preprocessor append devices metadata to the start document
+
+  # using keyword arguments (recommended)
+  metadata = SupplementalMetadata(devices_dictionary=devices_dictionary, md_type=SupplementalMetadata.MetadataType.DEVICE_MD)
+  # or using positional arguments
+  metadata = SupplementalMetadata(devices_dictionary, SupplementalMetadata.MetadataType.DEVICE_MD)
   RE.preprocessors.append(metadata)
   ```
 

@@ -82,7 +82,7 @@ class NXpositionerModel(NXgroupModel):
     )
     value: Optional[NXfieldModelWithPrePostRunString] = Field(
         None,
-        description="best known value of positioner - need [n] as may be " "scanned",
+        description="best known value of positioner - need [n] as may be scanned",
     )
     raw_value: Optional[NXfieldModelWithPrePostRunString] = Field(
         None,
@@ -95,7 +95,7 @@ class NXpositionerModel(NXgroupModel):
     )
     tolerance: Optional[NXfieldModelWithPrePostRunString] = Field(
         None,
-        description="maximum allowable difference between target_value and " "value",
+        description="maximum allowable difference between target_value and value",
     )
     soft_limit_min: Optional[NXfieldModelWithPrePostRunString] = Field(
         None, description="minimum allowed limit to set value"
@@ -105,7 +105,7 @@ class NXpositionerModel(NXgroupModel):
     )
     velocity: Optional[NXfieldModelWithPrePostRunString] = Field(
         None,
-        description="velocity of the positioner (distance moved per unit " "time)",
+        description="velocity of the positioner (distance moved per unit time)",
     )
     acceleration_time: Optional[NXfieldModelWithPrePostRunString] = Field(
         None, description="time to ramp the velocity up to full speed"

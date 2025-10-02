@@ -52,7 +52,6 @@ def add_special_timestamps(
     #   - is a list of strings
     #   - is just a string, in this case we deal with numpy array of ndim=0 (scalar)
     if timestamps.dtype == object:
-
         # Check if the numpy array is a scalar (ndim=0) or has more dimensions
         if timestamps.ndim == 0:
             # If it's a scalar, convert it to a 1D array with a single element
@@ -145,10 +144,8 @@ def add_events_timestamps(key: str, value: dict, group: h5py.Group):
     # - just a string, in this case we deal with numpy array of ndim=0 (scalar)
 
     if timestamps.dtype == object:
-
         # Check if the numpy array is a scalar (ndim=0) or has more dimensions
         if timestamps.ndim == 0:
-
             # If it's a scalar, convert it to a 1D array with a single element
             timestamps = np.array([timestamps.item()], dtype=object)
 
@@ -186,8 +183,7 @@ def add_events_timestamps(key: str, value: dict, group: h5py.Group):
     ds.attrs["shape"] = list(timestamps.shape)
     ds.attrs["description"] = "Timestamps of the events"
     logger.debug(
-        "New dataset for events_timestamps: dtype: %s,"
-        " key: %s, group: %s, value: %s",
+        "New dataset for events_timestamps: dtype: %s, key: %s, group: %s, value: %s",
         ds.dtype,
         key,
         group.name,

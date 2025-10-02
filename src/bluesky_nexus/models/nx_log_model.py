@@ -118,19 +118,17 @@ class NXlogModel(NXgroupModel):
 
             start: Optional[NXfieldModelForAttribute] = Field(
                 None,
-                description="If missing start is assumed to be the same as "
-                "for 'time'.",
+                description="If missing start is assumed to be the same as for 'time'.",
             )
             scaling_factor: Optional[NXfieldModelForAttribute] = Field(
                 None,
-                description="If missing start is assumed to be the same as "
-                "for 'time'.",
+                description="If missing start is assumed to be the same as for 'time'.",
             )
             model_config = ConfigDict(arbitrary_types_allowed=True, extra="forbid")
 
         attributes: Optional[AttributesModel] = Field(
             None,
-            description="Attributes specific to the 'cue_timestamp_zero' " "field.",
+            description="Attributes specific to the 'cue_timestamp_zero' field.",
         )
 
     cue_timestamp_zero: Optional[cue_timestamp_zeroModel] = Field(

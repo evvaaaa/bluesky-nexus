@@ -65,7 +65,6 @@ def add_group_or_field(group: h5py.Group, data: Union[Dict[str, Any], Any]) -> N
     """
 
     def process_dataset(key: str, value: dict) -> None:
-
         # dtype assigned in the pydantic schema
         # or extracted from the descriptor doc
         dtype = value.get("dtype", None)
@@ -113,7 +112,6 @@ def add_group_or_field(group: h5py.Group, data: Union[Dict[str, Any], Any]) -> N
             add_events_timestamps(key, value, group)
 
     def process_group(key: str, value: dict) -> None:
-
         # Create group
         subgroup = group.create_group(key)
 
@@ -154,7 +152,6 @@ def add_group_or_field(group: h5py.Group, data: Union[Dict[str, Any], Any]) -> N
 
     for key, value in data.items():
         if isinstance(value, dict):
-
             # Handle dataset (field) with "value"
             # value["value"] is in "post-run" case always numpy array
             if "value" in value:

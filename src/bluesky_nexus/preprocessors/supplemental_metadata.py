@@ -11,19 +11,15 @@ and NeXus metadata (NEXUS_MD).
 
 Key Features:
 
-    Dynamically generate metadata for devices participating in a plan.
-    Validate and filter devices based on their usage in the plan.
+    Dynamically generate metadata for all devices defined in 'devices_dictionary'.
     Support for placeholder resolution in NeXus metadata, handling missing
     data gracefully.
-    Caching of plans to ensure non-exhaustible replayable plans.
     Utilities for metadata extraction, processing, and validation.
 
 Classes:
 
     SupplementalMetadata: Extends SupplementalData to manage device metadata
     injection.
-    PlanDeviceChecker: Utility to validate which devices in a dictionary are
-    used in a plan.
 
 Functions:
 
@@ -39,7 +35,6 @@ Functions:
     metadata dictionaries.
     get_nested_dict_value: Fetches values from nested dictionaries using a
     key path.
-    cache_plan: Caches Bluesky plan to make it replayable twice.
 
 Dependencies:
 
@@ -53,15 +48,10 @@ Dependencies:
 """
 
 from enum import Enum, auto
-from itertools import tee
-from typing import Any, Callable, Dict, Generator, Tuple, Union
+from typing import Any, Callable, Dict, Generator, Union
 
 import bluesky.plan_stubs as bps
-from bluesky.preprocessors import (
-    SupplementalData,
-    inject_md_wrapper,
-    plan_mutator,
-)
+from bluesky.preprocessors import SupplementalData, inject_md_wrapper
 from ophyd.device import Device  # type: ignore
 
 from bluesky_nexus.bluesky_nexus_const import (
@@ -99,13 +89,13 @@ class SupplementalMetadata(SupplementalData):
         DEVICE_MD = auto()
         NEXUS_MD = auto()
 
-    # Class annotations for md_type and devices_dictionary are provided to satisfy
-    # static checkers, as both attributes are assigned dynamically
-    # before use in the preprocessor.
-    md_type: MetadataType
-    devices_dictionary: dict
-
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(
+        self,
+        devices_dictionary: dict | None = None,
+        md_type: MetadataType | None = None,
+        *args,
+        **kwargs,
+    ) -> None:
         """Initialize the SupplementalMetadata instance.
 
         This constructor accepts both positional and keyword arguments,
@@ -113,9 +103,14 @@ class SupplementalMetadata(SupplementalData):
 
         Args:
             *args: Positional arguments passed to the parent constructor.
+            devices_dictionary: Dictionary of devices for metadata injection.
+            Defaults to None.
+            md_type: Metadata type (DEVICE_MD or NEXUS_MD). Defaults to None.
             **kwargs: Keyword arguments passed to the parent constructor.
         """
         super().__init__(*args, **kwargs)
+        self.devices_dictionary: dict | None = devices_dictionary
+        self.md_type: SupplementalMetadata.MetadataType | None = md_type
 
     def __call__(self, plan: Any):
         """Call.
@@ -145,15 +140,14 @@ class SupplementalMetadata(SupplementalData):
             AttributeError: If required attributes are missing.
             ValueError: If the metadata type is invalid.
         """
-        if not hasattr(self, "devices_dictionary"):
+        if self.devices_dictionary is None:
             raise AttributeError(
-                "The 'devices_dictionary' attribute must be set "
-                "before calling the instance."
+                "'devices_dictionary' must not be None when calling the instance."
             )
 
-        if not hasattr(self, "md_type"):
+        if self.md_type is None:
             raise AttributeError(
-                "The 'md_type' attribute must be set before calling the instance."
+                "'md_type' must not be None when calling the instance."
             )
 
         # Dictionary to map MetadataType to their respective
@@ -168,34 +162,18 @@ class SupplementalMetadata(SupplementalData):
         if create_md is None:
             raise ValueError(f"Invalid metadata type: {self.md_type}")
 
-        # We have to cache the plan, otherwise the PlanDeviceChecker
-        # would exhaust the plan
-        plan1, plan2 = cache_plan(plan)
-
-        # Check if all devices of self.devices_dictionary are participating
-        # in the plan.
-        checker = PlanDeviceChecker(self.devices_dictionary)
-        checker_result = checker.validate_plan_devices(plan1)
-
-        # Define a dictionary of devices taking part in the plan.
-        # (It includes devices not taking part in a RUN but subscribed
-        # to the baseline or silent devices)
-        devices_in_plan: dict = {
-            name: dev
-            for name, dev in self.devices_dictionary.items()
-            if dev in checker_result["used_devices"].values()
-        }
-
-        # Assign to all the devices contained in 'devices_in_plan'
+        # Assign to all the devices contained in 'devices_dictionary'
         # instances of pydantic models
         if self.MetadataType.NEXUS_MD == self.md_type:
-            assign_pydantic_model_instance(devices_in_plan)
+            assign_pydantic_model_instance(self.devices_dictionary)
 
         # Create metadata and inject it into the plan
-        metadata: dict = create_md(devices_in_plan)
+        metadata: dict = create_md(self.devices_dictionary)
+
         if isinstance(metadata, Generator):
             metadata = (yield from metadata) or {}
-        mutated_plan = inject_md_wrapper(plan2, metadata)
+
+        mutated_plan = inject_md_wrapper(plan, metadata)
         return (yield from mutated_plan)
 
 
@@ -496,7 +474,7 @@ def resolve_pre_run_placeholder_value(placeholder: str, device_obj: Device) -> A
 
 
 def get_nested_dict_value(
-    data: dict[str, Any], key_path: list[str]
+    current_level: dict[str, Any], key_path: list[str]
 ) -> Union[Any, None]:
     """Get nested dict value.
 
@@ -504,7 +482,7 @@ def get_nested_dict_value(
     representing the path.
 
     Args:
-        data (dict): The nested dictionary to search.
+        current_level (dict): The nested dictionary to search.
         key_path (list): A list of keys representing the path to the desired
             value. Each key corresponds to a level in the nested dictionary.
 
@@ -513,7 +491,7 @@ def get_nested_dict_value(
         valid, or `None` if any key is missing.
 
     Example:
-        data = {
+        current_level = {
             "a": {
                 "b": {
                     "c": 42
@@ -522,122 +500,11 @@ def get_nested_dict_value(
         }
 
         key_path = ["a", "b", "c"]
-        result = get_nested_value(data, key_path)  # Returns 42
+        result = get_nested_value(current_level, key_path)  # Returns 42
     """
-    current_level = data
     for key in key_path:
         if isinstance(current_level, dict) and key in current_level:
             current_level = current_level[key]
         else:
             return None  # Return None if the path is invalid
     return current_level
-
-
-class PlanDeviceChecker:
-    """Plan device checker.
-
-    Check which of the devices listed in devices_dictionary
-    participate in the plan.
-
-    Returns:
-        - all_devices_used: bool
-        - unused_devices: dict
-        - used_devices: dict
-    """
-
-    def __init__(self, devices_dictionary) -> None:
-        """__init__.
-
-        Initialize with a dictionary of devices and store their names as
-        a set.
-        """
-        self.devices_dictionary = devices_dictionary
-        self.device_names_set = set(
-            devices_dictionary.keys()
-        )  # Set of all device names
-
-    @measure_time
-    def validate_plan_devices(self, plan: Generator) -> dict:
-        """validate_plan_devices.
-
-        Check which devices from self.devices_dictionary are used in
-        the plan. Optimized to stop iterating once all devices have been
-        found.
-
-        Returns:
-            dict: {
-                "all_devices_used": bool,  # True if all devices in
-                    self.devices_dictionary are used
-                "unused_devices": dict,    # Devices in
-                    self.devices_dictionary that are NOT used
-                "used_devices": dict       # Devices in
-                    self.devices_dictionary that are used
-            }
-        """
-        logger.info("Detection of devices in the plan started. Please wait.")
-
-        used_device_names = set()  # To store the names of used devices
-
-        # Step 1: Create the callable to collect devices used in the plan
-        def collect_devices(msg):
-            if msg.obj and msg.obj.name in self.device_names_set:
-                used_device_names.add(msg.obj.name)
-            # Stop iteration if all devices are found
-            if len(used_device_names) == len(self.device_names_set):
-                return None, None
-            return None, None
-
-        # Step 2: Iterate over the plan using the plan_mutator
-        # and collect devices
-        try:
-            list(plan_mutator(plan, collect_devices))  # Trigger iteration process
-        except StopIteration:
-            pass  # Gracefully handle the StopIteration without
-            # causing a RuntimeError
-
-        # Step 3: Create used_devices and unused_devices dictionaries
-        used_devices: dict = {
-            name: self.devices_dictionary[name] for name in used_device_names
-        }
-        logger.debug("Names of devices used in the plan: %s", list(used_devices.keys()))
-
-        unused_devices: dict = {
-            name: self.devices_dictionary[name]
-            for name in self.device_names_set - used_device_names
-        }
-        logger.debug(
-            "Names of devices unused in the plan: %s", list(unused_devices.keys())
-        )
-        # Step 4: Return results
-        logger.info("Detection of devices in the plan finished.")
-
-        return {
-            "all_devices_used": not unused_devices,  # True if all devices
-            # were used
-            "unused_devices": unused_devices,
-            "used_devices": used_devices,
-        }
-
-
-@measure_time
-def cache_plan(
-    plan: Generator,
-) -> Tuple[Generator[Any, Any, Any], Generator[Any, Any, Any]]:
-    """Cache plan.
-
-    Efficiently create two independent iterators from a Bluesky plan
-    while preserving generator behavior.
-
-    Args:
-        plan (generator): The original Bluesky plan.
-
-    Returns:
-        tuple: Two independent generators over the plan.
-    """
-    plan1, plan2 = tee(plan, 2)  # Create two independent iterators
-
-    def wrap_generator(it):
-        for msg in it:  # pylint: disable=use-yield-from
-            yield msg  # Ensures it works like a generator
-
-    return wrap_generator(plan1), wrap_generator(plan2)

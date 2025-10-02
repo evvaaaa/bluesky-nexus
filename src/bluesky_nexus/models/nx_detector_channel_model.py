@@ -23,7 +23,6 @@ Key Features:
 
 # pylint: disable=duplicate-code
 
-
 from typing import Optional
 
 from bluesky_nexus.models.nx_core_models import (
