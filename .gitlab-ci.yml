@@ -1,5 +1,5 @@
 # Define a global default image for all jobs
-image: python:3.10
+image: registry.hzdr.de/hzb/bluesky/core/images/bluesky_container:${BLUESKY_CONTAINER_TAG}
 
 # Define stages
 stages:
@@ -9,11 +9,9 @@ stages:
 pytest:
   stage: test
   before_script:
-    - python -m venv venv # Create virtual environment
-    - source venv/bin/activate # Activate virtual environment
+    - . /home/bluesky/.venv/bin/activate # Activate the bluesky virtual environment
     - pip install --upgrade pip # Upgrade pip before installing dependencies
-    - pip install . # Install the package as a local package
-    - pip install -r requirements.txt # Install dependencies from requirements.txt
+    - uv pip install -e .[dev] # Install the current package in editable mode
     - pip install pytest-html
   script:
     - pytest --html=report.html --junitxml=report.xml -v --capture=fd # Run pytest and generate reports

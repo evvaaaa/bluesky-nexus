@@ -24,6 +24,7 @@ dev = [
   "ophyd",
   "pytest",
   "pre-commit",
+  "pytest-html"
 ]
 
 [tool.ruff]
