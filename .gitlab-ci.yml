@@ -12,7 +12,6 @@ pytest:
     - . /home/bluesky/.venv/bin/activate # Activate the bluesky virtual environment
     - pip install --upgrade pip # Upgrade pip before installing dependencies
     - uv pip install -e .[dev] # Install the current package in editable mode
-    - pip install pytest-html
   script:
     - pytest --html=report.html --junitxml=report.xml -v --capture=fd # Run pytest and generate reports
   artifacts:
