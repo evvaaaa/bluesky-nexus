@@ -1,15 +1,12 @@
 """
-Module: mono.py
-===============
+Module: mono.py.
 
-This module contains the YAML schema definition in form of a yml string for the monochromator,
-which is used for storing and processing data in the Nexus format.
+This module contains the YAML schema definition in form of a yml string for
+the monochromator, which is used for storing and processing data in the Nexus format.
 """
 
-"""
-Mono_nxschema: YAML Schema for Mono
-===================================
-"""
+# Mono_nxschema: YAML Schema for Mono
+# ===================================
 
 Mono_nxschema: str = """
 nx_model: NXmonochromatorModel # pydantic model associated with this schema
@@ -29,7 +26,8 @@ energy: # field: "energy" belongs to NXmonochromator group
     PI: 3.1415
     active: [True, False]
   transformation:
-    expression: 3 * x**2 + np.exp(np.log(5)) + 1 # symbolic expression for the transformation
+    expression: 3 * x**2 + np.exp(np.log(5)) + 1
+    # symbolic expression for the transformation
     target: value # specifies the name of array to which expression is applied
 GRATING: # group: 'GRATING' belongs to NXmonochromator group
   nxclass: NXgrating
@@ -53,7 +51,8 @@ TRANSFORMATIONS: # group: 'TRANSFORMATIONS' belongs to NXmonochromator group
     attr_2: [1.01, 2.02]
   alpha: # field: 'alpha' belongs to group "TRANSFORMATIONS"
     nxclass: NX_CHAR
-    value: $pre-run-md:transformations_axisname # fetch it from the device metadata (happi)
+    value: $pre-run-md:transformations_axisname
+    # fetch it from the device metadata (happi)
     dtype: str
     attrs: # attrs belong to field "AXISNAME"
       units: "um"
@@ -69,7 +68,8 @@ TRANSFORMATIONS: # group: 'TRANSFORMATIONS' belongs to NXmonochromator group
         value: "um"
         dtype: str
       depends_on: # facultative attribute of the AXISNAME
-        value: $pre-run-md:transformations_axisname # fetch it from the device metadata (happi)
+        value: $pre-run-md:transformations_axisname
+        # fetch it from the device metadata (happi)
         dtype: str
       equipment_component: # facultative attribute of "AXISNAME"
         value: "A.71"
@@ -96,7 +96,8 @@ attrs: # attrs belong to NXmonochromator group
   attr_5: True
 
 ###
-### NXmonochromator group allows extra groups/fields that are not explicitly defined in the model
+### NXmonochromator group allows extra groups/fields that are not explicitly
+### defined in the model
 ###
 someGroup: # additional group: "someGroup"
   nxclass: NXsomeClass
@@ -122,12 +123,14 @@ someDataset: # additional dataset: "someDataset"
 # This is a test of the creation:
 # - A group with 6 attributes
 # If you want to run it:
-# - Rename in devices/monochromators/mono.py the parameter passed to decorator from "Mono_nxschema" to "Mono1_nxschema"
-# - Execute test_2 only (in debug mode) with the deactivated function verify_nexus_file()
-"""
-Mono1_nxschema: YAML Schema for Mono1
-====================================================
-"""
+# - Rename in devices/monochromators/mono.py the parameter passed to decorator from
+#   "Mono_nxschema" to "Mono1_nxschema"
+# - Execute test_2 only (in debug mode) with the deactivated function
+#   verify_nexus_file()
+
+# Mono1_nxschema: YAML Schema for Mono1
+# ====================================================
+
 Mono1_nxschema: str = """
 nx_model: NXgeneralModel # pydantic model associated with this schema
 nxclass: NXmonochromator # group: NXmonochromator

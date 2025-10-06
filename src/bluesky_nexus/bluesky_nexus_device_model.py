@@ -1,122 +1,189 @@
-"""Module: bluesky_nexus_device_model
+"""
+Module: bluesky_nexus_device_model.
 
-This module is responsible for instantiating Pydantic models and assigning them to device instances within the Bluesky Nexus framework. The module facilitates the dynamic creation of Pydantic model instances based on schema files, and assigns the resulting model instances to the 'nx_model' attribute of device objects.
+Handles the instantiation and assignment of Pydantic models to device
+instances within the Bluesky Nexus framework.
 
-Functions:
-    - assign_pydantic_model_instance(devices_dictionary: dict): For each device in the provided dictionary, this function assigns a Pydantic model instance based on the pydantic schema associated with the device.
-    - create_model_instance(model_name: str, schema_content: dict) -> object: This function creates a Pydantic model instance based on the given model name and schema content associated with the device. The model is instantiated by mapping the model name to the appropriate Pydantic class and passing the schema content as initialization arguments.
-    - read_attribute(device, attribute_name: str): This function retrieves the value of a specified attribute from a device instance. If the attribute does not exist, it returns None and logs an error message.
+This module enables dynamic creation of Pydantic model instances based
+on schema files and assigns each instance to the `nx_model` attribute
+of a device object. It also provides utilities for reading device
+attributes and managing schema-related errors.
 
-Modules and Constants:
+Functions
+---------
+assign_pydantic_model_instance(devices_dictionary: dict)
+    Assigns a Pydantic model instance to each device in the given
+    dictionary based on the schema associated with the device.
 
-    Imports various utilities, constants, and models related to the Nexus schema and device management, such as DEVICE_CLASS_NX_SCHEMA_ATTRIBUTE_NAME, and Pydantic models.
+create_model_instance(model_name: str, schema_content: dict) -> object
+    Creates a Pydantic model instance by mapping the model name to the
+    corresponding Pydantic class and initializing it with the provided
+    schema content.
 
-Error Handling:
+read_attribute(device, attribute_name: str)
+    Retrieves the value of a specified attribute from a device. Returns
+    None and logs an error if the attribute does not exist.
 
-    Raises ValueError for missing or invalid schema files, missing keys in the schema, or unrecognized model names in the schema content.
+Modules and Constants
+---------------------
+Includes various utilities, constants, and models related to NeXus
+schema and device management, such as
+`DEVICE_CLASS_NX_SCHEMA_ATTRIBUTE_NAME` and Pydantic models.
+
+Error Handling
+--------------
+Raises `ValueError` for missing or invalid schema files, missing keys
+in schemas, or unrecognized model names.
 """
 
 import json
-import os
 
 from bluesky_nexus.bluesky_nexus_const import (
     DEVICE_CLASS_NX_SCHEMA_ATTRIBUTE_NAME,
     DEVICE_INSTANCE_NX_MODEL_ATTRIBUTE_NAME,
     NX_SCHEMA_MODEL_NAME_KEY,
 )
-from bluesky_nexus.common.yaml_utils import read_yaml
-from bluesky_nexus.common.logging_utils import logger
-from bluesky_nexus.models.nx_models import *
+from bluesky_nexus.common.logging_utils import (
+    logger,
+)
+from bluesky_nexus.models.nx_models import (
+    MODEL_NAME_TO_CLASS_MAPPING,
+)
 
 
-def assign_pydantic_model_instance(devices_dictionary: dict):
+def assign_pydantic_model_instance(
+    devices_dictionary: dict,
+):
+    """assign_pydantic_model_instance.
+
+    Assign a Pydantic model instance to each device in the dictionary.
     """
-    For each device in devices_dictionary assign a pydantic model instance to it
-    """
-
     if not devices_dictionary:
         logger.warning(
-            "Assignment of pydantic model instances to devices is not possible since 'devices_dictionary' is empty."
+            "Assignment of pydantic model instances to devices "
+            "is not possible since 'devices_dictionary' is empty."
         )
 
     for dev_instance in devices_dictionary.values():
-        # Each device instance has a schema content that is assigned to it as a attribute 'nx_schema'
+        # Each device instance has a schema content that is assigned
+        # to it as a attribute 'nx_schema'
         schema_content: dict = read_attribute(
-            dev_instance, DEVICE_CLASS_NX_SCHEMA_ATTRIBUTE_NAME
+            dev_instance,
+            DEVICE_CLASS_NX_SCHEMA_ATTRIBUTE_NAME,
         )
 
-        # When pydantic schema is not assigned to the class of the dev_instance (by means of the decorator)
-        if (
-            not schema_content
-        ):  # Triggers for schema_content = None or "" (empty string) or [] (empty list) or {} (empty dict) or 0, 0.0 or False
+        # When pydantic schema is not assigned to the class
+        # of the dev_instance (by means of the decorator)
+        # Triggers for schema_content = None or "" (empty string) or
+        # [] (empty list) or {} (empty dict) or 0, 0.0 or False
+        if not schema_content:
             schema_content = {
                 "nx_model": "NXgeneralModel",
                 "nxclass": f"NX{dev_instance.__class__.__name__.lower()}",
             }
-            schema_content_str: str = json.dumps(
-                schema_content
-            )  # Convert dictionary to JSON string
+            # Convert dictionary to JSON string
+            schema_content_str: str = json.dumps(schema_content)
             logger.warning(
-                f"Pydantic NeXus schema content for device: '{dev_instance.name}' was None or empty. Defaulting to: {schema_content_str}"
+                "Pydantic NeXus schema content for device: '%s' was None or empty. "
+                "Defaulting to: %s",
+                dev_instance.name,
+                schema_content_str,
             )
+
         else:
             logger.debug(
-                f"Pydantic NeXus schema content for device: '{dev_instance.name}' found as expected (it is not None or not empty)."
+                "Pydantic NeXus schema content for device: '%s' found as expected "
+                "(it is not None or not empty).",
+                dev_instance.name,
             )
 
         # Read model name from the schema content
         try:
             model_name = schema_content[NX_SCHEMA_MODEL_NAME_KEY]
-        except KeyError:
+        except KeyError as err:
             raise ValueError(
-                f"The key: {NX_SCHEMA_MODEL_NAME_KEY} not found in a schema file associated with the device: {dev_instance.name}"
-            )
+                f"The key: {NX_SCHEMA_MODEL_NAME_KEY} not found "
+                f"in a schema file associated with "
+                f"the device: {dev_instance.name}"
+            ) from err
 
         # Create instance of the pydantic model
-        model_instance: object = create_model_instance(model_name, schema_content)
+        model_instance: object = create_model_instance(
+            model_name,
+            schema_content,
+        )
 
         # Dynamically assign the attribute to the object
-        setattr(dev_instance, DEVICE_INSTANCE_NX_MODEL_ATTRIBUTE_NAME, model_instance)
+        setattr(
+            dev_instance,
+            DEVICE_INSTANCE_NX_MODEL_ATTRIBUTE_NAME,
+            model_instance,
+        )
 
 
-def create_model_instance(model_name, schema_content) -> object:
+def create_model_instance(
+    model_name,
+    schema_content,
+) -> object:
+    """create_model_instance.
+
+    Create a model instance based on the model name and schema
+    content.
+
+    Returns
+    -------
+    object
+        The instantiated model.
     """
-    Create a model instance based on the model_name and the content of the schema
-    Return the model instance
-    """
-
     # Check if the model_name corresponds to one of the classes in the mapping
     if model_name in MODEL_NAME_TO_CLASS_MAPPING:
         # Instantiate the model class.
-        # **schema_content unpacks the dictionary schema_content and passes each key-value pair as keyword arguments to the constructor of the class.
+        # **schema_content unpacks the dictionary schema_content
+        # and passes each key-value pair as keyword arguments
+        # to the constructor of the class.
         model_instance: object = MODEL_NAME_TO_CLASS_MAPPING[model_name](
             **schema_content
         )
         return model_instance
-    else:
-        raise ValueError(
-            f"Class with name {model_name} not found in MODEL_NAME_TO_CLASS_MAPPING! Check the content of 'MODEL_NAME_TO_CLASS_MAPPING' in the file: 'bluesky_nexus.models.pydantic_models_hzb'"
-        )
+
+    raise ValueError(
+        f"Class with name {model_name} not found in "
+        f"MODEL_NAME_TO_CLASS_MAPPING! Check the content "
+        f" of 'MODEL_NAME_TO_CLASS_MAPPING' in the file: "
+        f"'bluesky_nexus.models.nx_models'"
+    )
 
 
-def read_attribute(device, attribute_name):
-    """
-    Reads the value of a specified attribute from a device instance.
+def read_attribute(
+    device,
+    attribute_name,
+):
+    """Read the value of a specified attribute from a device instance.
 
-    Parameters:
-        device (object): The device instance.
-        attribute_name (str): The name of the attribute to read.
+    Parameters
+    ----------
+    device : object
+        The device instance.
+    attribute_name : str
+        The name of the attribute to read.
 
-    Returns:
-        The value of the attribute if it exists, or None if the attribute does not exist.
+    Returns
+    -------
+    Any
+        The value of the attribute if it exists, otherwise None.
     """
     try:
         # Attempt to retrieve the attribute's value
-        value = getattr(device, attribute_name)
+        value = getattr(
+            device,
+            attribute_name,
+        )
         return value
     except AttributeError:
         # Handle case where the attribute does not exist
-        logger.exception(
-            f"Attribute '{attribute_name}' does not exist on the device {device.name}."
+        logger.warning(
+            "Attribute '%s' does not exist on the device %s.",
+            attribute_name,
+            device.name,
         )
         return None

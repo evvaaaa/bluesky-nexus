@@ -1,38 +1,46 @@
 [build-system]
 requires = ["setuptools", "setuptools-scm"]
 build-backend = "setuptools.build_meta"
+
 [project]
 name = "bluesky_nexus"
-version = "1.0.0"
+dynamic = ["version"]
 description = "Generation of the NeXus file from a blusky run using pydantic schema-model approach."
 keywords = ["bluesky", "nexus", "hdf5", "data-science", "pydantic"]
 authors = [
-    { name = "Daniel Tomecki", email = "daniel.tomecki@helmholtz-berlin.de" },
+  { name = "Daniel Tomecki", email = "daniel.tomecki@helmholtz-berlin.de" },
 ]
 license = { file = "LICENSE" }
-
 requires-python = ">=3.10"
-dependencies = [
-    "babel~=2.10",
-    "beautifulsoup4>=4.11.0,<5.0.0",
-    "bluesky>=1.13",
-    "click>=7.0",
-    "colorama~=0.4",
-    "fonttools>=4.22.0",
-    "h5py==3.12.1",
-    "jinja2>=2.11.1,<4.0.0",
-    "kiwisolver>=1.3.1",
-    "markupsafe>=2.0.1",
-    "mkdocs==1.6.1",
-    "mkdocs-drawio-file==1.5.2",
-    "mkdocs-material==9.5.38",
-    "numpy",
-    "ophyd==1.9.0",
-    "pillow>=8",
-    "pyparsing>=2.3.1",
-    "pydantic==2.10.4",
-    "PyYAML==6.0.2",
-    "requests>=2.27.1,<3.0.0",
-]
+dependencies = ["bluesky", "h5py", "numpy", "pydantic", "PyYAML"]
+
+[tool.setuptools_scm]
+version_file = "src/bluesky_nexus/_version.py"
+
 [project.optional-dependencies]
-dev = ["pytest>=8.3.4"]
+dev = [
+  "ruff",
+  # For tests
+  "ophyd",
+  "pytest",
+  "pre-commit",
+  "pytest-html"
+]
+
+[tool.ruff]
+line-length = 88
+fix = true
+target-version = "py310"
+
+[tool.ruff.lint]
+extend-select = [
+  "D", # pydocstyle rules (PEP 257)
+  "E", # pycodestyle errors (PEP 8)
+  "W", # pycodestyle warnings (PEP 8)
+  "F", # pyflakes
+  "I", # isort
+  "B", # flake8-bugbear
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "pep257"

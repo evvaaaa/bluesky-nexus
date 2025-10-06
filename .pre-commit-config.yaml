@@ -1,0 +1,47 @@
+default_language_version:
+  python: python3.10
+
+repos:
+  # 🧹 Basic cleanup:
+  #   - removes trailing whitespace,
+  #   - ensures newline at EOF,
+  #   - blocks large files
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-added-large-files
+
+  # 🧾 Auto-formatting of docstrings to follow PEP 257 and wrap text neatly
+  - repo: https://github.com/PyCQA/docformatter
+    rev: v1.7.7
+    hooks:
+      - id: docformatter
+        args: ["--in-place", "--wrap-summaries=72", "--wrap-descriptions=72"]
+
+  # 🕵️ Fast Python linter and fixer (combines features of many other tools)
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.13.2
+    hooks:
+      # Run the linter.
+      - id: ruff-check
+        args: [--fix]
+      # Run the formatter.
+      - id: ruff-format
+
+  # 🔒 Security scanner for Python code to catch common vulnerabilities
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.8
+    hooks:
+      - id: bandit
+        args: ["-ll"] # 'low' severity threshold; adjust as needed
+
+  # 🧪 Static type checker for Python (enforces type hints via mypy)
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.15.0
+    hooks:
+      - id: mypy
+        additional_dependencies:
+          - types-PyYAML
+        exclude: ^ioc/

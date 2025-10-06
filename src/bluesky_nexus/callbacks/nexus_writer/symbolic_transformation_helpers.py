@@ -1,5 +1,4 @@
-"""
-symbolic_transformation.py
+"""symbolic_transformation.py.
 
 This module provides functionality for applying symbolic transformations to NumPy arrays
 using dynamically evaluated mathematical expressions. It enables users to define complex
@@ -27,15 +26,35 @@ from bluesky_nexus.common.logging_utils import logger
 
 
 class ExpressionEvaluationError(ValueError):
+    """ExpressionEvaluationError.
+
+    Exception raised when an error occurs during the evaluation of an expression.
+
+    This exception logs the provided error message immediately upon instantiation,
+    and inherits from `ValueError`.
+
+    Args:
+        message (str): A description of the error that occurred during expression
+        evaluation.
+    """
+
     def __init__(self, message: str):
+        """__init__.
+
+        Initialize the ExpressionEvaluationError.
+
+        Logs the error message upon creation and passes it to the base `ValueError`.
+
+        Args:
+            message (str): A description of the evaluation error.
+        """
         # Log the exception as soon as it's created
         logger.exception(message)
         super().__init__(message)  # Call the base class constructor
 
 
 def apply_symbolic_transformation(array: np.ndarray, expression: str) -> np.ndarray:
-    """
-    Apply a symbolic transformation to a NumPy array.
+    """Apply a symbolic transformation to a NumPy array.
 
     Args:
         array (np.ndarray):
@@ -68,16 +87,33 @@ def apply_symbolic_transformation(array: np.ndarray, expression: str) -> np.ndar
         array([  8,  17,  32,  53])
     """
     # Define a safe evaluation environment
+
+    # pylint: disable=too-few-public-methods
+    class SafeNumpy:
+        """Namespace for safe NumPy functions allowed.
+
+        in symbolic expressions.
+        """
+
+        sqrt = np.sqrt
+        exp = np.exp
+        log = np.log
+        sin = np.sin
+        cos = np.cos
+
     safe_globals = {
-        "__builtins__": None,  # Disable built-ins for safety
-        "np": np,  # Allow NumPy functions
+        "__builtins__": None,
+        # disables all dangerous built-in functions like open, eval, exec, import
+        "np": SafeNumpy,
+        # makes your custom safe subset of NumPy accessible to the expression
     }
 
     # 'x' represents the array in the expression
     x = array
     try:
         # Evaluate the expression in the restricted environment
-        result = eval(expression, safe_globals, {"x": x})
+        # pylint: disable=eval-used
+        result = eval(expression, safe_globals, {"x": x})  # nosec
     except Exception as e:
         raise ExpressionEvaluationError(
             f"Failed to evaluate expression '{expression}'"
