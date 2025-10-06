@@ -1,5 +1,5 @@
 # Define a global default image for all jobs
-image: registry.hzdr.de/hzb/bluesky/core/images/bluesky_container:v1.4.1
+image: registry.hzdr.de/hzb/bluesky/core/images/bluesky_container:${BLUESKY_CONTAINER_TAG}
 
 # Define stages
 stages:
@@ -23,4 +23,3 @@ pytest:
   only:
     - main # Run this job only when changes are pushed to the main branch
     - develop # Also run this job when changes are pushed to the develop branch
-    - pipeline_nexus # Also run this job for the pipeline_nexus branch
