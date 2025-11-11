@@ -8,6 +8,9 @@
   - [Pydantic schema and model capabilities](#pydantic-schema-and-model-capabilities)
     - [Example of schema yml file](#example-of-schema-yml-file)
   - [Rules concerning definition of a groups, datasets and their attributes in the schema yml file](#rules-concerning-definition-of-a-groups-datasets-and-their-attributes-in-the-schema-yml-file)
+    - [Group](#group)
+    - [Dataset](#dataset)
+    - [Group \& Dataset — Definition of Attributes and Attrs](#group--dataset--definition-of-attributes-and-attrs)
   - [Role of the schema with the model](#role-of-the-schema-with-the-model)
     - [Example of model class](#example-of-model-class)
   - [Unit definition strategy](#unit-definition-strategy)
@@ -216,37 +219,49 @@ someDataset: # additional dataset: "someDataset"
 
 ## Rules concerning definition of a groups, datasets and their attributes in the schema yml file
 
-Elements of a group:
+### Group
 
-- definition of `nxclass`: mandatory. This is a name of the group equivalent to the name of the NeXus base class defining this group. E.g. NXmonochromator, NXgrating, NXtransformations, etc.
-- definition of `attributes`: facultative and applicable only if attributes are defined at the group level by the NeXus base class of the group. Attributes at the group level are associated with the group.
-- definition of datasets: facultative and applicable as defined by the NeXus base class defining the group
-- definition of `attrs`: facultative arbitrary attributes at the group level defined by the user and not by the the NeXus base class of the group. The input is not validated by the pydantic model since not defined by the NeXus base class of the group. Attributes at the group level are associated with the group.
+**Elements of a group:**
 
-Elements of a dataset:
+- **`nxclass`** — **mandatory**: Name of the group equivalent to the name of the NeXus base class defining this group. E.g. NXmonochromator, NXgrating, NXtransformations, etc.
+- **`attributes`** — *facultative*: applicable only if attributes are defined at the group level by the NeXus base class of the group. Attributes at the group level are associated with the group.
+- **datasets** — *facultative*: applicable as defined by the NeXus base class defining the group
+- **`attrs`**: *facultative*: arbitrary attributes at the group level defined by the user and not by the the NeXus base class of the group. The input is not validated by the pydantic model since not defined by the NeXus base class of the group. Attributes at the group level are associated with the group.
 
-- definition of `nxclass`: mandatory, defined in the the NeXus base class of the group the dataset belongs to, e.g. NX_FLOAT, NX_INT, NX_CHAR ...
-- definition of `value`: mandatory placeholder for addressing the device component from which the data is to be retrieved from bluesky documents once the bluesky run is done.
-- definition of `dtype`: obligatory in case the device component does not provide data type information. If device provides data type information the user can still force/overwrite the data type for the dataset to be written to the NeXus file by defining explicitelly the `dtype`, e.g. float64, int32, str, bool ...
-- definition of `attributes`: facultative and applicable only if attributes are defined at the dataset level by the NeXus base class of the group the dataset belongs to. Attributes at the dataset level are associated with the dataset.
-- definition of `attrs`: facultative, arbitrary attributes at the dataset level defined by the user and not by the the NeXus base class of the group the dataset belongs to. The input is not validated by the pydantic model since it is not defined by the NeXus base class of the group the dataset belongs to. Attributes at the datset level are associated with the dataset.
-- definition of `transformation`: applicable if transformation of the numerical value/values provided by the device component is required before writting it/them to the NeXus file.
+### Dataset
 
-Elements of `attributes` defined at the group or dataset level:
+The name of a field/dataset should correspond to the **name defined in the NeXus base class** of the group it belongs to.
+For example:
 
-- `value`: mandatory placeholder for addressing the device component from which the data is to be retrieved from bluesky documents once the bluesky run is done. Instead of the placeholder it can also be a scalar value.
+- `energy` in case of `NXmonochromator`
+- `value` in case of `NXpositioner`
+
+**Elements of a dataset:**
+
+- **`nxclass`** — **mandatory**: Defined in the the NeXus base class of the group the dataset belongs to, e.g. NX_FLOAT, NX_INT, NX_CHAR ...
+- **`value`** — **mandatory**: Placeholder for addressing the device component from which the data is to be retrieved from bluesky documents once the bluesky run is done.
+- **`dtype`** — **mandatory** in case the device component does not provide data type information. If device provides data type information the user can still force/overwrite the data type for the dataset to be written to the NeXus file by defining explicitly the `dtype`, e.g. float64, int32, str, bool ...
+- **`attributes`** — *facultative*: Applicable only if attributes are defined at the dataset level by the NeXus base class of the group the dataset belongs to. Attributes at the dataset level are associated with the dataset.
+- **`attrs`** — *facultative*: Arbitrary attributes at the dataset level defined by the user and not by the the NeXus base class of the group the dataset belongs to. The input is not validated by the pydantic model since it is not defined by the NeXus base class of the group the dataset belongs to. Attributes at the dataset level are associated with the dataset.
+- **`transformation`** — *facultative*: Applicable if transformation of the numerical value/values provided by the device component is required before writing it/them to the NeXus file.
+
+### Group & Dataset — Definition of Attributes and Attrs
+
+**Elements of `attributes`** defined at the group or dataset level:
+
+- `value`: **mandatory**: Placeholder for addressing the device component from which the data is to be retrieved from bluesky documents once the bluesky run is done. Instead of the placeholder it can also be a scalar value.
 - `dtype`:
-  - if `value` defines a placeholder: obligatory in case the device component does not provide data type information. If device provides data type information the user can still force/overwrite the data type for the attribute to be written to the NeXus file by defining explicitelly the `dtype`, e.g. float64, int32, str, bool ...
-  - if `value` defines a fixed scalar value: obligatory, i.e. str, float64, int32 ...
+  - if `value` defines a placeholder: **mandatory** in case the device component does not provide data type information. If device provides data type information the user can still force/overwrite the data type for the attribute to be written to the NeXus file by defining explicitly the `dtype`, e.g. float64, int32, str, bool ...
+  - if `value` defines a fixed scalar value: **mandatory**, i.e. str, float64, int32 ...
 
-The “attrs” defined by the user at group or dataset level are saved in the NeXus file according to the following rules:
+**Elements of `attrs`** defined by the user at group or dataset level are saved in the NeXus file according to the following rules
 
-- dictionary is converted to a JSON string and saved as variable-length UTF-8 string value
-- string is saved as variable-length UTF-8 string value
-- integer is saved as int64 value
-- float is saved as float64 value
-- bool is saved as uint8 value
-- list of floats/integers/bools is saved as numpy array of float64/int64/uint8 values
+- A **dictionary** is converted to a JSON string and saved as variable-length UTF-8 string value.
+- A **string** is saved as variable-length UTF-8 string value.
+- An **integer** is saved as `int64` value.
+- A **float** is saved as `float64` value
+- A **bool** is saved as `uint8` value
+- A **list** of floats, integers or booleans is saved as NumPy array of `float64`, `int64`, or `uint8` values, respectively.
 
 ---
 
