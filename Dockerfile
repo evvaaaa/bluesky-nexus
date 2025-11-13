@@ -55,4 +55,4 @@ RUN uv pip install --system --no-cache-dir . \
 RUN mkdir -p /data /logs
 
 # ---- Run dispatcher on when container starts ----
-CMD ["python", "scripts/start_nexus_writer_dispatcher.py"]
+CMD ["python", "scripts/start_bluesky_nexus_writer_dispatcher.py"]
