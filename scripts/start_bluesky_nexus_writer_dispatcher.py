@@ -3,22 +3,20 @@
 This module launches a standalone process that listens to a Bluesky ZeroMQ
 publisher and writes NeXus files for all incoming documents. It uses the
 `NexusWriter` from `bluesky_nexus` and automatically resolves the output
-directory via `get_nx_file_dir_path()`. It also configures an optional,
-high-granularity NeXus logging system.
+directory via `get_nx_file_dir_path()`.
 
-Environment variables control the runtime behavior:
+It also configures an optional high-granularity NeXus logging system.
 
-- **ZMQ_IP** (required): IP address of the ZeroMQ publisher.
-- **ZMQ_PORT** (required): Port of the ZeroMQ publisher.
-- **NX_FILE_DIR_PATH** (implicit): Resolved via `get_nx_file_dir_path()`.
-- **NX_LOG_FILE_DIR_PATH** (implicit): Resolved via `get_nx_log_file_dir_path()`.
-- **OPHYD_CPT_NAME_DELIMITER** (optional): Custom delimiter for addressing
+Environment variables use leading underscores:
+- _ZMQ_IP                   (required): IP address of the ZeroMQ publisher.
+- _ZMQ_PORT                 (required): Port of the ZeroMQ publisher.
+- _NX_FILE_DIR_PATH         (required): Used internally by `get_nx_file_dir_path()`.
+- _NX_LOG_FILE_DIR_PATH     (required): Used internally by `get_nx_log_file_dir_path()`.
+- _OPHYD_CPT_NAME_DELIMITER (optional): Custom delimiter for addressing
   component names inside Bluesky documents. If not set, ``_`` (underscore)
   is assumed as the default by the writer.
 
 Logging Configuration:
-
-1. **Logging Initialization**
    - A NeXus logger is initialized via ``setup_nx_logger`` with optional
      console and file handlers.
    - Logging supports configurable formatting, separate verbosity levels for
@@ -28,7 +26,6 @@ Logging Configuration:
      ``get_nx_log_file_dir_path()``.
 
 Workflow:
-
 1. Read and validate all required environment variables.
 2. Configure the NeXus logging system using ``setup_nx_logger``.
 3. Instantiate the `NexusWriter`, optionally applying the component-name delimiter.
@@ -62,22 +59,22 @@ def main():
     files until interrupted (Ctrl+C).
     """
     # Read env vars
-    ophyd_cpt_name_delimiter = os.environ.get("OPHYD_CPT_NAME_DELIMITER")
-    zmq_ip = os.environ.get("ZMQ_IP")
-    zmq_port = os.environ.get("ZMQ_PORT")
+    ophyd_cpt_name_delimiter = os.environ.get("_OPHYD_CPT_NAME_DELIMITER")
+    zmq_ip = os.environ.get("_ZMQ_IP")
+    zmq_port = os.environ.get("_ZMQ_PORT")
 
     nx_file_dir_path = get_nx_file_dir_path()
     nx_log_file_dir_path = get_nx_log_file_dir_path()
 
     # Validate env vars
     if not zmq_ip:
-        raise EnvironmentError("Environment variable 'ZMQ_IP' is not set.")
+        raise EnvironmentError("Environment variable '_ZMQ_IP' is not set.")
     if not zmq_port:
-        raise EnvironmentError("Environment variable 'ZMQ_PORT' is not set.")
+        raise EnvironmentError("Environment variable '_ZMQ_PORT' is not set.")
     if not nx_file_dir_path:
-        raise EnvironmentError("'NX_FILE_DIR_PATH' missing or invalid.")
+        raise EnvironmentError("'_NX_FILE_DIR_PATH' missing or invalid.")
     if not nx_log_file_dir_path:
-        raise EnvironmentError("'NX_LOG_FILE_DIR_PATH' missing or invalid.")
+        raise EnvironmentError("'_NX_LOG_FILE_DIR_PATH' missing or invalid.")
 
     print(f"NeXus output directory: {nx_file_dir_path}")
 
