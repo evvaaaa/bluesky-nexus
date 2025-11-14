@@ -18,10 +18,10 @@
 #   - To persist output and logs, mount host directories using `-v` bindings.
 #
 # How to build the image:
-#    docker build --no-cache -t bluesky_nexus_container:latest .
+#    docker build --no-cache -t bluesky_nexus_writer:latest .
 #
 # How to start the container:
-#    Please execute the provided script 'start_bluesky_nexus_container.sh'
+#    Please execute the provided script 'scripts/start_bluesky_nexus_container.sh'
 #
 # -----------------------------------------------------------------------------
 
