@@ -59,7 +59,7 @@ def main():
     files until interrupted (Ctrl+C).
     """
     # Read env vars
-    ophyd_cpt_name_delimiter = os.environ.get("_OPHYD_CPT_NAME_DELIMITER")
+    cpt_name_delimiter = os.environ.get("_CPT_NAME_DELIMITER")
     zmq_ip = os.environ.get("_ZMQ_IP")
     zmq_port = os.environ.get("_ZMQ_PORT")
 
@@ -93,13 +93,13 @@ def main():
         enable_console=True,
         enable_file=True,
     )
-    if ophyd_cpt_name_delimiter:
-        print(f"Using ophyd CPT name delimiter: {ophyd_cpt_name_delimiter}")
+    if cpt_name_delimiter:
+        print(f"Using ophyd device component name delimiter: {cpt_name_delimiter}")
 
         # Create Nexus writer
         nexus_writer = NexusWriter(
             nx_file_dir_path=nx_file_dir_path,
-            cpt_name_delimiter=ophyd_cpt_name_delimiter,
+            cpt_name_delimiter=cpt_name_delimiter,
         )
     else:
         # Create Nexus writer
