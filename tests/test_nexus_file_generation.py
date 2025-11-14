@@ -577,11 +577,14 @@ def test_1(
         "NX_abc",
         {"a": 1, "b": 2, "c": {"d": 3, "e": 4}},
     )
+    # Nexus writer creates additional directories if 'base_name' or 'exp_name' found
+    # in the metadata
+    md["base_name"] = "feu"
+    md["exp_name"] = "chatterton"
 
     callback_file_path = get_callback_file_path(
         _callback_file_dir_path, f"callback_file_{request.node.name}.json"
     )
-
     # Execute plan and write generated documents to a json file
     # using 'WriteToFileFormattedCallback'
     with WriteToFileFormattedCallback(callback_file_path) as callback_writer:
@@ -591,7 +594,9 @@ def test_1(
         )
 
     # Define Nexus file path
-    nx_file_path: str = get_nx_file_path(_nx_file_dir_path, nx_file_name)
+    nx_file_path: str = get_nx_file_path(
+        _nx_file_dir_path + "/" + md["base_name"] + "/" + md["exp_name"], nx_file_name
+    )
 
     # Assert file creation
     assert os.path.exists(nx_file_path), (
