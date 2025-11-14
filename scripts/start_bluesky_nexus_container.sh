@@ -40,7 +40,7 @@
 
 # --- Configuration -----------------------------------------------------------
 CONTAINER_NAME="bluesky_nexus_writer"
-declare -r IMAGE_NAME="bluesky_nexus_container"
+declare -r IMAGE_NAME="bluesky_nexus_writer"
 
 # Host directories (change if needed)
 HOST_DATA_DIR="$HOME/nexus_output"
@@ -77,6 +77,7 @@ fi
 
 docker run -d \
   --restart unless-stopped \
+  --network host \
   --name "$CONTAINER_NAME" \
   --env _NX_FILE_DIR_PATH="$CONTAINER_DATA_DIR" \
   --env _NX_LOG_FILE_DIR_PATH="$CONTAINER_LOG_DIR" \
