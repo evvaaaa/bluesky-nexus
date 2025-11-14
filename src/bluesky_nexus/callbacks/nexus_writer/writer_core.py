@@ -1,57 +1,25 @@
-"""Module for Creating and Writing NeXus Files.
+"""NeXus Writer Module for Bluesky Runs.
 
-This module contains functions for generating NeXus files in the HDF5
-format using a dictionary-based approach. The functions allow the
-creation of a hierarchical structure within the NeXus file, with
-special handling for specific NeXus groups such as 'instrument' and
-'run_info'. The module supports various types of data, including
-simple values, lists, and more complex nested structures.
+This module provides the core functionality to create NeXus files in HDF5
+format based on Bluesky run documents (start, event, descriptor, stop).
+It implements the logic used by the `NexusWriter` callback, including:
 
-Functions provided in this module include:
+    • extracting run information
+    • processing NeXus metadata templates (nexus_md)
+    • resolving $post-run placeholders using descriptors and events
+    • filtering out unused devices based on descriptors
+    • constructing standardized NeXus file paths and filenames
+    • writing the NeXus hierarchy (NXentry, NXinstrument, NXcollection)
+    • automatic directory creation for base_name/exp_name
 
-- `extract_run_info(start: dict, stop: dict) -> dict`: Extracts
-  relevant information from the start and stop documents and returns
-  a dictionary containing the relevant data.
-- `create_nexus_file(file_path, data_dict)`: Creates a NeXus file at
-  the specified file path using the provided data dictionary,
-  handling groups and datasets based on the NeXus standard.
-- `add_group_or_field(group, data)`: Recursively adds groups or
-  datasets to a NeXus file based on the provided data, supporting
-  nested structures and various data types.
-- `write_collection(group, data: dict)`: Recursively writes a
-  collection of data (nested dictionaries, lists, and primitive
-  values) to a given group in the NeXus file, handling different data
-  types appropriately.
-
-The module ensures that valid data types are used for fields and
-datasets, and it validates input to avoid errors in the NeXus file
-structure. It is intended for use cases where NeXus data needs to be
-programmatically created and stored in HDF5 format, with support for
-complex data types and nested hierarchies.
-
-Example Usage:
-
-    # Example of using the module to create a NeXus file
-    data = {
-        "instrument": {"mono": {"NX_class": "NXmonochromator",
-                               "value": 123.4}},
-        "run_info": {"start_time": "2023-12-01T12:00:00"},
-    }
-    create_nexus_file("example.nxs", data)
-
-Notes:
-    - The module expects the provided data dictionary to be
-      well-structured according to the NeXus format.
-    - Special handling for fields like 'events_cpt_timestamps' and
-      'events_timestamps' is included.
-    - Error handling is in place to manage invalid data types and
-      unsupported structures.
+The module follows the NeXus standard and produces files suitable for
+data archival and beamline data workflows.
 """
 
 import copy
-import os
 from collections import deque
 from functools import partial
+from pathlib import Path
 from typing import Any, Deque, Dict
 
 import h5py  # type: ignore
@@ -74,31 +42,30 @@ from bluesky_nexus.common.version_utils import log_package_version
 
 
 class NexusWriter(CollectThenCompute):
-    """NexusWriter.
+    """Callback that builds NeXus files from Bluesky run documents.
 
-    This class handles the extraction of relevant metadata from the documents
-    (start, stop, event, and descriptor documents), processes it,
-    and generates a NeXus file in HDF5 format. It is designed to work within
-    a data collection pipeline, that interacts with a RunEngine and manages
-    data collection, processing, and file writing.
+    The NexusWriter collects metadata and data from the RunEngine
+    (start, descriptor, event, and stop documents), processes NeXus metadata
+    templates (`nexus_md`), resolves $post-run placeholders, filters out devices
+    not used in the run, constructs the output directory and filename, and
+    finally generates a valid NeXus file in HDF5 format.
 
-    Inherits from:
-        CollectThenCompute
+    Key responsibilities:
+        - Collect run documents through the Bluesky callback interface.
+        - Filter device metadata to include only devices present in descriptors.
+        - Resolve post-run metadata placeholders using descriptors and events.
+        - Create hierarchical directories based on `base_name` and `exp_name`.
+        - Construct standardized filenames:
+              {scan_id:04d}_{plan_name}_{uid8}.nx
+        - Write NeXus groups: NXentry, NXinstrument, NXcollection.
 
-    Parameters:
-        nx_file_dir_path (str): Path to the directory where NeXus files
-            will be saved.
-        cpt_name_delimiter (str): Delimiter for device component
-            names applied in bluesky documents. Per default: "_", valid
-            for ophyd devices.
-
-    Public Methods:
-        - __call__(name, doc): Handles incoming documents from the RunEngine,
-        processing them based on their type ('start', 'stop', etc.).
-        - create_nx_file_path(dir_path, file_name): Constructs and validates
-            the NeXus file path.
-        - compute(): Entry point to trigger NeXus file generation.
-        - generate_nexus_file(): Extracts metadata and writes the NeXus file.
+    Parameters
+    ----------
+    nx_file_dir_path : str
+        Base directory where NeXus files are stored.
+    cpt_name_delimiter : str, optional
+        Delimiter separating component names in device keys.
+        Default is "_" (standard for Ophyd).
     """
 
     def __init__(self, nx_file_dir_path: str, cpt_name_delimiter: str = "_") -> None:
@@ -114,34 +81,45 @@ class NexusWriter(CollectThenCompute):
         log_package_version()
 
     def descriptor(self, doc: dict) -> None:
-        """Handle descriptors for selected streams."""
+        """Handle descriptor documents for streams relevant to NeXus.
+
+        output.
+
+        Only descriptors from the "primary" or "baseline" streams are
+        collected. Other streams are ignored for NeXus file generation.
+        """
         if doc["name"] in ("primary", "baseline"):
             super().descriptor(doc)
 
     def event(self, doc: dict) -> None:
-        """Handle events corresponding to accepted descriptors."""
+        """Handle event documents belonging to previously accepted.
+
+        descriptors.
+
+        Events are processed only if their descriptor UID matches one of
+        the stored descriptors handled by `descriptor()`.
+        """
         if doc["descriptor"] in (d["uid"] for d in self._descriptors):
             super().event(doc)
 
     # pylint: disable=signature-differs
     def __call__(self, name: str, doc: dict) -> None:
-        """Call.
+        """Dispatch Bluesky documents to their appropriate handlers.
 
-        Handle documents from the RunEngine and delegate them to
-        the appropriate methods based on the document type.
+        Parameters
+        ----------
+        name : str
+            Document type, such as "start", "descriptor", "event", or "stop".
+        doc : dict
+            Document content emitted by the RunEngine.
 
-        Parameters:
-            name (str): The type of the document (e.g., 'start', 'stop',
-                'descriptor', 'event').
-            doc (dict): The content of the document, which is passed to the
-                corresponding method for processing (e.g., start document,
-                event data, etc.).
-
-        Notes:
-            - The method ensures that documents are processed in the correct
-            sequence (start -> descriptor -> event -> stop).
-            - This method delegates the responsibility of handling each
-                document type to specific class methods.
+        Notes
+        -----
+        This method ensures proper ordering and delegates to:
+            - start()
+            - descriptor()
+            - event()
+            - stop()
         """
         if name == "start":
             self.start(doc)
@@ -152,62 +130,95 @@ class NexusWriter(CollectThenCompute):
         elif name == "stop":
             self.stop(doc)
 
-    def create_nx_file_path(self, dir_path: str, file_name: str) -> str:
-        """Create nx_file_path.
+    def create_nx_file_path(self, dir_path_str: str) -> Path:
+        """Construct the full NeXus file path for the current.
 
-        Creates a valid file path for the NeXus file, ensuring the directory
-        exists and the file name adheres to the expected format.
+        Bluesky run.
 
-        Parameters:
-            dir_path (str): The directory path where the NeXus file will
-            be saved. file_name (str): The desired name of the NeXus file.
-            If None or empty, a name will be auto-generated using the UID
-            from the start document.
+        This method builds the hierarchical directory structure and the final
+        NeXus filename using metadata from the start document. It ensures that all
+        directories exist and that the filename adheres to the naming scheme used
+        by the NexusWriter.
 
-        Returns:
-            str: The complete file path for the NeXus file.
+        Directory layout:
+            {nx_file_dir_path}/{base_name}/{exp_name}/
 
-        Raises:
-            ValueError: If the provided directory path is not a
-            valid directory.
+        Filename format:
+            {scan_id:04d}_{plan_name}_{uid8}.nx
 
-        Notes:
-            - If the file name is not provided, it defaults to a generated
-            name based on the UID in the start document with the proper NeXus
-            file extension.
-            - If the file name contains "{uid}", it is replaced with the UID
-            from the start document.
-            - The file name will always have the NeXus file extension appended
-            if not already present.
+            - scan_id is zero-padded to 4 digits (e.g., 15 → "0015")
+            - uid8 is the first 8 characters of the UID with all dashes removed
+            - plan_name is taken from the start document
+            - If `nx_file_name` is provided in the metadata, it overrides the
+            auto-generated name (extension is appended if missing)
+
+        Parameters
+        ----------
+        dir_path_str : str
+            Base directory where the NeXus file hierarchy should be created.
+
+        Returns
+        -------
+        Path
+            Full path to the NeXus file, guaranteed to be located inside the
+            auto-created directory tree.
+
+        Raises
+        ------
+        ValueError
+            If the base directory path does not exist.
+
+        Notes
+        -----
+        - Directories `{base_name}` and `{exp_name}` are created automatically.
+        - The `.nx` extension is appended if missing.
+        - This function does not open or write the file; it only returns a valid path.
         """
-        # Check if 'dir_path' is pointing to existing directory
-        if not os.path.isdir(dir_path):
-            raise ValueError(
-                f"Nexus dir path {dir_path} is not pointing to a directory."
-            )
+        # Convert the dir path string to Path
+        dir_path: Path = Path(dir_path_str)
 
-        # Check if 'file_name' is not None or not empty string
-        if file_name is None or not file_name.strip():
-            file_name = self._start_doc["uid"]
-            file_name = file_name + NX_FILE_EXTENSION
-            logger.warning(
-                "Nexus file name not defined by the user. Nexus file name "
-                "automatically generated to '%s'",
-                file_name,
-            )
+        # Check if 'dir_path' is pointing to existing directory
+        if not dir_path.is_dir():
+            raise ValueError(f"Nexus dir path {dir_path} is not a directory.")
+
+        # Extract 'base_name' from metadata passed to the run
+        base_name: str = self._start_doc.get("base_name", None)
+        if base_name and base_name.strip():
+            dir_path = dir_path / base_name.strip()
+
+        # Extract 'exp_name' from metadata passed to the run
+        exp_name: str = self._start_doc.get("exp_name", None)
+        if exp_name and exp_name.strip():
+            dir_path = dir_path / exp_name.strip()
+
+        # Create the directories if they do not exist
+        dir_path.mkdir(parents=True, exist_ok=True)
+
+        # Retrieve nexus file name from metadata passed to the run
+        nx_file_name: str = self._start_doc.get("nx_file_name", None)
+
+        if nx_file_name and nx_file_name.strip():
+            file_name = nx_file_name.strip()
+        else:
+            # Auto-generate filename
+            scan_id: int = self._start_doc["scan_id"]
+            plan_name: str = self._start_doc["plan_name"]
+            uid: str = self._start_doc["uid"]
+
+            # Format scan_id to 4 digits
+            scan_id_str = f"{scan_id:04d}"
+
+            # Take only the first 8 characters of the UID (remove "-")
+            uid_short = uid.replace("-", "")[:8]
+
+            # Construct the file name
+            file_name = f"{scan_id_str}_{plan_name}_{uid_short}"
 
         # Add extension to file name
         if not file_name.endswith(NX_FILE_EXTENSION):
-            file_name = file_name + NX_FILE_EXTENSION
+            file_name += NX_FILE_EXTENSION
 
-        # Add uid to file name if necessary
-        if "{uid}" in file_name:
-            file_name = file_name.format(uid=self._start_doc["uid"])
-
-        # Define nexus file path
-        file_path: str = os.path.join(dir_path, file_name)
-
-        return file_path
+        return dir_path / file_name
 
     def compute(self) -> None:
         """Compute.
@@ -222,35 +233,19 @@ class NexusWriter(CollectThenCompute):
 
     @measure_time
     def generate_nexus_file(self) -> None:
-        """Generate nexus file.
+        """Construct and write the NeXus file.
 
-        Processes the NeXus metadata and writes a NeXus file based on
-        the start, stop, event, and descriptor documents.
+        for the completed Bluesky run.
 
-        The workflow includes:
-            1. Verifying the presence of necessary metadata in the start
-            document.
-            2. Retrieving configuration from the environment, such as
-            the NeXus directory path.
-            3. Generating the NeXus file path using the directory and file
-            name.
-            4. Extracting run information from the start and stop documents.
-            5. Safely creating a deepcopy of the start document
-            for processing.
-            6. Handling placeholders in the metadata using event
-            and descriptor data.
-            7. Combining instrument metadata with run information.
-            8. Writing the NeXus file with the combined data.
-
-        Raises:
-            Exception: If an error occurs during the deepcopy of
-            the start document.
-
-        Notes:
-            - If required metadata is missing from the start document,
-            an error message is logged.
-            - The method processes placeholders within the NeXus
-            metadata using the associated events and descriptors.
+        The method performs:
+            1. Validation of required metadata (`nexus_md`) in the start document.
+            2. Creation of the file path using `create_nx_file_path()`.
+            3. Deep copying of the start document (docs are immutable).
+            4. Filtering out unused devices based on descriptors.
+            5. Resolving $post-run placeholders in NeXus metadata.
+            6. Extracting a structured `run_info` dictionary.
+            7. Combining instrument metadata with run_info.
+            8. Writing the NeXus HDF5 file.
         """
 
         def collect_descriptor_keys(descriptors: deque) -> set:
@@ -282,22 +277,22 @@ class NexusWriter(CollectThenCompute):
         def filter_start_doc(
             start_doc_cpy: dict, keys_set: set, delimiter: str = "_"
         ) -> dict:
-            """Remove device names not taking part in run.
+            """Remove metadata for devices that do not participate in.
 
-            Filters 'device_md' and 'nexus_md' in start_doc_cpy,
-            keeping only those entries whose keys either:
-            1. exactly match a key in keys_set, or
-            2. are a prefix of some key in keys_set, followed by the delimiter.
+            the run.
 
-            Args:
-                start_doc_cpy (dict): dictionary with at least
-                    'device_md' and 'nexus_md'
-                keys_set (set): set of valid keys from descriptors
-                delimiter (str): string that separates a prefix from
-                    the rest of a key (default "_")
+            Devices are kept only if:
+                - The key exactly matches a descriptor key, OR
+                - The key is a prefix of a descriptor key, followed by the delimiter.
 
-            Returns:
-                dict: the filtered start_doc_cpy, with invalid devices removed
+            This filtering applies to:
+                - start_doc_cpy["device_md"]
+                - start_doc_cpy["nexus_md"]
+
+            Returns
+            -------
+            dict
+                Filtered copy of the start document.
             """
 
             def is_valid_key(key: str) -> bool:
@@ -350,11 +345,8 @@ class NexusWriter(CollectThenCompute):
         # Define nexus file dir path
         nx_dir_path: str = self.nx_file_dir_path
 
-        # Retrieve nexus file name from start doc
-        nx_file_name: str = self._start_doc.get("nx_file_name", None)
-
         # Create nexus file path
-        nx_file_path: str = self.create_nx_file_path(nx_dir_path, nx_file_name)
+        nx_file_path: Path = self.create_nx_file_path(nx_dir_path)
 
         # Copy the start document to be able to modify it.
         # Reason: Documents are immutable.
@@ -538,14 +530,14 @@ def extract_run_info(start: dict, stop: dict) -> dict:
     return result
 
 
-def create_nexus_file(file_path: str, data_dict: Dict[str, Any]) -> None:
+def create_nexus_file(file_path: Path, data_dict: Dict[str, Any]) -> None:
     """Create nexus file.
 
     Creates a NeXus file at the specified file path using the provided data
     dictionary.
 
     Parameters:
-        file_path (str): The path where the NeXus file will be created.
+        file_path (Path): The path where the NeXus file will be created.
         data_dict (dict): A dictionary containing the data to populate the
             NeXus file. Keys represent group or dataset names, and values
             represent their corresponding data or attributes. Special keys
