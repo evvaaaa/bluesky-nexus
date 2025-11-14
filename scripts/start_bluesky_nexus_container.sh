@@ -51,7 +51,7 @@ CONTAINER_DATA_DIR="/data"
 CONTAINER_LOG_DIR="/logs"
 
 # Bluesky ZMQ proxy connection
-ZMQ_IP="127.0.0.1"
+ZMQ_IP="localhost"
 ZMQ_PORT="5578"
 
 # -----------------------------------------------------------------------------
