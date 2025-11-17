@@ -20,14 +20,21 @@
   - [Subscription of devices in the baseline](#subscription-of-devices-in-the-baseline)
   - [Requirements for device classes](#requirements-for-device-classes)
     - [Example of custom device](#example-of-custom-device)
-  - [Installation and usage in the context of bluesky container (bluesky deployment)](#installation-and-usage-in-the-context-of-bluesky-container-bluesky-deployment)
-  - [Installation and usage outside the bluesky container](#installation-and-usage-outside-the-bluesky-container)
-    - [NeXus logging setup](#nexus-logging-setup)
-    - [Let the preprocessor append ```NeXus metadata``` to the start document](#let-the-preprocessor-append-nexus-metadata-to-the-start-document)
-    - [Let the preprocessor append ```devices metadata``` to the start document](#let-the-preprocessor-append-devices-metadata-to-the-start-document)
-    - [Subscribe the callback: NexusWriter](#subscribe-the-callback-nexuswriter)
+  - [Installation and usage in the context of bluesky container (embedded NexusWriter mode)](#installation-and-usage-in-the-context-of-bluesky-container-embedded-nexuswriter-mode)
+  - [Installation and usage when NexusWriter runs as a separate service](#installation-and-usage-when-nexuswriter-runs-as-a-separate-service)
+    - [How it works](#how-it-works)
+  - [Installation and usage outside the HZB deployment infrastructure](#installation-and-usage-outside-the-hzb-deployment-infrastructure)
+    - [Installation](#installation)
+    - [Operating Modes](#operating-modes)
+      - [Mode A – Local mode (NexusWriter in the same process as the RE)](#mode-a--local-mode-nexuswriter-in-the-same-process-as-the-re)
+      - [Mode B – Remote mode (NexusWriter executed as a separate process)](#mode-b--remote-mode-nexuswriter-executed-as-a-separate-process)
+  - [NeXus directory structure](#nexus-directory-structure)
+  - [NeXus file naming conventions](#nexus-file-naming-conventions)
+    - [Case 1 — User provides `nx_file_name`](#case-1--user-provides-nx_file_name)
+    - [Case 2 — User does not provide `nx_file_name` (or value is empty)](#case-2--user-does-not-provide-nx_file_name-or-value-is-empty)
+      - [Auto-generated filename format](#auto-generated-filename-format)
+      - [Example](#example)
   - [Explanations on the optional NeXus logger](#explanations-on-the-optional-nexus-logger)
-  - [Optional definition of the metadata dictionary in Your script that is transferred to the plan](#optional-definition-of-the-metadata-dictionary-in-your-script-that-is-transferred-to-the-plan)
   - [Cheat sheet for maintenance purposes in context of HZB bluesky deployment](#cheat-sheet-for-maintenance-purposes-in-context-of-hzb-bluesky-deployment)
   - [Context](#context)
   - [License](#license)
@@ -394,140 +401,59 @@ class Mono(Device):
 
 ---
 
-## Installation and usage in the context of bluesky container (bluesky deployment)
+## Installation and usage in the context of bluesky container (embedded NexusWriter mode)
 
-  Make sure that the “nexus.py” file is located in the “beamline_config” directory. The content of “nexus.py” is:
+  This mode corresponds to deployment method where the `NexusWriter` is not executed as a separate service.
 
-```python
-from .base import *
-from .beamline import *
+  Instead, it is instantiated directly inside the `bluesky_container` running the `RunEngine` (RE).
+  NeXus files are therefore written from within the same process that runs the RE.
 
-from bluesky_nexus.preprocessors.supplemental_metadata import SupplementalMetadata
-from bluesky_nexus.callbacks.nexus_writer.writer_core import NexusWriter
-from bluesky_nexus.common.logging_utils import setup_nx_logger, LogLevel
-from bluesky_nexus.bluesky_nexus_paths import (
-    get_nx_file_dir_path,
-    get_nx_log_file_dir_path,
-)
+  In the [nexus.py](https://codebase.helmholtz.cloud/hzb/bluesky/beamlines_endstations/vanilla_beamline/source/beamlinetools/-/blob/develop/beamlinetools/beamline_config/nexus.py?ref_type=heads):
 
-# This is an optional setup for the NeXus logger. If not configured, logging to a file
-# is disabled by default. The logger supports separate configuration for console and
-# file output, with options for log rotation, formatting, and enabling/disabling handlers.
-nx_log_file_dir_path: str = get_nx_log_file_dir_path()
-setup_nx_logger(
-    console_level=LogLevel.ERROR,
-    file_level=LogLevel.DEBUG,
-    log_file_dir_path=nx_log_file_dir_path,
-    log_file_name="nx_log.log",
-    log_format=None,  # Uses default format if None
-    max_file_size=10 * 1024 * 1024,  # 10 MB
-    backup_count=5,
-    enable_console=True,
-    enable_file=True,
-)
+- Add imports
 
-# Note: `SupplementalMetadata` accepts `devices_dictionary` and `md_type` either as positional or keyword arguments.
-# For clarity, keyword arguments are recommended.
+   ```python
+   from .base import *
+   from .beamline import *
 
-# Let the preprocessor append NeXus metadata to the start document
+   from bluesky_nexus.preprocessors.supplemental_metadata import SupplementalMetadata
+   from bluesky_nexus.callbacks.nexus_writer.writer_core import NexusWriter
+   from bluesky_nexus.common.logging_utils import setup_nx_logger, LogLevel
+   from bluesky_nexus.bluesky_nexus_paths import (
+       get_nx_file_dir_path,
+       get_nx_log_file_dir_path,
+   )
+   ```
 
-# using keyword arguments (recommended)
-metadata = SupplementalMetadata(devices_dictionary=devices_dictionary, md_type=SupplementalMetadata.MetadataType.NEXUS_MD)
-# or using positional arguments
-metadata = SupplementalMetadata(devices_dictionary, SupplementalMetadata.MetadataType.NEXUS_MD)
-RE.preprocessors.append(metadata)
-
-
-# Let the preprocessor append devices metadata to the start document
-
-# using keyword arguments (recommended)
-metadata = SupplementalMetadata(devices_dictionary=devices_dictionary, md_type=SupplementalMetadata.MetadataType.DEVICE_MD)
-# or using positional arguments
-metadata = SupplementalMetadata(devices_dictionary, SupplementalMetadata.MetadataType.DEVICE_MD)
-RE.preprocessors.append(metadata)
-
-# Subscribe the callback: 'NexusWriter'
-nx_file_dir_path: str = get_nx_file_dir_path()
-cpt_name_delimiter: str = "_" # Optionally specify a delimiter used in Bluesky documents to separate device components. If not specified, the default is "_".
-nexus_writer = NexusWriter(nx_file_dir_path=nx_file_dir_path, cpt_name_delimiter = cpt_name_delimiter)
-RE.subscribe(nexus_writer)
-```
-
-See the section [Explanations on the optional NeXus logger](#explanations-on-the-optional-nexus-logger)
-on the optional NeXus logger below for detailed information on each parameter
-of the optional NeXus logger setup.
-
-Make sure that the file `__init__.py` in the “beamline_config” directory contains the following import:
-
-```python
-from .nexus import *
-```
-
----
-
-## Installation and usage outside the bluesky container
-
-- Clone the main branch of the project [bluesky_nexus](https://codebase.helmholtz.cloud/hzb/bluesky/core/source/bluesky_nexus)
-- Create and activate an environemet with python_version >= "3.10"
-- Install bluesky_nexus package in this environement.
-
-  If you are working in a production environment use:
-
-  ```bash
-  cd "path to cloned `bluesky_nexus` package"
-  pip install .
-  ```
-
-  If you are working in a development environment use:
-
-  ```bash
-  cd "path to cloned `bluesky_nexus` package"
-  pip install -e .
-  ```
-
-  In your script use following imports:
+- Add optional NeXus logging setup
 
   ```python
-  from bluesky_nexus.preprocessors.supplemental_metadata import SupplementalMetadata
-  from bluesky_nexus.callbacks.nexus_writer.writer_core import NexusWriter
-  from bluesky_nexus.common.logging_utils import setup_nx_logger, LogLevel
+  # This is an optional setup for the NeXus logger. If not configured, logging to a file
+  # is disabled by default. The logger supports separate configuration for console and
+  # file output, with options for log rotation, formatting, and enabling/disabling handlers
+  nx_log_file_dir_path: str = get_nx_log_file_dir_path()
+  setup_nx_logger(
+      console_level=LogLevel.ERROR,
+      file_level=LogLevel.DEBUG,
+      log_file_dir_path=nx_log_file_dir_path,
+      log_file_name="nx_log.log",
+      log_format=None,  # Uses default format if None
+      max_file_size=10 *1024* 1024,  # 10 MB
+      backup_count=5,
+      enable_console=True,
+      enable_file=True,
+  )
   ```
 
-Add the following NeXus logging setup, preprocessor, and callback subscriptions to your script:
+  See the section [Explanations on the optional NeXus logger](#explanations-on-the-optional-nexus-logger)
+  for detailed information on the logger configuration.
 
-### NeXus logging setup
-
-This is an optional setup for the NeXus logger. If not configured, logging to a file
-is disabled by default. The logger supports separate configuration for console and
-file output, with options for log rotation, formatting, and enabling/disabling handlers.
-
-See the section [Explanations on the optional NeXus logger](#explanations-on-the-optional-nexus-logger)
-on the optional NeXus logger below for detailed information on each parameter
-of the optional NeXus logger setup.
-
-```python
-nx_log_file_dir_path: str = "Your path to the NeXus log file directory"
-setup_nx_logger(
-    console_level=LogLevel.ERROR,
-    file_level=LogLevel.DEBUG,
-    log_file_dir_path=nx_log_file_dir_path,
-    log_file_name="nx_log.log",
-    log_format=None,  # Uses default format if None
-    max_file_size=10 * 1024 * 1024,  # 10 MB
-    backup_count=5,
-    enable_console=True,
-    enable_file=True,
-)
-```
-
-### Let the preprocessor append ```NeXus metadata``` to the start document
-
-**Note:** `SupplementalMetadata` accepts `devices_dictionary` and `md_type` either as positional or keyword arguments.
-For clarity, keyword arguments are recommended.
-
-In you script subscribe to the preprocessor
+- Add NeXus metadata to the start document
 
   ```python
+  # Note: `SupplementalMetadata` accepts `devices_dictionary` and `md_type` either as positional or keyword arguments
+  # For clarity, keyword arguments are recommended
+
   # Let the preprocessor append NeXus metadata to the start document
 
   # using keyword arguments (recommended)
@@ -537,9 +463,7 @@ In you script subscribe to the preprocessor
   RE.preprocessors.append(metadata)
   ```
 
-### Let the preprocessor append ```devices metadata``` to the start document
-
-In you script subscribe to the preprocessor
+- Add device metadata to the start document
 
   ```python
   # Let the preprocessor append devices metadata to the start document
@@ -551,16 +475,404 @@ In you script subscribe to the preprocessor
   RE.preprocessors.append(metadata)
   ```
 
-### Subscribe the callback: NexusWriter
-
-In you script subscribe to the callback
+- Subscribe the NexusWriter
 
   ```python
-  nx_file_dir_path: str = "Your path to nx_file directory"
+  # Subscribe the callback: 'NexusWriter'
+  nx_file_dir_path: str = get_nx_file_dir_path()
+  cpt_name_delimiter: str = "*" # Optionally specify a delimiter used in Bluesky documents to separate device components. If not specified, the default is "*".
+  nexus_writer = NexusWriter(nx_file_dir_path=nx_file_dir_path, cpt_name_delimiter = cpt_name_delimiter)
+  RE.subscribe(nexus_writer)
+  ```
+
+Please ensure that the file [init.py](https://codebase.helmholtz.cloud/hzb/bluesky/beamlines_endstations/vanilla_beamline/source/beamlinetools/-/blob/develop/beamlinetools/beamline_config/__init__.py?ref_type=heads#L7) file contains:
+
+```python
+from .nexus import *
+```
+
+This completes the installation and usage in the context of bluesky container (embedded NexusWriter mode)
+
+---
+
+## Installation and usage when NexusWriter runs as a separate service
+
+  This mode corresponds to the deployment method where the `NexusWriter` is
+  executed as a separate service.
+
+  It is not instantiated inside the `bluesky_container` running the `RunEngine`. Instead,
+  it is instantiated in a standalone background service, a dedicated container.
+  NeXus files are therefore written from a different process than the one executing RE.
+
+### How it works
+
+  1. The Bluesky RE process publishes bluesky documents over ZeroMQ. The publication mechanism is implemented in: [base.py](https://codebase.helmholtz.cloud/hzb/bluesky/beamlines_endstations/vanilla_beamline/source/beamlinetools/-/blob/develop/beamlinetools/beamline_config/base.py?ref_type=heads#L26-35).
+
+  2. A ZeroMQ proxy service must be running, forwarding documents from input port 5577 to output 5578. It can be started using:
+
+      ```bash
+      docker run -d --rm --name bluesky_zmq --network host \
+      registry.hzdr.de/hzb/bluesky/core/images/bluesky_container:v1.4.2 \
+      bluesky-0MQ-proxy 5577 5578
+      ```
+
+      or
+
+      ```bash
+      docker run -d --rm --name bluesky_zmq --network host \
+      registry.hzdr.de/hzb/bluesky/core/images/zmq-proxy:1-0-0 \
+      bluesky-0MQ-proxy 5577 5578
+      ```
+
+  4. The NexusWriter service container must be running. It can be started using:
+
+      ```bash
+      TODO
+      ```
+
+      The NexusWriter service container  starts a python script "scripts/start_bluesky_nexus_writer_dispatcher.py" when the container is launched.
+
+      The script:
+      - instantiates a `RemoteDispatcher` listening on port 5578,
+      - registers a `NexusWriter` callback inside this separate process,
+      - starts the `RemoteDispatcher` so that documents received on port 5578 can be processed by the `NexusWriter`.
+
+  Important: Since the `NexusWriter` runs in a separate process,  please ensure that the [nexus.py](https://codebase.helmholtz.cloud/hzb/bluesky/beamlines_endstations/vanilla_beamline/source/beamlinetools/-/blob/develop/beamlinetools/beamline_config/nexus.py?ref_type=heads) file does not contain any direct instantiation of `NexusWriter`.
+
+  Remove the following code entirely:
+
+  ```python
+  from bluesky_nexus.bluesky_nexus_paths import get_nx_file_dir_path
+  from bluesky_nexus.callbacks.nexus_writer.writer_core import NexusWriter
+
+  nx_file_dir_path: str = get_nx_file_dir_path()
+  cpt_name_delimiter: str = "_"
+  nexus_writer = NexusWriter(nx_file_dir_path=nx_file_dir_path, cpt_name_delimiter=cpt_name_delimiter)
+  RE.subscribe(nexus_writer)
+  ```
+
+  In this architecture, the subscription is handled exclusively by the NexusWriter service container, not by the main RE process.
+
+  This completes the installation and usage when NexusWriter runs as a separate service.
+
+---
+
+## Installation and usage outside the HZB deployment infrastructure
+
+To use bluesky_nexus outside the HZB Bluesky deployment environment, begin by installing the package manually and then choose one of two operating modes:
+
+- Mode A: NexusWriter runs in the same process as the RunEngine (RE)
+- Mode B: NexusWriter runs in a separate process, communicating via ZeroMQ
+
+Both setups are documented below.
+
+### Installation
+
+- Clone the main branch of the project [bluesky_nexus](https://codebase.helmholtz.cloud/hzb/bluesky/core/source/bluesky_nexus)
+- Create and activate an environment with python_version >= "3.10"
+- Install bluesky_nexus package in this environment:
+
+  Production-style installation
+
+  ```bash
+  cd "path/to/cloned/bluesky_nexus"
+  pip install .
+  ```
+
+  Development installation
+
+  ```bash
+  cd "path/to/cloned/bluesky_nexus"
+  pip install -e .[dev]
+  ```
+
+### Operating Modes
+
+#### Mode A – Local mode (NexusWriter in the same process as the RE)
+  (No ZeroMQ required)
+
+  In this mode, the NexusWriter runs inside the same Python process as your RunEngine.
+  This is the simplest setup for local experiments or development work.
+
+  In your script:
+
+- Add imports
+
+  ```python
+  from bluesky_nexus.preprocessors.supplemental_metadata import SupplementalMetadata
+  from bluesky_nexus.callbacks.nexus_writer.writer_core import NexusWriter
+  from bluesky_nexus.common.logging_utils import setup_nx_logger, LogLevel
+  ```
+
+- Add optional NeXus logging setup
+
+    ```python
+    nx_log_file_dir_path: str = "Your path to the NeXus log file directory"
+    setup_nx_logger(
+        console_level=LogLevel.ERROR,
+        file_level=LogLevel.DEBUG,
+        log_file_dir_path=nx_log_file_dir_path,
+        log_file_name="nx_log.log",
+        log_format=None,  # Uses default format if None
+        max_file_size=10 * 1024 * 1024,  # 10 MB
+        backup_count=5,
+        enable_console=True,
+        enable_file=True,
+    )
+    ```
+
+    See the section [Explanations on the optional NeXus logger](#explanations-on-the-optional-nexus-logger)
+    for detailed information on the logger configuration.
+
+- Add NeXus metadata to the start document
+
+    ```python
+    # Let the preprocessor append NeXus metadata to the start document
+
+    # using keyword arguments (recommended)
+    metadata = SupplementalMetadata(devices_dictionary=devices_dictionary, md_type=SupplementalMetadata.MetadataType.NEXUS_MD)
+    # or using positional arguments
+    metadata = SupplementalMetadata(devices_dictionary, SupplementalMetadata.MetadataType.NEXUS_MD)
+    RE.preprocessors.append(metadata)
+    ```
+
+- Add device metadata to the start document
+
+  ```python
+  # Let the preprocessor append devices metadata to the start document
+
+  # using keyword arguments (recommended)
+  metadata = SupplementalMetadata(devices_dictionary=devices_dictionary, md_type=SupplementalMetadata.MetadataType.DEVICE_MD)
+  # or using positional arguments
+  metadata = SupplementalMetadata(devices_dictionary, SupplementalMetadata.MetadataType.DEVICE_MD)
+  RE.preprocessors.append(metadata)
+  ```
+
+- Subscribe the NexusWriter
+
+  ```python
+  nx_file_dir_path: str = "Your/path/to/nx_file/directory"
   cpt_name_delimiter: str = "_" # Optionally specify a delimiter used in Bluesky documents to separate device components. If not specified, the default is "_".
   nexus_writer = NexusWriter(nx_file_dir_path=nx_file_dir_path, cpt_name_delimiter = cpt_name_delimiter)
   RE.subscribe(nexus_writer)
   ```
+
+  This completes the embedded/local mode setup.
+
+#### Mode B – Remote mode (NexusWriter executed as a separate process)
+  (ZeroMQ required)
+
+  In this mode, the NexusWriter is not instantiated in your experiment script.
+  Instead, it runs in a separate container. This process listens to a ZeroMQ proxy that forwards Bluesky documents from the RE.
+
+- Start a ZeroMQ proxy to forward documents from input port: 5577 to output port: 5578
+
+  ```bash
+  docker run -d --rm --name bluesky_zmq --network host \
+  registry.hzdr.de/hzb/bluesky/core/images/zmq-proxy:1-0-0 \
+  bluesky-0MQ-proxy 5577 5578
+  ```
+
+- Start the `NexusWriter` service container. It can be started using:
+
+  ```bash
+  TODO
+  ```
+
+  The `NexusWriter` service container  starts a python script "scripts/start_bluesky_nexus_writer_dispatcher.py" when the container is launched.
+
+  The script:
+  - instantiates a `RemoteDispatcher` listening on port 5578,
+  - registers a `NexusWriter` callback inside this separate process,
+  - starts the `RemoteDispatcher` so that documents received on port 5578 can be processed by the `NexusWriter`.
+
+In your script:
+
+- Add imports
+
+  ```python
+  from bluesky_nexus.preprocessors.supplemental_metadata import SupplementalMetadata
+  from bluesky_nexus.common.logging_utils import setup_nx_logger, LogLevel
+  ```
+
+- Add optional NeXus logging setup
+
+  ```python
+  nx_log_file_dir_path: str = "Your path to the NeXus log file directory"
+  setup_nx_logger(
+      console_level=LogLevel.ERROR,
+      file_level=LogLevel.DEBUG,
+      log_file_dir_path=nx_log_file_dir_path,
+      log_file_name="nx_log.log",
+      log_format=None,  # Uses default format if None
+      max_file_size=10 * 1024 * 1024,  # 10 MB
+      backup_count=5,
+      enable_console=True,
+      enable_file=True,
+  )
+  ```
+
+  See the section [Explanations on the optional NeXus logger](#explanations-on-the-optional-nexus-logger)
+  for detailed information on the logger configuration.
+
+- Add NeXus metadata to the start document
+
+  ```python
+  # Let the preprocessor append NeXus metadata to the start document
+
+  # using keyword arguments (recommended)
+  metadata = SupplementalMetadata(devices_dictionary=devices_dictionary, md_type=SupplementalMetadata.MetadataType.NEXUS_MD)
+  # or using positional arguments
+  metadata = SupplementalMetadata(devices_dictionary, SupplementalMetadata.MetadataType.NEXUS_MD)
+  RE.preprocessors.append(metadata)
+  ```
+
+- Add device metadata to the start document
+
+  ```python
+  # Let the preprocessor append devices metadata to the start document
+
+  # using keyword arguments (recommended)
+  metadata = SupplementalMetadata(devices_dictionary=devices_dictionary, md_type=SupplementalMetadata.MetadataType.DEVICE_MD)
+  # or using positional arguments
+  metadata = SupplementalMetadata(devices_dictionary, SupplementalMetadata.MetadataType.DEVICE_MD)
+  RE.preprocessors.append(metadata)
+  ```
+
+- Important: Do not subscribe NexusWriter in your RE script. In this mode, your experiment script must NOT contain:
+
+  ```python
+  nexus_writer = NexusWriter(...)
+  RE.subscribe(nexus_writer)
+  ```
+
+  This completes the remote mode setup.
+
+---
+
+## NeXus directory structure
+
+The `NexusWriter` creates a structured directory tree under the configured `nx_file_dir_path`. The directory structure follows:
+
+```swift
+{nx_file_dir_path}/{base_name}/{exp_name}/
+```
+
+Where:
+
+- nx_file_dir_path – mandaotry directory path passed to the `NexusWriter`
+- base_name – optional metadata key in the plan
+- exp_name – optional metadata key in the plan
+
+These values are passed in the plan metadata:
+
+```python
+md = {
+    "base_name": "UE112",
+    "exp_name": "double_slit_exp",
+}
+```
+
+Notes:
+
+- If `base_name` is not provided → that folder level is omitted
+- If `exp_name` is not provided → that folder level is omitted
+- If both are omitted → files go directly into {nx_file_dir_path}
+
+Example:
+
+```python
+nx_file_dir_path = "/data/nexus"
+md = {"base_name": "beamlineA", "exp_name": "test_experiment"}
+```
+
+Final directory:
+
+```bash
+/data/nexus/beamlineA/test_experiment/
+```
+
+## NeXus file naming conventions
+
+The `NexusWriter` determines the file naming based on metadata provided in the Bluesky plan.
+Two situations must be distinguished:
+
+1) The user/operator provides a file name via `nx_file_name`
+2) The user/operator does not provide a file name (or provides an empty string)
+
+### Case 1 — User provides `nx_file_name`
+
+If the user passes:
+
+```python
+md = {"nx_file_name": "my_scan"}
+```
+
+or
+
+```python
+md = {"nx_file_name": "my_scan.nxs"}
+```
+
+Naming behavior:
+
+- The `NexusWriter` uses exactly this name.
+- If the file name has no extension, .nxs is automatically appended.
+- Each new run overwrites the file if the same name is provided.
+
+Note: No UID, scan ID, or plan name is added.
+This mode gives explicit user control over naming and overwriting.
+
+### Case 2 — User does not provide `nx_file_name` (or value is empty)
+
+If
+
+```python
+"nx_file_name" not in md
+```
+
+or
+
+```python
+md = {"nx_file_name": ""}
+```
+
+then the NeXus filename is automatically generated based on run metadata.
+
+#### Auto-generated filename format
+
+```css
+{scan_id:04d}_{plan_name}_{uid8}.nxs
+```
+
+Where:
+
+- scan_id:04d – zero-padded 4-digit integer
+  - 3 → 0003
+  - 15 → 0015
+- plan_name – taken from the start document (start_doc["plan_name"])
+- uid8 – first 8 UID chars, dashes removed
+- .nxs – extension always appended
+
+#### Example
+
+Metadata:
+
+```python
+md = {"base_name": "beamlineA", "exp_name": "overnight"}
+```
+
+Run metadata:
+
+- scan_id = 12 → 0012
+- plan_name = "scan"
+- UID = "c5f9-a1e4-7a53-4a02-8199-efb4cd02bddc" → uid8 = "c5f9a1e4"
+
+Resulting full path:
+
+```bash
+/data/nexus/beamlineA/overnight/0012_scan_c5f9a1e4.nxs
+```
 
 ---
 
@@ -596,26 +908,6 @@ In you script subscribe to the callback
 - File logging requires a valid path in `log_file_dir_path` **and a defined `log_file_name`.**
   - If `log_file_dir_path` is `None` or `enable_file=False`, file logging is disabled.
   - Default value for `log_file_name` is `"nx_log.log"`, but it must be explicitly provided when customizing file logging behavior.
-
----
-
-## Optional definition of the metadata dictionary in Your script that is transferred to the plan
-
-  ```python
-  md = {
-      "nx_file_name": "test_{uid}",  # Facultative
-      "title": "fast test at HZB",  # Facultative
-      "definition": "NXxas",  # Facultative
-      }
-  ```
-
-The 'nx_file_name' enables the creation of a user-defined name for the NeXus file. If it is not defined, the name of the NeXus file is generated automatically based on
-the 'uid' extracted from the start document of the run (start_doc[“uid”]). You can use ```{uid}``` in the user-defined name (as in the example above), which is replaced by the uid extracted from the run's start document (start_doc[“uid”]).
-
-  ```python
-  def my_plan():
-    yield from scan(detectors, motor, 1, 10, 5, md=md)
-  ```
 
 ---
 
