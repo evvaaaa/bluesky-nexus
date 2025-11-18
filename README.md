@@ -673,11 +673,31 @@ Both setups are documented below.
   bluesky-0MQ-proxy 5577 5578
   ```
 
-- Start the `NexusWriter` service container. It can be started using:
+- Start the `NexusWriter` service container
 
-  ```bash
-  TODO
-  ```
+  - Create docker image. The necessary Dockerfile is provided.
+
+    ```bash
+    docker build --no-cache -t bluesky_nexus_writer:latest .
+    ```
+
+  - Start container based on the created image: `bluesky_nexus_writer`
+
+    - Make the script executable
+
+      ```bash
+      chmod +x scripts/start_bluesky_nexus_container.sh
+      ```
+
+    - Execute the script
+
+      ```bash
+      ./ scripts/start_bluesky_nexus_container.sh
+      ```
+
+    Note: The host directories defined in `start_bluesky_nexus_container.sh` can be changed according to your needs/system:
+    - HOST_DATA_DIR="$HOME/nexus_output" # This is a NeXus file directory used by `NexusWriter`
+    - HOST_LOG_DIR="$HOME/nexus_logs" # This is a log file directory used by `NexusWriter`
 
   The `NexusWriter` service container  starts a python script "scripts/start_bluesky_nexus_writer_dispatcher.py" when the container is launched.
 
