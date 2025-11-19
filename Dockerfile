@@ -54,5 +54,5 @@ RUN uv pip install --system --no-cache-dir . \
 # ---- Create default directories ----
 RUN mkdir -p /data /logs
 
-# ---- Run dispatcher on when container starts ----
-CMD ["python", "scripts/start_bluesky_nexus_writer_dispatcher.py"]
+# ---- Run NeXus writer dispatcher on when container starts ----
+CMD ["python", "-m", "bluesky_nexus"]
