@@ -5,20 +5,18 @@
 # environment variables.
 #
 # This script launches the NeXus writer container in detached mode as a
-# persistent service. It automatically:
+# persistent service. It supports two dispatcher modes:
 #
-#   1. Defines container name, image name, and host/container paths.
-#   2. Ensures that required host directories (data and logs) exist.
-#   3. Removes any existing container with the same name to avoid conflicts.
-#   4. Starts a new container with:
-#        - Persistent restart policy (restart unless manually stopped).
-#        - Mounted host volumes for file output and logging.
-#        - Environment variables for runtime configuration (_NX_*, _ZMQ_*, etc.).
-#        - Detached (background) execution.
+#   - ZMQ   : Uses Bluesky ZeroMQ RemoteDispatcher
+#   - Kafka : Uses Bluesky Kafka RemoteDispatcher
 #
-# Inside the container, the NeXus writer service is started via:
+# The mode is selected via the DISPATCHER_MODE variable (default: zmq).
 #
-#        python -m bluesky_nexus
+# Inside the container, the service starts via:
+#
+#        python -m bluesky_nexus <mode>
+#
+# where <mode> is either "zmq" or "kafka".
 #
 # Environment variables passed into the container:
 #
@@ -28,37 +26,25 @@
 #   _NX_LOG_FILE_DIR_PATH
 #       Directory inside the container where writer logs are stored.
 #
-#   _ZMQ_IP
-#       IP address of the Bluesky ZMQ publisher (data stream source).
+#   ZMQ MODE:
+#       _ZMQ_IP
+#       _ZMQ_PORT
 #
-#   _ZMQ_PORT
-#       Port of the Bluesky ZMQ publisher.
+#   KAFKA MODE:
+#       _KAFKA_BROKERS
+#       _KAFKA_GROUP       (optional)
+#       _KAFKA_TOPIC       (required)
 #
 #   _OPHYD_CPT_NAME_DELIMITER (optional)
-#       If defined and non-empty, this value is forwarded into the container
-#       and used by bluesky-nexus to override the default Component
-#       name delimiter used when expanding Ophyd device component names.
-#
-#       - If unset or empty: the default behavior is used : "_" (underscore)
-#       - If set to a non-empty string: the custom delimiter is applied.
-#
-#
-# Restart policy:
-#
-#   --restart unless-stopped
-#     - Container automatically restarts on crashes, daemon restarts, or host reboot.
-#     - Container does NOT restart if manually stopped via `docker stop`.
-#
-#
-# Usage:
-#
-#   chmod +x start_bluesky_nexus_container.sh
-#   ./start_bluesky_nexus_container.sh
+#       Custom ophyd component delimiter. If unset or empty, defaults are used.
 #
 # =============================================================================
 
+# ------------------------- Mode selection ------------------------------------
+# Available values: "zmq" or "kafka"
+DISPATCHER_MODE="zmq"
 
-# --- Configuration -----------------------------------------------------------
+# ------------------------- Configuration -------------------------------------
 CONTAINER_NAME="bluesky_nexus_writer"
 declare -r IMAGE_NAME="bluesky_nexus_writer"
 
@@ -70,69 +56,108 @@ HOST_LOG_DIR="$HOME/nexus_logs"
 CONTAINER_DATA_DIR="/data"
 CONTAINER_LOG_DIR="/logs"
 
-# Bluesky ZMQ proxy connection
+# ------------------------- ZMQ Configuration ---------------------------------
 ZMQ_IP="localhost"
 ZMQ_PORT="5578"
 
-# Optional variable:
-# - can be commented out          -> Not taken into account
-# - can be set to an empty string -> Not taken into account
-# - can be set to a valid string  -> Taken into account
+# ------------------------- Kafka Configuration -------------------------------
+KAFKA_BROKERS="localhost:5578"  # e.g. "localhost:5578"
+KAFKA_GROUP="Nexus-Writer"      # optional
+KAFKA_TOPIC="bluesky.documents" # required for Kafka mode
+
+# ------------------------- Optional ophyd delimiter ---------------------------
 OPHYD_CPT_NAME_DELIMITER=""
 
-# -----------------------------------------------------------------------------
+
+# =============================================================================
+# Validate mode-specific requirements
+# =============================================================================
+if [[ "$DISPATCHER_MODE" == "kafka" ]]; then
+    if [[ -z "$KAFKA_TOPIC" ]]; then
+        echo "ERROR: Kafka mode requires KAFKA_TOPIC to be set."
+        exit 1
+    fi
+    if [[ -z "$KAFKA_BROKERS" ]]; then
+        echo "ERROR: Kafka mode requires KAFKA_BROKERS to be set."
+        exit 1
+    fi
+fi
+
+# =============================================================================
 # Ensure output directories exist on host
-# -----------------------------------------------------------------------------
+# =============================================================================
 mkdir -p "$HOST_DATA_DIR" "$HOST_LOG_DIR"
 
-# -----------------------------------------------------------------------------
-# Run container
-# -----------------------------------------------------------------------------
-echo "Starting container '$CONTAINER_NAME' from image '$IMAGE_NAME'..."
-echo "Mounting:"
-echo "  Host data -> $HOST_DATA_DIR"
-echo "  Host logs -> $HOST_LOG_DIR"
-echo "Connecting to ZMQ at ${ZMQ_IP}:${ZMQ_PORT}"
+echo "Starting NeXus Writer container in '$DISPATCHER_MODE' mode..."
+echo "Container name : $CONTAINER_NAME"
+echo "Image name     : $IMAGE_NAME"
+echo "Host data dir  : $HOST_DATA_DIR"
+echo "Host log dir   : $HOST_LOG_DIR"
 echo
 
-# --- Remove existing container if present ------------------------------------
+
+# =============================================================================
+# Remove existing container
+# =============================================================================
 if docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
-  echo -e "Old container '${CONTAINER_NAME}' exists. Removing it...${RESET}"
+  echo "Old container '${CONTAINER_NAME}' exists. Removing it..."
   docker rm -f "$CONTAINER_NAME" >/dev/null
 fi
 
 
-# Arguments common for both following docker run commands
+# =============================================================================
+# Common docker run arguments
+# =============================================================================
 COMMON_RUN_ARGS=(
   --restart unless-stopped
   --network host
   --name "$CONTAINER_NAME"
   --env _NX_FILE_DIR_PATH="$CONTAINER_DATA_DIR"
   --env _NX_LOG_FILE_DIR_PATH="$CONTAINER_LOG_DIR"
-  --env _ZMQ_IP="$ZMQ_IP"
-  --env _ZMQ_PORT="$ZMQ_PORT"
   -v "$HOST_DATA_DIR":"$CONTAINER_DATA_DIR"
   -v "$HOST_LOG_DIR":"$CONTAINER_LOG_DIR"
 )
 
-# ---- Switch ----
 
-# OPHYD_CPT_NAME_DELIMITER exists and is not empty
-if [[ -n "$OPHYD_CPT_NAME_DELIMITER" ]]; then
-    echo "Using OPHYD_CPT_NAME_DELIMITER='$OPHYD_CPT_NAME_DELIMITER'"
-    docker run -d \
-      "${COMMON_RUN_ARGS[@]}" \
-      --env _OPHYD_CPT_NAME_DELIMITER="$OPHYD_CPT_NAME_DELIMITER" \
-      "$IMAGE_NAME"
-
-# OPHYD_CPT_NAME_DELIMITER does not exists or is empty
-else
-    echo "OPHYD_CPT_NAME_DELIMITER empty or unset -> default mode"
-    docker run -d \
-      "${COMMON_RUN_ARGS[@]}" \
-      "$IMAGE_NAME"
+# ------------------------- ZMQ MODE ------------------------------------------
+if [[ "$DISPATCHER_MODE" == "zmq" ]]; then
+    COMMON_RUN_ARGS+=(
+      --env _ZMQ_IP="$ZMQ_IP"
+      --env _ZMQ_PORT="$ZMQ_PORT"
+    )
 fi
 
-# -----------------------------------------------------------------------------
-# End
-# -----------------------------------------------------------------------------
+# ------------------------- KAFKA MODE ----------------------------------------
+if [[ "$DISPATCHER_MODE" == "kafka" ]]; then
+    COMMON_RUN_ARGS+=(
+      --env _KAFKA_BROKERS="$KAFKA_BROKERS"
+      --env _KAFKA_GROUP="$KAFKA_GROUP"
+      --env _KAFKA_TOPIC="$KAFKA_TOPIC"
+    )
+fi
+
+
+# ------------------------- Optional delimiter --------------------------------
+if [[ -n "$OPHYD_CPT_NAME_DELIMITER" ]]; then
+    echo "Using OPHYD_CPT_NAME_DELIMITER='$OPHYD_CPT_NAME_DELIMITER'"
+    COMMON_RUN_ARGS+=( --env _OPHYD_CPT_NAME_DELIMITER="$OPHYD_CPT_NAME_DELIMITER" )
+else
+    echo "OPHYD_CPT_NAME_DELIMITER empty or unset -> default behavior"
+fi
+
+
+# =============================================================================
+# Run container
+# =============================================================================
+docker run -d \
+  "${COMMON_RUN_ARGS[@]}" \
+  "$IMAGE_NAME" \
+  "$DISPATCHER_MODE"
+
+echo
+echo "Container '$CONTAINER_NAME' started in mode: $DISPATCHER_MODE"
+echo "Use 'docker logs -f $CONTAINER_NAME' to follow logs."
+echo "Use 'docker stop $CONTAINER_NAME' to stop it."
+echo "Use 'docker rm -f $CONTAINER_NAME' to remove it."
+echo
+echo "Done."
