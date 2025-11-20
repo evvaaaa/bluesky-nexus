@@ -61,7 +61,7 @@ ZMQ_IP="localhost"
 ZMQ_PORT="5578"
 
 # ------------------------- Kafka Configuration -------------------------------
-KAFKA_BROKERS="localhost:5578"  # e.g. "localhost:5578"
+KAFKA_BROKERS="localhost:9092"  # e.g. "localhost:9092"
 KAFKA_GROUP="Nexus-Writer"      # optional
 KAFKA_TOPIC="bluesky.documents" # required for Kafka mode
 
