@@ -47,38 +47,52 @@ from bluesky_nexus.common.logging_utils import LogLevel, setup_nx_logger
 
 
 def run_kafka_dispatcher(args) -> None:
-    """Start a Kafka-based Bluesky RemoteDispatcher.
+    """Start a Bluesky RemoteDispatcher using Kafka.
 
-    This function resolves configuration values from CLI arguments, optionally falling
-    back to environment variables. After validating all required inputs, it initializes
-    logging, constructs a `NexusWriter` callback, and starts a Kafka `RemoteDispatcher`
-    listening for Bluesky documents on the specified topic.
+    This function is executed when the user selects the ``kafka`` data-source
+    from the top-level CLI (``python -m bluesky_nexus --source kafka``).
+
+    It performs the following responsibilities:
+
+    1. Resolve configuration values from CLI arguments, with optional
+       fallbacks to environment variables.
+    2. Validate all required parameters.
+    3. Initialize logging for the NexusWriter (console + rotating file logs).
+    4. Instantiate the `NexusWriter` callback.
+    5. Instantiate and start a Kafka-backed `RemoteDispatcher`, subscribing
+       the NexusWriter to Bluesky documents on the configured topic.
 
     Parameters
     ----------
     args : argparse.Namespace
-        Parsed CLI arguments. Expected attributes:
+        Parsed CLI arguments for the Kafka subparser. Expected attributes:
 
         Required:
-            - kafka_brokers: Kafka bootstrap server list.
-            - kafka_topic:   Kafka topic to subscribe to.
-            - nx_dir:        Directory where NeXus files will be written.
-            - log_dir:       Directory where NexusWriter log files will be stored.
+            - kafka_brokers : str
+                Comma-separated Kafka bootstrap servers.
+            - kafka_topic : str
+                Name of the Kafka topic to subscribe to.
+            - nx_dir : str
+                Directory where NeXus files will be written.
+            - log_dir : str
+                Directory where NeXus log files will be stored.
 
         Optional:
-            - kafka_group:     Kafka consumer group (default: "default").
-            - cpt_delimiter:   Custom ophyd component name delimiter.
+            - kafka_group : str, default="default"
+                Kafka consumer group to join.
+            - cpt_delimiter : str or None
+                Custom ophyd component name delimiter.
 
     Environment Variable Fallbacks
     ------------------------------
     CLI arguments take precedence. If not provided, the following environment
-    variables are used:
+    variables supply fallback values:
 
-        _KAFKA_BROKERS              → fallback for --kafka-brokers
-        _KAFKA_GROUP                → fallback for --kafka-group
-        _NX_FILE_DIR_PATH           → fallback for --nx-dir
-        _NX_LOG_FILE_DIR_PATH       → fallback for --log-dir
-        _OPHYD_CPT_NAME_DELIMITER   → fallback for --cpt-delimiter
+        _KAFKA_BROKERS              → --kafka-brokers
+        _KAFKA_GROUP                → --kafka-group
+        _NX_FILE_DIR_PATH           → --nx-dir
+        _NX_LOG_FILE_DIR_PATH       → --log-dir
+        _OPHYD_CPT_NAME_DELIMITER   → --cpt-delimiter
 
     Raises
     ------
@@ -87,8 +101,8 @@ def run_kafka_dispatcher(args) -> None:
 
     Notes
     -----
-    - The function runs until interrupted (Ctrl+C).
-    - On shutdown, it attempts to close the dispatcher cleanly.
+    - The dispatcher runs until interrupted (Ctrl+C).
+    - On shutdown, it attempts a clean dispatcher termination.
     """
     # ---------------------------------------------------------------------------
     # Resolve configuration with fallback to environment variables if CLI absent
