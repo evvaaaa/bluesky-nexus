@@ -98,7 +98,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     kafka_parser.add_argument(
         "--kafka-topic",
-        required=True,
+        required=False,
         help="Kafka topic to subscribe to (e.g. bluesky.documents)",
     )
 
@@ -135,7 +135,7 @@ def main():
     Raises
     ------
     ValueError
-        If the selected ``--source`` is not recognized.
+        If the selected ``dest="source"`` is not recognized.
     """
     parser = build_parser()
     args = parser.parse_args()
