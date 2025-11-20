@@ -48,34 +48,60 @@ def run_zmq_dispatcher(args) -> None:
     """Start a Bluesky RemoteDispatcher using ZeroMQ.
 
     This function is executed when the user selects the ``zmq`` data-source
-    from the top-level CLI (``python -m bluesky_nexus --source zmq``).
+    from the top-level CLI (``python -m bluesky_nexus zmq``).
 
-    It performs the following responsibilities:
+    Responsibilities:
 
-    1. Resolve required configuration from CLI arguments or environment variables.
-    2. Validate the required configuration
-    3. Initialize logging for the NeXus writer (console + rotating file logs).
+    1. Resolve configuration values from CLI arguments, with optional
+       fallbacks to environment variables.
+    2. Validate all required parameters.
+    3. Initialize logging for the NexusWriter (console + rotating file logs).
     4. Instantiate the `NexusWriter` callback.
-    5. Instantiate and start a `RemoteDispatcher` and subscribe the writer
-        to BlueSky documents.
+    5. Instantiate and start a ZeroMQ-backed `RemoteDispatcher`, subscribing
+       the NexusWriter to Bluesky documents.
 
     Parameters
     ----------
     args : argparse.Namespace
-        Parsed arguments specific to the ZMQ subparser. Expected attributes:
-        - zmq_ip : str or None
-        - zmq_port : str or None
-        - nx_dir : str or None
-        - log_dir : str or None
-        - cpt_delimiter : str or None
+        Parsed CLI arguments for the ZeroMQ subparser. Expected attributes:
+
+        Required:
+            - zmq_ip : str or None
+                IP address of the ZeroMQ publisher.
+            - zmq_port : str or None
+                Port of the ZeroMQ publisher.
+            - nx_dir : str or None
+                Directory where NeXus files will be written.
+            - log_dir : str or None
+                Directory where NeXus log files will be stored.
+
+        Optional:
+            - cpt_delimiter : str or None
+                Custom ophyd component name delimiter.
+
+    Environment Variable Fallbacks
+    ------------------------------
+    CLI arguments take precedence. If not provided, the following environment
+    variables supply fallback values:
+
+        _ZMQ_IP                   → --zmq-ip
+        _ZMQ_PORT                 → --zmq-port
+        _NX_FILE_DIR_PATH         → --nx-dir
+        _NX_LOG_FILE_DIR_PATH     → --log-dir
+        _OPHYD_CPT_NAME_DELIMITER → --cpt-delimiter
 
     Raises
     ------
     ValueError
-        If any mandatory configuration parameter is missing.
+        If any required configuration value is missing.
 
     KeyboardInterrupt
         Gracefully stops the dispatcher when Ctrl+C is pressed.
+
+    Notes
+    -----
+    - The dispatcher runs until interrupted (Ctrl+C).
+    - On shutdown, it attempts a clean dispatcher termination.
     """
     # ---------------------------------------------------------------------------
     # Resolve configuration with fallback to environment variables if CLI absent
