@@ -90,6 +90,7 @@ def run_kafka_dispatcher(args) -> None:
 
         _KAFKA_BROKERS              → --kafka-brokers
         _KAFKA_GROUP                → --kafka-group
+        _KAFKA_TOPIC                → --kafka-topic
         _NX_FILE_DIR_PATH           → --nx-dir
         _NX_LOG_FILE_DIR_PATH       → --log-dir
         _OPHYD_CPT_NAME_DELIMITER   → --cpt-delimiter
@@ -110,7 +111,7 @@ def run_kafka_dispatcher(args) -> None:
     kafka_brokers = args.kafka_brokers or os.environ.get("_KAFKA_BROKERS")
     # Kafka consumer groups usually have a default, often "default" or "group1".
     kafka_group = args.kafka_group or os.environ.get("_KAFKA_GROUP", "default")
-    kafka_topic = args.kafka_topic  # No fallback since required by --kafka-topic
+    kafka_topic = args.kafka_topic or os.environ.get("_KAFKA_TOPIC")
     nx_dir = args.nx_dir or os.environ.get("_NX_FILE_DIR_PATH")
     log_dir = args.log_dir or os.environ.get("_NX_LOG_FILE_DIR_PATH")
     cpt_delimiter = args.cpt_delimiter or os.environ.get("_OPHYD_CPT_NAME_DELIMITER")
