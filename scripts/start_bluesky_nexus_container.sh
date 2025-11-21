@@ -97,6 +97,15 @@ echo
 
 
 # =============================================================================
+# Verify that the image exists before continuing
+# =============================================================================
+if ! docker image inspect "$IMAGE_NAME" >/dev/null 2>&1; then
+    echo "ERROR: Docker image '$IMAGE_NAME' not found."
+    exit 1
+fi
+
+
+# =============================================================================
 # Remove existing container
 # =============================================================================
 if docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
@@ -114,6 +123,14 @@ COMMON_RUN_ARGS=(
   --name "$CONTAINER_NAME"
   --env _NX_FILE_DIR_PATH="$CONTAINER_DATA_DIR"
   --env _NX_LOG_FILE_DIR_PATH="$CONTAINER_LOG_DIR"
+  --env _NX_LOG_FILE_NAME="feu_chatterton.log"
+  --env _NX_LOG_FILE_MAX_SIZE="5242880"
+  --env _NX_BACKUP_COUNT="6"
+  --env _NX_CONSOLE_LOG_LEVEL="ERROR"
+  --env _NX_FILE_LOG_LEVEL="DEBUG"
+  --env _NX_ENABLE_CONSOLE_LOG="true"
+  --env _NX_ENABLE_FILE_LOG="true"
+
   -v "$HOST_DATA_DIR":"$CONTAINER_DATA_DIR"
   -v "$HOST_LOG_DIR":"$CONTAINER_LOG_DIR"
 )
