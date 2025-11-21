@@ -61,14 +61,14 @@ class NexusWriter(CollectThenCompute):
 
     Parameters
     ----------
-    nx_file_dir_path : str
+    nx_file_dir_path : Path
         Base directory where NeXus files are stored.
     cpt_name_delimiter : str, optional
         Delimiter separating component names in device keys.
         Default is "_" (standard for Ophyd).
     """
 
-    def __init__(self, nx_file_dir_path: str, cpt_name_delimiter: str = "_") -> None:
+    def __init__(self, nx_file_dir_path: Path, cpt_name_delimiter: str = "_") -> None:
         """Init.
 
         Initialize with NeXus file path and component name delimiter.
@@ -130,7 +130,7 @@ class NexusWriter(CollectThenCompute):
         elif name == "stop":
             self.stop(doc)
 
-    def create_nx_file_path(self, dir_path_str: str) -> Path:
+    def create_nx_file_path(self, dir_path: Path) -> Path:
         """Construct the full NeXus file path for the current.
 
         Bluesky run.
@@ -154,7 +154,7 @@ class NexusWriter(CollectThenCompute):
 
         Parameters
         ----------
-        dir_path_str : str
+        dir_path : Path
             Base directory where the NeXus file hierarchy should be created.
 
         Returns
@@ -174,9 +174,6 @@ class NexusWriter(CollectThenCompute):
         - The `.nx` extension is appended if missing.
         - This function does not open or write the file; it only returns a valid path.
         """
-        # Convert the dir path string to Path
-        dir_path: Path = Path(dir_path_str)
-
         # Check if 'dir_path' is pointing to existing directory
         if not dir_path.is_dir():
             raise ValueError(f"Nexus dir path {dir_path} is not a directory.")
@@ -342,11 +339,8 @@ class NexusWriter(CollectThenCompute):
             )
             return
 
-        # Define nexus file dir path
-        nx_dir_path: str = self.nx_file_dir_path
-
         # Create nexus file path
-        nx_file_path: Path = self.create_nx_file_path(nx_dir_path)
+        nx_file_path: Path = self.create_nx_file_path(self.nx_file_dir_path)
 
         # Copy the start document to be able to modify it.
         # Reason: Documents are immutable.
