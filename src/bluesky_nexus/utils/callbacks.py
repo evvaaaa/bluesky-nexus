@@ -58,6 +58,7 @@ Notes:
 """
 
 import json
+from pathlib import Path
 from pprint import pprint
 
 from bluesky.callbacks import CallbackBase
@@ -74,15 +75,15 @@ class WriteToFileCallback:
     entry to the file in JSON format.
 
     Attributes:
-        file_path (str): Path to the file where data will be written.
+        file_path (Path): Path to the file where data will be written.
         file (file object): File handle used for writing.
     """
 
-    def __init__(self, file_path):
+    def __init__(self, file_path: Path):
         """Initialize the WriteToFileCallback with the path to the file.
 
         Args:
-            file_path (str): The path to the file where entries will be written.
+            file_path (Path): The path to the file where entries will be written.
         """
         self.file_path = file_path
         self.file = None
@@ -130,17 +131,17 @@ class WriteToFileFormattedCallback:
     output instead of streaming line-by-line.
     """
 
-    def __init__(self, file_path):
+    def __init__(self, file_path: Path):
         """Initialize the WriteToFileFormattedCallback.
 
         Parameters:
         ----------
-        file_path : str
+        file_path : Path
             Path to the file where the formatted JSON output will be written.
         """
         self.file_path = file_path
         self.file = None
-        self.documents = []
+        self.documents: list = []
 
     def __enter__(self):
         """Open the file on entering the context."""
