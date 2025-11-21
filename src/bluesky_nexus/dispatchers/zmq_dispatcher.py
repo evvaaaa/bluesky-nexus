@@ -38,7 +38,7 @@ The dispatcher simply forwards documents to the given callback.
 
 import os
 
-from bluesky.callbacks.zmq import RemoteDispatcher
+from bluesky.callbacks.zmq import RemoteDispatcher as ZMQDispatcher
 
 from bluesky_nexus.callbacks.nexus_writer.writer_core import NexusWriter
 from bluesky_nexus.common.logging_utils import LogLevel, setup_nx_logger
@@ -165,7 +165,7 @@ def run_zmq_dispatcher(args) -> None:
     address = f"{zmq_ip}:{zmq_port}"
     print(f"Connecting to ZMQ publisher at {address}")
 
-    dispatcher = RemoteDispatcher(address)
+    dispatcher = ZMQDispatcher(address)
     dispatcher.subscribe(writer)
     print("ZMQ RemoteDispatcher ready. Press Ctrl+C to stop.")
 
