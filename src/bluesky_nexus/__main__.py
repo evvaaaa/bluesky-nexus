@@ -1,37 +1,170 @@
 """Entry point for the ``bluesky_nexus`` command-line interface.
 
-Usage:
-    bluesky_nexus zmq   --zmq-ip 127.0.0.1 --zmq-port 5567
-    bluesky_nexus kafka --kafka-brokers localhost:9092 --kafka-group nexus-writer
+Usage examples
+--------------
+ZeroMQ:
+    bluesky_nexus \
+        --log-dir /path/to/logs \
+        --console-level INFO \
+        --file-level DEBUG \
+        zmq \
+            --zmq-ip localhost \
+            --zmq-port 5578 \
+            --nx-dir /path/to/nexus_output
 
-Each subcommand initializes the appropriate document source
-(ZMQ or Kafka), configures a RemoteDispatcher, and attaches
-the NexusWriter callback.
+Kafka:
+    bluesky_nexus \
+        --log-dir /path/to/logs \
+        --file-level DEBUG \
+        --log-file-name nx_writer.log \
+        kafka \
+            --kafka-brokers localhost:9092 \
+            --kafka-group nexus-writer \
+            --kafka-topic bluesky.documents \
+            --nx-dir /path/to/nexus_output
+
+This script:
+1. Parses top-level CLI arguments that configure global logging.
+2. Parses a subcommand (``zmq`` or ``kafka``) that selects the document source.
+3. Initializes global logging exactly once.
+4. Delegates execution to the appropriate dispatcher.
+
+---------------------------------------------------------------------------
+Top-Level Logging Arguments (must come BEFORE the subcommand)
+---------------------------------------------------------------------------
+
+| CLI Argument     | Env Variable               | Description                          |
+|------------------|----------------------------|--------------------------------------|
+| --log-dir        | _NX_LOG_FILE_DIR_PATH      | Directory for NeXus log files        |
+| --console-level  | _NX_CONSOLE_LOG_LEVEL      | Console log level (default=ERROR)    |
+| --file-level     | _NX_FILE_LOG_LEVEL         | File log level (default=DEBUG)       |
+| --log-file-name  | _NX_LOG_FILE_NAME          | Log file name (default=nx_log.log)   |
+| --file-max-size  | _NX_LOG_FILE_MAX_SIZE      | Max size in bytes (default=10485760) |
+| --backup-count   | _NX_BACKUP_COUNT           | Number of rotated logs (default=5)   |
+| --enable-console | _NX_ENABLE_CONSOLE_LOG     | Enable console logging (default=True)|
+| --enable-file    | _NX_ENABLE_FILE_LOG        | Enable file logging (default=True)   |
+
+⚠️ These arguments **must** be placed *before* the subcommand (``zmq`` or ``kafka``).
+
+Example:
+    bluesky_nexus --log-dir ./logs zmq --zmq-ip 127.0.0.1
+
+---------------------------------------------------------------------------
+Subcommands (Document Sources)
+---------------------------------------------------------------------------
+
+After the top-level options, choose the document source:
+
+    bluesky_nexus [TOP-LEVEL OPTIONS] zmq   [ZMQ OPTIONS...]
+    bluesky_nexus [TOP-LEVEL OPTIONS] kafka [KAFKA OPTIONS...]
+
+Each subcommand defines its own backend-specific options.
+
+---------------------------------------
+ZMQ Backend Options (after ``zmq``)
+---------------------------------------
+
+| CLI Argument     | Env Variable             | Description                           |
+|------------------|---------------------------|--------------------------------------|
+| --zmq-ip         | _ZMQ_IP                   | ZeroMQ publisher IP address          |
+| --zmq-port       | _ZMQ_PORT                 | ZeroMQ publisher port                |
+| --nx-dir         | _NX_FILE_DIR_PATH         | Directory for NeXus output files     |
+| --cpt-delimiter  | _OPHYD_CPT_NAME_DELIMITER | Custom ophyd component delimiter     |
+
+-----------------------------------------
+Kafka Backend Options (after ``kafka``)
+-----------------------------------------
+
+| CLI Argument     | Env Variable             | Description                           |
+|------------------|---------------------------|--------------------------------------|
+| --kafka-brokers  | _KAFKA_BROKERS            | Comma-separated list of Kafka servers|
+| --kafka-group    | _KAFKA_GROUP              | Kafka consumer group ID              |
+| --kafka-topic    | _KAFKA_TOPIC              | Kafka topic to subscribe to          |
+| --nx-dir         | _NX_FILE_DIR_PATH         | Directory for NeXus output files     |
+| --cpt-delimiter  | _OPHYD_CPT_NAME_DELIMITER | Custom ophyd component delimiter     |
 """
 
 import argparse
+import os
 
+from bluesky_nexus.common.logging_utils import LogLevel, logger, setup_nx_logger
+from bluesky_nexus.common.validation_utils import validate_directory
 from bluesky_nexus.dispatchers.kafka_dispatcher import run_kafka_dispatcher
 from bluesky_nexus.dispatchers.zmq_dispatcher import run_zmq_dispatcher
 
 
+# ---------------------------------------------------------------------------
+# Top-level parser
+# ---------------------------------------------------------------------------
 def build_parser() -> argparse.ArgumentParser:
-    """Define subcommands: ``zmq`` and ``kafka`` for selecting the document source.
-
-    These determine the document transport to be used by the RemoteDispatcher.
-    Each subcommand provides its own broker- specific arguments while
-    sharing common configuration options for the NexusWriter, such as
-    directory paths and the ophyd component name delimiter.
-
-    Returns
-    -------
-    argparse.ArgumentParser
-        A fully configured argument parser ready to parse CLI arguments.
-    """
+    """Define top-level arguments and the zmq/kafka subcommands."""
     parser = argparse.ArgumentParser(
         description="Bluesky NeXus writer service entry point."
     )
 
+    # -----------------------------------------------------------------------
+    # TOP-LEVEL LOGGING ARGUMENTS
+    # -----------------------------------------------------------------------
+    parser.add_argument(
+        "--log-dir",
+        required=False,
+        help="Directory for NeXus logs (env: _NX_LOG_FILE_DIR_PATH).",
+    )
+
+    parser.add_argument(
+        "--console-level",
+        required=False,
+        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+        help="Console log level (env: _NX_CONSOLE_LOG_LEVEL).",
+    )
+
+    parser.add_argument(
+        "--file-level",
+        required=False,
+        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+        help="File log level (env: _NX_FILE_LOG_LEVEL).",
+    )
+
+    parser.add_argument(
+        "--log-file-name",
+        required=False,
+        type=str,
+        help="Log file name (env: _NX_LOG_FILE_NAME). Default: nx_log.log",
+    )
+
+    parser.add_argument(
+        "--file-max-size",
+        required=False,
+        type=int,
+        help="Maximum file size before rotation (env: _NX_LOG_FILE_MAX_SIZE).",
+    )
+
+    parser.add_argument(
+        "--backup-count",
+        required=False,
+        type=int,
+        help="Number of rotated log files to keep (env: _NX_BACKUP_COUNT).",
+    )
+
+    parser.add_argument(
+        "--enable-console",
+        required=False,
+        type=str,
+        choices=["true", "false"],
+        help="Enable console logging (env: _NX_ENABLE_CONSOLE_LOG). Default: True",
+    )
+
+    parser.add_argument(
+        "--enable-file",
+        required=False,
+        type=str,
+        choices=["true", "false"],
+        help="Enable file logging (env: _NX_ENABLE_FILE_LOG). Default: True",
+    )
+
+    # -----------------------------------------------------------------------
+    # SUBPARSERS: zmq and kafka
+    # -----------------------------------------------------------------------
     subparsers = parser.add_subparsers(
         title="Document source",
         dest="source",
@@ -39,9 +172,9 @@ def build_parser() -> argparse.ArgumentParser:
         help="Choose the document source (zmq or kafka).",
     )
 
-    # -------------------------------------------------------
-    # ZMQ SUBPARSER
-    # -------------------------------------------------------
+    # -----------------------------
+    # ZMQ subcommand
+    # -----------------------------
     zmq_parser = subparsers.add_parser(
         "zmq",
         help="Start a Bluesky ZMQ RemoteDispatcher.",
@@ -49,11 +182,15 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     zmq_parser.add_argument(
-        "--zmq-ip", required=False, help="ZeroMQ publisher IP (env: ``_ZMQ_IP``)."
+        "--zmq-ip",
+        required=False,
+        help="ZeroMQ publisher IP (env: ``_ZMQ_IP``).",
     )
 
     zmq_parser.add_argument(
-        "--zmq-port", required=False, help="ZeroMQ publisher port (env: ``_ZMQ_PORT``)."
+        "--zmq-port",
+        required=False,
+        help="ZeroMQ publisher port (env: ``_ZMQ_PORT``).",
     )
 
     zmq_parser.add_argument(
@@ -63,21 +200,15 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     zmq_parser.add_argument(
-        "--log-dir",
-        required=False,
-        help="Directory for NeXus logs (env: ``_NX_LOG_FILE_DIR_PATH``).",
-    )
-
-    zmq_parser.add_argument(
         "--cpt-delimiter",
         required=False,
         help="Delimiter for ophyd component names "
         "(env: ``_OPHYD_CPT_NAME_DELIMITER``).",
     )
 
-    # -------------------------------------------------------
-    # KAFKA SUBPARSER
-    # -------------------------------------------------------
+    # -----------------------------
+    # Kafka subcommand
+    # -----------------------------
     kafka_parser = subparsers.add_parser(
         "kafka",
         help="Start a Bluesky Kafka RemoteDispatcher.",
@@ -109,45 +240,106 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     kafka_parser.add_argument(
-        "--log-dir",
-        required=False,
-        help="Directory for NeXus logs (env: ``_NX_LOG_FILE_DIR_PATH``).",
-    )
-
-    kafka_parser.add_argument(
         "--cpt-delimiter",
         required=False,
         help="Delimiter for ophyd component names "
         "(env: ``_OPHYD_CPT_NAME_DELIMITER``).",
     )
-
     return parser
 
 
+# ---------------------------------------------------------------------------
+# main()
+# ---------------------------------------------------------------------------
 def main():
-    """Run the CLI entry point for ``python -m bluesky_nexus``.
-
-    This function builds the CLI parser, parses command-line
-    arguments, and dispatches control to the appropriate backend
-    (ZMQ or Kafka) to initialize and start the corresponding
-    RemoteDispatcher service.
-
-    Raises
-    ------
-    ValueError
-        If the selected ``dest="source"`` is not recognized.
-    """
+    """Run the CLI entry point for ``python -m bluesky_nexus``."""
     parser = build_parser()
     args = parser.parse_args()
 
+    # -------------------------------------------------------
+    # Resolve logging configuration with env fallbacks
+    # -------------------------------------------------------
+    log_dir = args.log_dir or os.environ.get("_NX_LOG_FILE_DIR_PATH")
+    if not log_dir:
+        raise ValueError(
+            "Missing log directory (--log-dir or env. var. _NX_LOG_FILE_DIR_PATH)."
+        )
+
+    log_file_name = args.log_file_name or os.environ.get(
+        "_NX_LOG_FILE_NAME", "nx_log.log"
+    )
+
+    log_file_max_size = args.file_max_size or int(
+        os.environ.get("_NX_LOG_FILE_MAX_SIZE", 10 * 1024 * 1024)
+    )
+
+    backup_count = args.backup_count or int(os.environ.get("_NX_BACKUP_COUNT", 5))
+
+    console_level_str = (
+        args.console_level or os.environ.get("_NX_CONSOLE_LOG_LEVEL", "ERROR")
+    ).upper()
+
+    file_level_str = (
+        args.file_level or os.environ.get("_NX_FILE_LOG_LEVEL", "DEBUG")
+    ).upper()
+
+    # Validate levels to avoid KeyError
+    try:
+        console_level = LogLevel[console_level_str]
+    except KeyError:
+        raise ValueError(f"Invalid console log level: {console_level_str}") from None
+
+    try:
+        file_level = LogLevel[file_level_str]
+    except KeyError:
+        raise ValueError(f"Invalid file log level: {file_level_str}") from None
+
+    enable_console = _str_to_bool(
+        args.enable_console or os.environ.get("_NX_ENABLE_CONSOLE_LOG", "True")
+    )
+
+    enable_file = _str_to_bool(
+        args.enable_file or os.environ.get("_NX_ENABLE_FILE_LOG", "True")
+    )
+
+    # -------------------------------------------------------
+    # Validate log directory
+    # -------------------------------------------------------
+    log_path = validate_directory(log_dir, "Log directory")
+
+    # -------------------------------------------------------
+    # Configure logging
+    # -------------------------------------------------------
+    setup_nx_logger(
+        console_level=console_level,
+        file_level=file_level,
+        log_file_dir_path=log_path,
+        log_file_name=log_file_name,
+        log_file_max_size=log_file_max_size,
+        backup_count=backup_count,
+        enable_console=enable_console,
+        enable_file=enable_file,
+    )
+
+    logger.info("Logging initialized. Directory: %s", log_path)
+    logger.info("Starting dispatcher: '%s'", args.source)
+
+    # -------------------------------------------------------
+    # Dispatch to backend
+    # -------------------------------------------------------
     if args.source == "zmq":
         run_zmq_dispatcher(args)
-
     elif args.source == "kafka":
         run_kafka_dispatcher(args)
-
     else:
         raise ValueError(f"Unknown dispatcher source: {args.source!r}")
+
+
+# ---------------------------------------------------------------------------
+# Helper
+# ---------------------------------------------------------------------------
+def _str_to_bool(value: str) -> bool:
+    return value.lower() in {"1", "true", "yes", "on"}
 
 
 if __name__ == "__main__":
