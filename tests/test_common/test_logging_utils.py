@@ -13,6 +13,7 @@ import logging
 import os
 import shutil
 import tempfile
+from pathlib import Path
 
 import pytest
 
@@ -28,7 +29,7 @@ from bluesky_nexus.common.logging_utils import (
 @pytest.fixture
 def temp_log_dir():
     """Fixture for creating and cleaning up a temporary directory."""
-    path = tempfile.mkdtemp()
+    path = Path(tempfile.mkdtemp())
     yield path
     shutil.rmtree(path)
 
@@ -70,7 +71,7 @@ def test_file_logging_creates_file(temp_log_dir):
     )
 
     logger.info("File log message")
-    log_path = os.path.join(temp_log_dir, log_file)
+    log_path = temp_log_dir / log_file
 
     assert os.path.exists(log_path)
 
@@ -86,7 +87,7 @@ def test_log_rotation_creates_multiple_files(temp_log_dir):
     setup_nx_logger(
         log_file_dir_path=temp_log_dir,
         log_file_name=log_file,
-        max_file_size=200,  # Small size to force rotation
+        log_file_max_size=200,  # Small size to force rotation
         backup_count=2,
         enable_console=False,
     )
@@ -120,7 +121,7 @@ def test_logger_setup_multiple_times_no_duplicate_logs(temp_log_dir):
 
     logger.info("Log this once")
 
-    log_path = os.path.join(temp_log_dir, "multi.log")
+    log_path = temp_log_dir / "multi.log"
     with open(log_path, encoding="utf-8") as f:
         content = f.read()
         assert content.count("Log this once") == 1
@@ -134,13 +135,13 @@ def test_get_level_value_with_enum_and_int():
 
 def test_logging_info_level_file_only(tmp_path):
     """Verify file logging at INFO level captures INFO, not DEBUG."""
-    log_dir = tmp_path
+    log_dir = Path(tmp_path)
     log_file_name = "test_nx_log.log"
 
     setup_nx_logger(
         console_level=LogLevel.INFO,
         file_level=LogLevel.INFO,
-        log_file_dir_path=str(log_dir),
+        log_file_dir_path=log_dir,
         log_file_name=log_file_name,
         enable_console=False,  # don't use console
         enable_file=True,
