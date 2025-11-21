@@ -33,10 +33,10 @@
 #      python -m bluesky_nexus zmq
 #
 #   2) Override the dispatcher mode (Kafka example):
-#      docker run bluesky_nexus_writer kafka --kafka-topic xyz \
+#      docker run bluesky_nexus_writer kafka --kafka-topic "bluesky.documents" \
 #                 --kafka-brokers localhost:9092
 #      expands to:
-#      python -m bluesky_nexus kafka --kafka-topic xyz \
+#      python -m bluesky_nexus kafka --kafka-topic "bluesky.documents" \
 #             --kafka-brokers localhost:9092
 #
 # How to start the container using the provided script:
@@ -68,10 +68,7 @@ RUN git clone --branch ${REPO_BRANCH} ${REPO_URL} .
 RUN pip install -U uv
 
 # ---- Install package and dependencies ----
-RUN uv pip install --system --no-cache-dir . \
-    && uv pip install --system --no-cache-dir pyzmq \
-    && uv pip install --system --no-cache-dir bluesky-kafka
-
+RUN uv pip install --system --no-cache-dir .
 
 # ---- Create default directories ----
 RUN mkdir -p /data /logs
