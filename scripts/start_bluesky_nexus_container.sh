@@ -190,6 +190,7 @@ fi
 docker run -d \
   --restart unless-stopped \
   --network host \
+  --user "$(id -u)":"$(id -g)" \
   --name "$CONTAINER_NAME" \
   -v "$HOST_DATA_DIR":"$CONTAINER_DATA_DIR" \
   -v "$HOST_LOG_DIR":"$CONTAINER_LOG_DIR" \
