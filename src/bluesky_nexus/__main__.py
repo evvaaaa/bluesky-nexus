@@ -1,87 +1,125 @@
-"""Entry point for the ``bluesky_nexus`` command-line interface.
+"""Command-line interface for the ``bluesky_nexus`` writer service.
 
-Usage examples
---------------
-ZeroMQ:
-    bluesky_nexus \
-        --log-dir /path/to/logs \
-        --console-level INFO \
-        --file-level DEBUG \
-        zmq \
-            --zmq-ip localhost \
-            --zmq-port 5578 \
-            --nx-dir /path/to/nexus_output
+The CLI writes NeXus files from Bluesky documents using one of two backends:
 
-Kafka:
-    bluesky_nexus \
-        --log-dir /path/to/logs \
-        --file-level DEBUG \
-        --log-file-name nx_writer.log \
-        kafka \
-            --kafka-brokers localhost:9092 \
-            --kafka-group nexus-writer \
-            --kafka-topic bluesky.documents \
-            --nx-dir /path/to/nexus_output
+    • ZeroMQ  (zmq)
+    • Kafka   (kafka)
 
-This script:
-1. Parses top-level CLI arguments that configure global logging.
-2. Parses a subcommand (``zmq`` or ``kafka``) that selects the document source.
-3. Initializes global logging exactly once.
-4. Delegates execution to the appropriate dispatcher.
+Both backends share the same logging system and accept environment variables
+as fallbacks for most options.
 
----------------------------------------------------------------------------
-Top-Level Logging Arguments (must come BEFORE the subcommand)
----------------------------------------------------------------------------
+===============================================================================
+Quick Start
+===============================================================================
 
-| CLI Argument     | Env Variable               | Description                          |
-|------------------|----------------------------|--------------------------------------|
-| --log-dir        | _NX_LOG_FILE_DIR_PATH      | Directory for NeXus log files        |
-| --console-level  | _NX_CONSOLE_LOG_LEVEL      | Console log level (default=ERROR)    |
-| --file-level     | _NX_FILE_LOG_LEVEL         | File log level (default=DEBUG)       |
-| --log-file-name  | _NX_LOG_FILE_NAME          | Log file name (default=nx_log.log)   |
-| --file-max-size  | _NX_LOG_FILE_MAX_SIZE      | Max size in bytes (default=10485760) |
-| --backup-count   | _NX_BACKUP_COUNT           | Number of rotated logs (default=5)   |
-| --enable-console | _NX_ENABLE_CONSOLE_LOG     | Enable console logging (default=True)|
-| --enable-file    | _NX_ENABLE_FILE_LOG        | Enable file logging (default=True)   |
+Run the ZMQ backend:
 
-⚠️ These arguments **must** be placed *before* the subcommand (``zmq`` or ``kafka``).
+python -m bluesky_nexus \
+    --log-dir /home/daniel/nexus_logs \
+    zmq \
+        --zmq-ip localhost \
+        --zmq-port 5578 \
+        --nx-dir /home/daniel/nexus_output
 
-Example:
-    bluesky_nexus --log-dir ./logs zmq --zmq-ip 127.0.0.1
 
----------------------------------------------------------------------------
-Subcommands (Document Sources)
----------------------------------------------------------------------------
+Run the Kafka backend:
 
-After the top-level options, choose the document source:
+python -m bluesky_nexus \
+    --log-dir /home/daniel/nexus_logs \
+    kafka \
+        --kafka-brokers localhost:9092 \
+        --kafka-topic bluesky.documents \
+        --nx-dir /home/daniel/nexus_output
 
-    bluesky_nexus [TOP-LEVEL OPTIONS] zmq   [ZMQ OPTIONS...]
-    bluesky_nexus [TOP-LEVEL OPTIONS] kafka [KAFKA OPTIONS...]
+===============================================================================
+Viewing Help
+===============================================================================
 
-Each subcommand defines its own backend-specific options.
+Global help (logging options + subcommands):
 
----------------------------------------
-ZMQ Backend Options (after ``zmq``)
----------------------------------------
+    python -m bluesky_nexus --help
 
-| CLI Argument     | Env Variable             | Description                           |
-|------------------|---------------------------|--------------------------------------|
-| --zmq-ip         | _ZMQ_IP                   | ZeroMQ publisher IP address          |
-| --zmq-port       | _ZMQ_PORT                 | ZeroMQ publisher port                |
-| --nx-dir         | _NX_FILE_DIR_PATH         | Directory for NeXus output files     |
-| --cpt-delimiter  | _OPHYD_CPT_NAME_DELIMITER | Custom ophyd component delimiter     |
+Help for the ZMQ backend:
 
------------------------------------------
-Kafka Backend Options (after ``kafka``)
------------------------------------------
+    python -m bluesky_nexus zmq --help
 
-| CLI Argument     | Env Variable             | Description                           |
-|------------------|---------------------------|--------------------------------------|
-| --kafka-brokers  | _KAFKA_BROKERS            | Comma-separated list of Kafka servers|
-| --kafka-group    | _KAFKA_GROUP              | Kafka consumer group ID              |
-| --kafka-topic    | _KAFKA_TOPIC              | Kafka topic to subscribe to          |
-| --nx-dir         | _NX_FILE_DIR_PATH         | Directory for NeXus output files     |
-| --cpt-delimiter  | _OPHYD_CPT_NAME_DELIMITER | Custom ophyd component delimiter     |
+Help for the Kafka backend:
+
+    python -m bluesky_nexus kafka --help
+
+
+===============================================================================
+Required Arguments
+===============================================================================
+
+Global requirement:
+    A log directory must always be provided, either via:
+        --log-dir
+    or the environment variable:
+        _NX_LOG_FILE_DIR_PATH
+
+ZMQ backend requires:
+    --zmq-ip and --zmq-port
+    or environment variables:
+    _ZMQ_IP and _ZMQ_PORT
+
+Kafka backend requires:
+    --kafka-brokers and --kafka-topic
+    or environment variables:
+    _KAFKA_BROKERS and _KAFKA_TOPIC
+
+
+===============================================================================
+Top-Level Logging Options (must come BEFORE zmq/kafka)
+===============================================================================
+
+| CLI Argument    | Env Variable           | Description                               |
+|-----------------|------------------------|-------------------------------------------|
+| --log-dir       | _NX_LOG_FILE_DIR_PATH  | Directory for log files (required)        |
+| --console-level | _NX_CONSOLE_LOG_LEVEL  | Console log level (default=ERROR)         |
+| --file-level    | _NX_FILE_LOG_LEVEL     | File log level (default=DEBUG)            |
+| --log-file-name | _NX_LOG_FILE_NAME      | Log filename (default=nx_log.log)         |
+| --file-max-size | _NX_LOG_FILE_MAX_SIZE  | Rotate logs above this size (default=10MB)|
+| --backup-count  | _NX_BACKUP_COUNT       | Num of rotated logs to keep (default=5)   |
+| --enable-console| _NX_ENABLE_CONSOLE_LOG | Enable console logging (default=True)     |
+| --enable-file   | _NX_ENABLE_FILE_LOG    | Enable file logging (default=True)        |
+
+⚠️ All logging arguments must appear *before* the backend subcommand.
+
+
+===============================================================================
+ZMQ Backend Options (after `zmq`)
+===============================================================================
+
+| CLI Argument     | Env Variable             | Description                        |
+|------------------|---------------------------|-----------------------------------|
+| --zmq-ip         | _ZMQ_IP                   | IP of the Bluesky ZMQ publisher   |
+| --zmq-port       | _ZMQ_PORT                 | Port of the Bluesky ZMQ publisher |
+| --nx-dir         | _NX_FILE_DIR_PATH         | Output directory for NeXus files  |
+| --cpt-delimiter  | _OPHYD_CPT_NAME_DELIMITER | Ophyd component name delimiter    |
+
+
+===============================================================================
+Kafka Backend Options (after `kafka`)
+===============================================================================
+
+| CLI Argument     | Env Variable             | Description                         |
+|------------------|---------------------------|------------------------------------|
+| --kafka-brokers  | _KAFKA_BROKERS            | Comma-separated Kafka servers      |
+| --kafka-group    | _KAFKA_GROUP              | Kafka consumer group               |
+| --kafka-topic    | _KAFKA_TOPIC              | Topic containing Bluesky documents |
+| --nx-dir         | _NX_FILE_DIR_PATH         | Output directory for NeXus files   |
+| --cpt-delimiter  | _OPHYD_CPT_NAME_DELIMITER | Ophyd component name delimiter     |
+
+
+===============================================================================
+What this script does
+===============================================================================
+
+1. Parses global logging arguments.
+2. Parses a backend selection: ``zmq`` or ``kafka``.
+3. Sets up logging exactly once.
+4. Starts the appropriate dispatcher and passes documents to the writer.
 """
 
 import argparse
