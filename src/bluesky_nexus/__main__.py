@@ -150,7 +150,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--enable-console",
         required=False,
         type=str,
-        choices=["true", "false"],
+        choices=["True", "False"],
         help="Enable console logging (env: _NX_ENABLE_CONSOLE_LOG). Default: True",
     )
 
@@ -158,7 +158,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--enable-file",
         required=False,
         type=str,
-        choices=["true", "false"],
+        choices=["True", "False"],
         help="Enable file logging (env: _NX_ENABLE_FILE_LOG). Default: True",
     )
 
