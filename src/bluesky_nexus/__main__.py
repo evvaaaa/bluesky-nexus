@@ -15,21 +15,21 @@ Quick Start
 Run the ZMQ backend:
 
 python -m bluesky_nexus \
-    --log-dir /home/daniel/nexus_logs \
+    --log-dir /home/user/nexus_logs \
     zmq \
         --zmq-ip localhost \
         --zmq-port 5578 \
-        --nx-dir /home/daniel/nexus_output
+        --nx-dir /home/user/nexus_output
 
 
 Run the Kafka backend:
 
 python -m bluesky_nexus \
-    --log-dir /home/daniel/nexus_logs \
+    --log-dir /home/user/nexus_logs \
     kafka \
         --kafka-brokers localhost:9092 \
         --kafka-topic bluesky.documents \
-        --nx-dir /home/daniel/nexus_output
+        --nx-dir /home/user/nexus_output
 
 ===============================================================================
 Viewing Help
