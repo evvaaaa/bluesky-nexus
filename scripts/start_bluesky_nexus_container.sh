@@ -1,44 +1,71 @@
 #!/usr/bin/env bash
 
 # =============================================================================
-# Start the bluesky_nexus_writer service with mounted volumes and configured
-# environment variables.
+# Start the Bluesky NeXus Writer service as a persistent Docker container.
 #
-# This script launches the NeXus writer container in detached mode as a
-# persistent service. It supports two dispatcher modes:
+# This script launches the `bluesky_nexus_writer` container with mounted
+# host directories and fully configured environment variables. It supports
+# both available dispatcher backends:
 #
-#   - ZMQ   : Uses Bluesky ZeroMQ RemoteDispatcher
-#   - Kafka : Uses Bluesky Kafka RemoteDispatcher
+#   - ZMQ   : Bluesky ZeroMQ RemoteDispatcher
+#   - Kafka : Bluesky Kafka RemoteDispatcher
 #
-# The mode is selected via the DISPATCHER_MODE variable (default: zmq).
+# The backend is selected using DISPATCHER_MODE (default: "zmq").
 #
-# Inside the container, the service starts via:
+# Inside the container, the service runs via:
 #
-#        python -m bluesky_nexus <mode>
+#       python -m bluesky_nexus <zmq|kafka>
 #
-# where <mode> is either "zmq" or "kafka".
+# =====================================================================
+# Logging Configuration (applies to all backends)
+# =====================================================================
+# Logging MUST be configured before the backend subcommand. This script
+# sets the following environment variables for the container:
 #
-# Environment variables passed into the container:
+#   _NX_LOG_FILE_DIR_PATH   Directory for log file output (mounted to /logs)
+#   _NX_LOG_FILE_NAME       Log filename      (default here: bluesky_nexus_writer.log)
+#   _NX_LOG_FILE_MAX_SIZE   Log rotation size (default here: 5 MB)
+#   _NX_BACKUP_COUNT        Number of rotated logs (default here: 6)
+#   _NX_CONSOLE_LOG_LEVEL   Console level (default: ERROR)
+#   _NX_FILE_LOG_LEVEL      File level    (default: DEBUG)
+#   _NX_ENABLE_CONSOLE_LOG  Enable console logging [True|False] (default: True)
+#   _NX_ENABLE_FILE_LOG     Enable file logging    [True|False] (default: True)
 #
-#   _NX_FILE_DIR_PATH
-#       Directory inside the container where NeXus files are written.
+# These override the defaults defined in the Python code.
 #
-#   _NX_LOG_FILE_DIR_PATH
-#       Directory inside the container where writer logs are stored.
+# =====================================================================
+# Backend Configuration
+# =====================================================================
+# ZMQ Mode:
+#   _ZMQ_IP                   ZeroMQ publisher IP
+#   _ZMQ_PORT                 ZeroMQ publisher port
+#   _NX_FILE_DIR_PATH         Directory where NeXus files are written
 #
-#   ZMQ MODE:
-#       _ZMQ_IP
-#       _ZMQ_PORT
+# Kafka Mode:
+#   _KAFKA_BROKERS            Kafka bootstrap servers (required)
+#   _KAFKA_TOPIC              Kafka topic for Bluesky documents (required)
+#   _KAFKA_GROUP              Kafka consumer group (optional, default: "default")
+#   _NX_FILE_DIR_PATH         Directory where NeXus files are written
 #
-#   KAFKA MODE:
-#       _KAFKA_BROKERS
-#       _KAFKA_GROUP       (optional)
-#       _KAFKA_TOPIC       (required)
+# Optional:
+#   _OPHYD_CPT_NAME_DELIMITER Component delimiter for ophyd names
+#                             If unset or empty → default behaviour is used.
 #
-#   _OPHYD_CPT_NAME_DELIMITER (optional)
-#       Custom ophyd component delimiter. If unset or empty, defaults are used.
+# =====================================================================
+# Volumes
+# =====================================================================
+# Host directories are mounted:
+#   $HOST_DATA_DIR → /data : NeXus file output
+#   $HOST_LOG_DIR  → /logs : Writer log output
 #
+# =====================================================================
+# Additional Notes
+# =====================================================================
+# • Container is started with '--restart unless-stopped'.
+# • Uses host networking (--network host).
+# • Any existing container with the same name is removed first.
 # =============================================================================
+
 
 # ------------------------- Mode selection ------------------------------------
 # Available values: "zmq" or "kafka"
@@ -115,30 +142,24 @@ fi
 
 
 # =============================================================================
-# Common docker run arguments
+# Base env vars for logging (override defaults)
 # =============================================================================
-COMMON_RUN_ARGS=(
-  --restart unless-stopped
-  --network host
-  --name "$CONTAINER_NAME"
+ENV_VARS=(
   --env _NX_FILE_DIR_PATH="$CONTAINER_DATA_DIR"
   --env _NX_LOG_FILE_DIR_PATH="$CONTAINER_LOG_DIR"
-  --env _NX_LOG_FILE_NAME="feu_chatterton.log"
+  --env _NX_LOG_FILE_NAME="bluesky_nexus_writer.log"
   --env _NX_LOG_FILE_MAX_SIZE="5242880"
   --env _NX_BACKUP_COUNT="6"
   --env _NX_CONSOLE_LOG_LEVEL="ERROR"
   --env _NX_FILE_LOG_LEVEL="DEBUG"
-  --env _NX_ENABLE_CONSOLE_LOG="true"
-  --env _NX_ENABLE_FILE_LOG="true"
-
-  -v "$HOST_DATA_DIR":"$CONTAINER_DATA_DIR"
-  -v "$HOST_LOG_DIR":"$CONTAINER_LOG_DIR"
+  --env _NX_ENABLE_CONSOLE_LOG="True"
+  --env _NX_ENABLE_FILE_LOG="True"
 )
 
 
 # ------------------------- ZMQ MODE ------------------------------------------
 if [[ "$DISPATCHER_MODE" == "zmq" ]]; then
-    COMMON_RUN_ARGS+=(
+    ENV_VARS+=(
       --env _ZMQ_IP="$ZMQ_IP"
       --env _ZMQ_PORT="$ZMQ_PORT"
     )
@@ -146,7 +167,7 @@ fi
 
 # ------------------------- KAFKA MODE ----------------------------------------
 if [[ "$DISPATCHER_MODE" == "kafka" ]]; then
-    COMMON_RUN_ARGS+=(
+    ENV_VARS+=(
       --env _KAFKA_BROKERS="$KAFKA_BROKERS"
       --env _KAFKA_GROUP="$KAFKA_GROUP"
       --env _KAFKA_TOPIC="$KAFKA_TOPIC"
@@ -157,7 +178,7 @@ fi
 # ------------------------- Optional delimiter --------------------------------
 if [[ -n "$OPHYD_CPT_NAME_DELIMITER" ]]; then
     echo "Using OPHYD_CPT_NAME_DELIMITER='$OPHYD_CPT_NAME_DELIMITER'"
-    COMMON_RUN_ARGS+=( --env _OPHYD_CPT_NAME_DELIMITER="$OPHYD_CPT_NAME_DELIMITER" )
+    ENV_VARS+=( --env _OPHYD_CPT_NAME_DELIMITER="$OPHYD_CPT_NAME_DELIMITER" )
 else
     echo "OPHYD_CPT_NAME_DELIMITER empty or unset -> default behavior"
 fi
@@ -167,7 +188,12 @@ fi
 # Run container
 # =============================================================================
 docker run -d \
-  "${COMMON_RUN_ARGS[@]}" \
+  --restart unless-stopped \
+  --network host \
+  --name "$CONTAINER_NAME" \
+  -v "$HOST_DATA_DIR":"$CONTAINER_DATA_DIR" \
+  -v "$HOST_LOG_DIR":"$CONTAINER_LOG_DIR" \
+  "${ENV_VARS[@]}" \
   "$IMAGE_NAME" \
   "$DISPATCHER_MODE"
 
