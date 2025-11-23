@@ -5,6 +5,25 @@
 - [bluesky nexus](#bluesky-nexus)
   - [Table of contents](#table-of-contents)
   - [Description](#description)
+  - [Operating Modes](#operating-modes)
+  - [Architecture overview (service mode)](#architecture-overview-service-mode)
+  - [Command-line usage (service mode)](#command-line-usage-service-mode)
+    - [Quick start: ZMQ mode](#quick-start-zmq-mode)
+    - [Quick start: Kafka mode](#quick-start-kafka-mode)
+    - [Help](#help)
+  - [CLI Logging Options (service mode)](#cli-logging-options-service-mode)
+  - [ZMQ backend options](#zmq-backend-options)
+    - [ZMQ Backend Options](#zmq-backend-options-1)
+  - [Kafka backend options](#kafka-backend-options)
+    - [Kafka Backend Options](#kafka-backend-options-1)
+  - [Ophyd component name delimiter](#ophyd-component-name-delimiter)
+    - [CLI](#cli)
+    - [Environment variable](#environment-variable)
+  - [Directory validation requirements](#directory-validation-requirements)
+  - [Environment variables overview (complete reference)](#environment-variables-overview-complete-reference)
+    - [Logging Environment Variables (Shared)](#logging-environment-variables-shared)
+    - [ZMQ Backend Environment Variables](#zmq-backend-environment-variables)
+    - [Kafka Backend Environment Variables](#kafka-backend-environment-variables)
   - [Pydantic schema and model capabilities](#pydantic-schema-and-model-capabilities)
     - [Example of schema yml file](#example-of-schema-yml-file)
   - [Rules concerning definition of a groups, datasets and their attributes in the schema yml file](#rules-concerning-definition-of-a-groups-datasets-and-their-attributes-in-the-schema-yml-file)
@@ -23,9 +42,11 @@
   - [Installation and usage in the context of bluesky container (embedded NexusWriter mode)](#installation-and-usage-in-the-context-of-bluesky-container-embedded-nexuswriter-mode)
   - [Installation and usage when NexusWriter runs as a separate service](#installation-and-usage-when-nexuswriter-runs-as-a-separate-service)
     - [How it works](#how-it-works)
+  - [Running the Docker container](#running-the-docker-container)
+  - [Using start\_bluesky\_nexus\_container.sh](#using-start_bluesky_nexus_containersh)
   - [Installation and usage outside the HZB deployment infrastructure](#installation-and-usage-outside-the-hzb-deployment-infrastructure)
     - [Installation](#installation)
-    - [Operating Modes](#operating-modes)
+    - [Operating Modes](#operating-modes-1)
       - [Mode A – Local mode (NexusWriter in the same process as the RE)](#mode-a--local-mode-nexuswriter-in-the-same-process-as-the-re)
       - [Mode B – Remote mode (NexusWriter executed as a separate process)](#mode-b--remote-mode-nexuswriter-executed-as-a-separate-process)
   - [NeXus directory structure](#nexus-directory-structure)
@@ -45,6 +66,280 @@
 
 - **NXinstrument Group**: Includes all instruments involved in the run, including baseline instruments.
 - **NXcollection Group**: Contains the content of the `start` and `stop` documents generated during the run by the Bluesky Run Engine.
+
+---
+
+## Operating Modes
+
+The bluesky_nexus package can be used in two different execution modes:
+
+1. Embedded mode (non-service mode)
+
+   - NexusWriter runs in the same process as the RunEngine (RE).
+   - No ZeroMQ or Kafka required.
+   - The NexusWriter callback is added directly to the RE via RE.subscribe(...).
+   - NeXus files are written synchronously within the RE process.
+   - Suitable for local development, test setups, or simple beamlines.
+
+    See: [Installation and usage in the context of bluesky container (embedded NexusWriter mode)](#installation-and-usage-in-the-context-of-bluesky-container-embedded-nexuswriter-mode)
+
+2. Service mode (NexusWriter running in a dedicated container or Python process)
+
+   - The main RE publishes Bluesky documents over ZeroMQ or Kafka.
+   - A remote RemoteDispatcher receives documents and writes NeXus files.
+   - The NexusWriter runs independently from the RE, increasing stability.
+
+    See: [Installation and usage when NexusWriter runs as a separate service](#installation-and-usage-when-nexuswriter-runs-as-a-separate-service)
+
+---
+
+## Architecture overview (service mode)
+
+When running the NexusWriter as a separate service (instead of embedding it inside your Bluesky RunEngine), the system follows a simple and robust architecture:
+
+```java
+RunEngine (RE)
+     │
+     ├── publishes Bluesky documents
+     │      • ZMQ Publisher (port 5577 → 5578 via proxy)
+     │      • OR Kafka Publisher (topic: bluesky.documents)
+     │
+ZeroMQ Proxy or Kafka Broker
+     │
+RemoteDispatcher (ZMQ or Kafka)
+     │
+NexusWriter
+     │
+HDF5/NeXus file (.nxs)
+```
+
+Key idea:
+The NexusWriter runs in a separate, long-running background process (container).
+It listens for Bluesky documents published by the RE and writes NeXus files independently.
+
+This provides:
+
+- Isolation between data acquisition and file writing
+- Reliability (crashes in writer do not affect RE)
+- Flexibility (can switch between ZMQ and Kafka backends)
+
+---
+
+## Command-line usage (service mode)
+
+The bluesky_nexus package exposes a complete command-line interface through:
+
+```bash
+python -m bluesky_nexus
+```
+
+It supports:
+
+- Top-level logging configuration
+- Subcommands:
+  - zmq – read Bluesky documents via ZeroMQ
+  - kafka – read Bluesky documents from Kafka
+
+General syntax:
+
+```bash
+python -m bluesky_nexus [LOGGING OPTIONS] <zmq|kafka> [BACKEND OPTIONS]
+```
+
+⚠️ Important:
+
+All logging-related options must appear before the backend (zmq or kafka) on the command line.
+
+### Quick start: ZMQ mode
+
+```bash
+python -m bluesky_nexus \
+    --log-dir /home/user/nexus_logs \
+    zmq \
+        --zmq-ip localhost \
+        --zmq-port 5578 \
+        --nx-dir /home/user/nexus_output
+```
+
+### Quick start: Kafka mode
+
+```bash
+python -m bluesky_nexus \
+    --log-dir /home/user/nexus_logs \
+    kafka \
+        --kafka-brokers localhost:9092 \
+        --kafka-topic bluesky.documents \
+        --nx-dir /home/user/nexus_output
+```
+
+### Help
+
+```bash
+python -m bluesky_nexus --help
+python -m bluesky_nexus zmq --help
+python -m bluesky_nexus kafka --help
+```
+
+---
+
+## CLI Logging Options (service mode)
+
+The service provides a full-featured logging system with log rotation, file/console levels, and environment variable overrides.
+
+These options **must be placed before the backend command** (`zmq` or `kafka`).
+
+| CLI Argument     | Environment Variable      | Default        | Description                              |
+|------------------|---------------------------|----------------|------------------------------------------|
+| `--log-dir`      | `_NX_LOG_FILE_DIR_PATH`   | required       | Directory where log files are written.   |
+| `--console-level`| `_NX_CONSOLE_LOG_LEVEL`   | `ERROR`        | Console log level.                       |
+| `--file-level`   | `_NX_FILE_LOG_LEVEL`      | `DEBUG`        | File log level.                          |
+| `--log-file-name`| `_NX_LOG_FILE_NAME`       | `nx_log.log`   | Name of the main log file.               |
+| `--file-max-size`| `_NX_LOG_FILE_MAX_SIZE`   | `10MB`         | Maximum log size before rotation.        |
+| `--backup-count` | `_NX_BACKUP_COUNT`        | `5`            | Number of rotated logs to keep.          |
+| `--enable-console`| `_NX_ENABLE_CONSOLE_LOG` | `True`         | Enable console logging.                  |
+| `--enable-file`  | `_NX_ENABLE_FILE_LOG`     | `True`         | Enable file logging.                     |
+
+Example:
+
+```bash
+python -m bluesky_nexus \
+    --log-dir /tmp/nexus_logs \
+    --console-level INFO \
+    --file-level DEBUG \
+    kafka \
+        --kafka-brokers localhost:9092 \
+        --kafka-topic bluesky.documents \
+        --nx-dir /tmp/nexus_output
+```
+
+---
+
+## ZMQ backend options
+
+These options apply when invoking:
+
+```bash
+python -m bluesky_nexus zmq ...
+
+```
+
+### ZMQ Backend Options
+
+| CLI Argument      | Environment Variable            | Description                        |
+|-------------------|---------------------------------|------------------------------------|
+| `--zmq-ip`        | `_ZMQ_IP`                       | ZeroMQ publisher IP.               |
+| `--zmq-port`      | `_ZMQ_PORT`                     | ZeroMQ publisher port.             |
+| `--nx-dir`        | `_NX_FILE_DIR_PATH`             | Output directory for NeXus files.  |
+| `--cpt-delimiter` | `_OPHYD_CPT_NAME_DELIMITER`     | Ophyd cpt delimiter                |
+
+ZeroMQ Networking Notes
+
+HZB setup:
+
+- RE publishes to port 5577
+- ZMQ proxy forwards 5577 → 5578
+- NexusWriter connects to 5578
+
+To run the proxy see chapter TO DO:  put a LINK
+
+---
+
+## Kafka backend options
+
+Used when invoking:
+
+```bash
+python -m bluesky_nexus kafka ...
+```
+
+### Kafka Backend Options
+
+| CLI Argument        | Environment Variable            | Description                                 |
+|---------------------|---------------------------------|---------------------------------------------|
+| `--kafka-brokers`   | `_KAFKA_BROKERS`                | Bootstrap server list (`host:port`).        |
+| `--kafka-topic`     | `_KAFKA_TOPIC`                  | Topic containing Bluesky documents.         |
+| `--kafka-group`     | `_KAFKA_GROUP`                  | Consumer group ID (default `"default"`).    |
+| `--nx-dir`          | `_NX_FILE_DIR_PATH`             | Output directory for NeXus files.           |
+| `--cpt-delimiter`   | `_OPHYD_CPT_NAME_DELIMITER`     | Ophyd delimiter.                            |
+
+Notes on Kafka usage:
+
+- Consumer group defines delivery semantics
+  - Same group → load balancing
+  - Different group → independent consumers
+- Each message corresponds to a Bluesky document dict (start, descriptor, event, stop).
+- The NexusWriter subscribes internally via the Kafka dispatcher.
+
+---
+
+## Ophyd component name delimiter
+Ophyd devices can use different naming conventions of components/signals depending on if they are ophyd pure or ophyd-async devices.
+
+### CLI
+
+```bash
+--cpt-delimiter "-"
+
+```
+
+### Environment variable
+
+```ini
+_OPHYD_CPT_NAME_DELIMITER="-"
+```
+
+If not provided, a default: '_' is used.
+
+---
+
+## Directory validation requirements
+The CLI validates:
+
+- Log directory (--log-dir)
+- NeXus output directory (--nx-dir)
+
+Validation behavior:
+
+- Directory must exist before running
+- If missing → ValueError is raised
+
+---
+
+## Environment variables overview (complete reference)
+
+### Logging Environment Variables (Shared)
+
+| Environment Variable        | Description                  |
+|-----------------------------|------------------------------|
+| `_NX_LOG_FILE_DIR_PATH`     | Directory for log files.     |
+| `_NX_LOG_FILE_NAME`         | Log filename.                |
+| `_NX_LOG_FILE_MAX_SIZE`     | Max size before rotating.    |
+| `_NX_BACKUP_COUNT`          | Number of rotated logs.      |
+| `_NX_CONSOLE_LOG_LEVEL`     | Console logging level.       |
+| `_NX_FILE_LOG_LEVEL`        | File logging level.          |
+| `_NX_ENABLE_CONSOLE_LOG`    | Enable console logging.      |
+| `_NX_ENABLE_FILE_LOG`       | Enable file logging.         |
+
+### ZMQ Backend Environment Variables
+
+| Environment Variable            | Description                        |
+|---------------------------------|------------------------------------|
+| `_ZMQ_IP`                       | Publisher IP.                      |
+| `_ZMQ_PORT`                     | Publisher port.                    |
+| `_NX_FILE_DIR_PATH`             | Output directory for NeXus files.  |
+| `_OPHYD_CPT_NAME_DELIMITER`     | Ophyd delimiter.                   |
+
+### Kafka Backend Environment Variables
+
+| Environment Variable            | Description                                 |
+|---------------------------------|---------------------------------------------|
+| `_KAFKA_BROKERS`                | Kafka bootstrap servers.                    |
+| `_KAFKA_TOPIC`                  | Kafka topic.                                |
+| `_KAFKA_GROUP`                  | Consumer group (default: `"default"`).      |
+| `_NX_FILE_DIR_PATH`             | Output directory for NeXus files.           |
+| `_OPHYD_CPT_NAME_DELIMITER`     | Ophyd delimiter.                            |
+
+---
 
 ---
 
@@ -438,7 +733,7 @@ class Mono(Device):
       log_file_dir_path=nx_log_file_dir_path,
       log_file_name="nx_log.log",
       log_format=None,  # Uses default format if None
-      max_file_size=10 *1024* 1024,  # 10 MB
+      log_file_max_size=10 *1024* 1024,  # 10 MB
       backup_count=5,
       enable_console=True,
       enable_file=True,
@@ -557,6 +852,90 @@ This completes the installation and usage in the context of bluesky container (e
 
 ---
 
+## Running the Docker container
+The provided Dockerfile builds a self-contained service:
+
+- Includes the full bluesky_nexus package
+- Contains both ZMQ and Kafka backends
+- Defines entrypoint:
+
+```dockerfile
+ENTRYPOINT ["python", "-m", "bluesky_nexus"]
+CMD ["zmq"]
+
+```
+
+Thus:
+
+```bash
+docker run bluesky_nexus_writer
+```
+
+expands to :
+
+```bash
+python -m bluesky_nexus zmq
+```
+
+Mounting volumes
+
+```bash
+docker run \
+   -v /host/data:/data \
+   -v /host/logs:/logs \
+   bluesky_nexus_writer
+```
+
+Important for permissions.
+To avoid log files being owned by root:
+
+```bash
+--user "$(id -u)":"$(id -g)"
+```
+
+---
+
+## Using start_bluesky_nexus_container.sh
+The provided script automates:
+
+- Environment variable configuration
+- Directory creation
+- Backend selection (DISPATCHER_MODE="zmq" or "kafka")
+- Container replacement
+- Volume mounting
+- Host-networking
+- Running with correct UID/GID
+
+Usage
+
+```bash
+chmod +x scripts/start_bluesky_nexus_container.sh
+./scripts/start_bluesky_nexus_container.sh
+
+```
+
+Customizing directories inside the script:
+
+```bash
+HOST_DATA_DIR="$HOME/nexus_output"
+HOST_LOG_DIR="$HOME/nexus_logs"
+
+```
+
+Backend selection
+
+```bash
+DISPATCHER_MODE="zmq"
+```
+
+or
+
+```bash
+DISPATCHER_MODE="kafka"
+```
+
+---
+
 ## Installation and usage outside the HZB deployment infrastructure
 
 To use bluesky_nexus outside the HZB Bluesky deployment environment, begin by installing the package manually and then choose one of two operating modes:
@@ -614,7 +993,7 @@ Both setups are documented below.
         log_file_dir_path=nx_log_file_dir_path,
         log_file_name="nx_log.log",
         log_format=None,  # Uses default format if None
-        max_file_size=10 * 1024 * 1024,  # 10 MB
+        log_file_max_size=10 * 1024 * 1024,  # 10 MB
         backup_count=5,
         enable_console=True,
         enable_file=True,
@@ -725,7 +1104,7 @@ In your script:
       log_file_dir_path=nx_log_file_dir_path,
       log_file_name="nx_log.log",
       log_format=None,  # Uses default format if None
-      max_file_size=10 * 1024 * 1024,  # 10 MB
+      log_file_max_size=10 * 1024 * 1024,  # 10 MB
       backup_count=5,
       enable_console=True,
       enable_file=True,
