@@ -20,11 +20,12 @@ import copy
 from collections import deque
 from functools import partial
 from pathlib import Path
-from typing import Any, Deque, Dict
+from typing import Any, Deque, Dict, Tuple, cast
 
 import h5py  # type: ignore
 import numpy as np
 from bluesky.callbacks.core import CollectThenCompute
+from event_model.documents import Document, Event, EventDescriptor, RunStart, RunStop
 
 from bluesky_nexus.bluesky_nexus_const import (
     DEVICE_MD_KEY,
@@ -80,10 +81,8 @@ class NexusWriter(CollectThenCompute):
         # Log the version of the package
         log_package_version()
 
-    def descriptor(self, doc: dict) -> None:
+    def descriptor(self, doc: EventDescriptor):
         """Handle descriptor documents for streams relevant to NeXus.
-
-        output.
 
         Only descriptors from the "primary" or "baseline" streams are
         collected. Other streams are ignored for NeXus file generation.
@@ -91,49 +90,76 @@ class NexusWriter(CollectThenCompute):
         if doc["name"] in ("primary", "baseline"):
             super().descriptor(doc)
 
-    def event(self, doc: dict) -> None:
-        """Handle event documents belonging to previously accepted.
-
-        descriptors.
+    def event(self, doc: Event) -> Event:
+        """Handle event documents belonging to accepted descriptors.
 
         Events are processed only if their descriptor UID matches one of
         the stored descriptors handled by `descriptor()`.
         """
         if doc["descriptor"] in (d["uid"] for d in self._descriptors):
             super().event(doc)
+        return doc
 
-    # pylint: disable=signature-differs
-    def __call__(self, name: str, doc: dict) -> None:
-        """Dispatch Bluesky documents to their appropriate handlers.
+    def __call__(
+        self, name: str, doc: Dict[str, Any], validate: bool = False
+    ) -> Tuple[str, Dict[str, Any]]:
+        """Dispatch a Bluesky document to its corresponding handler.
+
+        This method overrides ``DocumentRouter.__call__`` to route incoming
+        Bluesky documents (``start``, ``descriptor``, ``event``, ``stop``) to
+        the appropriate callback method of the ``NexusWriter``. The document is
+        first cast to its concrete type (``RunStart``, ``EventDescriptor``,
+        ``Event``, or ``RunStop``) to ensure proper type checking inside each
+        handler.
 
         Parameters
         ----------
         name : str
-            Document type, such as "start", "descriptor", "event", or "stop".
+            The type of document emitted by the RunEngine. Expected values are
+            ``"start"``, ``"descriptor"``, ``"event"``, or ``"stop"``.
         doc : dict
-            Document content emitted by the RunEngine.
+            The document payload associated with the given ``name``. The document
+            is dynamically cast to the corresponding concrete type before being
+            forwarded to the handler.
+        validate : bool, optional
+            Included to match the signature of ``DocumentRouter.__call__``.
+            Validation is not performed by this implementation. Default is ``False``.
+
+        Returns
+        -------
+        tuple[str, dict]
+            A ``(name, doc)`` tuple, as required by ``DocumentRouter``'s calling
+            convention. The returned document is the original input and is not
+            modified by this method.
 
         Notes
         -----
-        This method ensures proper ordering and delegates to:
-            - start()
-            - descriptor()
-            - event()
-            - stop()
+        This method ensures that:
+            - ``start`` documents are routed to ``start()``
+            - ``descriptor`` documents are routed to ``descriptor()``
+            - ``event`` documents are routed to ``event()``
+            - ``stop`` documents are routed to ``stop()``
+
+        Any other document type will silently bypass all handlers.
         """
+        typed_doc = cast(Document, doc)
+
         if name == "start":
-            self.start(doc)
+            self.start(cast(RunStart, typed_doc))
+
         elif name == "descriptor":
-            self.descriptor(doc)
+            self.descriptor(cast(EventDescriptor, typed_doc))
+
         elif name == "event":
-            self.event(doc)
+            self.event(cast(Event, typed_doc))
+
         elif name == "stop":
-            self.stop(doc)
+            self.stop(cast(RunStop, typed_doc))
+
+        return name, doc
 
     def create_nx_file_path(self, dir_path: Path) -> Path:
-        """Construct the full NeXus file path for the current.
-
-        Bluesky run.
+        """Construct the full NeXus file path.
 
         This method builds the hierarchical directory structure and the final
         NeXus filename using metadata from the start document. It ensures that all
@@ -232,8 +258,6 @@ class NexusWriter(CollectThenCompute):
     def generate_nexus_file(self) -> None:
         """Construct and write the NeXus file.
 
-        for the completed Bluesky run.
-
         The method performs:
             1. Validation of required metadata (`nexus_md`) in the start document.
             2. Creation of the file path using `create_nx_file_path()`.
@@ -274,9 +298,7 @@ class NexusWriter(CollectThenCompute):
         def filter_start_doc(
             start_doc_cpy: dict, keys_set: set, delimiter: str = "_"
         ) -> dict:
-            """Remove metadata for devices that do not participate in.
-
-            the run.
+            """Remove md for devices not participating in run.
 
             Devices are kept only if:
                 - The key exactly matches a descriptor key, OR
