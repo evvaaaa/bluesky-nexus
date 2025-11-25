@@ -59,7 +59,6 @@ Public API
 """
 
 import logging
-import os
 import traceback
 from enum import Enum
 from logging.handlers import RotatingFileHandler
@@ -110,7 +109,6 @@ def setup_nx_logger(
     log_file_max_size: int = 10 * 1024 * 1024,
     backup_count: int = 5,
     enable_console: bool = True,
-    enable_file: bool = True,
 ) -> None:
     """Configure the logger with console and file handlers.
 
@@ -118,10 +116,13 @@ def setup_nx_logger(
     logging levels for console and file output. File logging includes
     automatic log rotation and retention of backup log files.
 
+    File logging is enabled *only if* ``log_file_dir_path`` is not None.
+    If ``log_file_dir_path`` is None, file logging is disabled.
+
     Parameters:
         console_level (int or LogLevel, optional): Logging level for console output.
         file_level (int or LogLevel, optional): Logging level for file output.
-        log_file_dir_path (Path, optional): Directory where log files will
+        log_file_dir_path (Path | None, optional): Directory where log files will
             be stored. If None, file logging is disabled.
         log_file_name (str, optional): Name of the log file.
             Defaults to "nx_log.log".
@@ -132,7 +133,6 @@ def setup_nx_logger(
         backup_count (int, optional): Number of backup log files to keep
             after rotation. Defaults to 5.
         enable_console (bool, optional): Enable console logging. Defaults to True.
-        enable_file (bool, optional): Enable file logging. Defaults to True.
     """
     # Convert LogLevel enums to their int values since setLevel()
     # expects an int, not an enum.
@@ -157,15 +157,17 @@ def setup_nx_logger(
     logger.propagate = False
 
     # Add NullHandler if no output is desired
-    if not enable_console and not enable_file:
+    if not enable_console and log_file_dir_path is None:
         logger.addHandler(logging.NullHandler())
         return
 
-    # Configure file logging if log_file_dir_path is provided
-    if enable_file and log_file_dir_path:
+    # -------------------------
+    # File logging (only when log_file_dir_path is defined)
+    # -------------------------
+    if log_file_dir_path is not None:
         try:
             # Ensure the directory exists
-            os.makedirs(log_file_dir_path, exist_ok=True)
+            log_file_dir_path.mkdir(parents=True, exist_ok=True)
         except OSError as e:
             logger.error(
                 "Failed to create log directory '%s': %s. File logging disabled.",
@@ -176,10 +178,11 @@ def setup_nx_logger(
             logger.debug(
                 "Traceback for directory creation failure:\n%s", traceback.format_exc()
             )
-            enable_file = False  # disable file logging
+            log_file_dir_path = None  # disable file logging
 
-        if enable_file:
+        if log_file_dir_path is not None:
             log_file_path: Path = log_file_dir_path / log_file_name
+
             # Create a RotatingFileHandler for log rotation
             file_handler = RotatingFileHandler(
                 log_file_path,
@@ -204,7 +207,7 @@ def setup_nx_logger(
         "File logging: %s (level: %s)",
         "enabled" if enable_console else "disabled",
         logging.getLevelName(console_level),
-        "enabled" if enable_file else "disabled",
+        "enabled" if log_file_dir_path is not None else "disabled",
         logging.getLevelName(file_level),
     )
 
