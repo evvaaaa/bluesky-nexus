@@ -45,10 +45,13 @@ Typical application setup:
 
 Notes
 -----
-- If ``log_file_dir_path`` is ``None`` or cannot be created, file logging is
-  silently disabled.
+- If ``log_file_dir_path`` is ``None``, file logging is disabled.
+- If ``log_file_dir_path`` is provided but the directory cannot be created or
+  the log file cannot be opened, a ``RuntimeError`` is raised to avoid silent
+  loss of file logging.
 - Console and file logging can be independently enabled or disabled.
-- If both output channels are disabled, a `NullHandler` is installed.
+- If both output channels are disabled (no console, no file), a `NullHandler`
+  is installed.
 - The module uses `DEFAULT_NX_LOG_FORMAT` unless a custom format is provided.
 
 Public API
@@ -59,7 +62,6 @@ Public API
 """
 
 import logging
-import traceback
 from enum import Enum
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
@@ -168,22 +170,16 @@ def setup_nx_logger(
         try:
             # Ensure the directory exists
             log_file_dir_path.mkdir(parents=True, exist_ok=True)
+
+        # Hard fail if mkdir fails
         except OSError as e:
-            logger.error(
-                "Failed to create log directory '%s': %s. File logging disabled.",
-                log_file_dir_path,
-                e,
-            )
-            # Optional: Log the full traceback for deeper debugging
-            logger.debug(
-                "Traceback for directory creation failure:\n%s", traceback.format_exc()
-            )
-            log_file_dir_path = None  # disable file logging
+            raise RuntimeError(
+                f"Failed to create log directory '{log_file_dir_path}': {e}"
+            ) from e
 
-        if log_file_dir_path is not None:
-            log_file_path: Path = log_file_dir_path / log_file_name
+        log_file_path: Path = log_file_dir_path / log_file_name
 
-            # Create a RotatingFileHandler for log rotation
+        try:
             file_handler = RotatingFileHandler(
                 log_file_path,
                 mode="a",
@@ -191,9 +187,15 @@ def setup_nx_logger(
                 backupCount=backup_count,
                 encoding="utf-8",
             )
-            file_handler.setLevel(file_level)
-            file_handler.setFormatter(formatter)
-            logger.addHandler(file_handler)
+        # Hard fail if opening the log file fails
+        except OSError as e:
+            raise RuntimeError(
+                f"Failed to create/open log file '{log_file_path}': {e}"
+            ) from e
+
+        file_handler.setLevel(file_level)
+        file_handler.setFormatter(formatter)
+        logger.addHandler(file_handler)
 
     if enable_console:
         # Configure console logging
