@@ -190,14 +190,13 @@ These options **must be placed before the backend command** (`zmq` or `kafka`).
 
 | CLI Argument     | Environment Variable      | Default        | Description                              |
 |------------------|---------------------------|----------------|------------------------------------------|
-| `--log-dir`      | `_NX_LOG_FILE_DIR_PATH`   | required       | Directory where log files are written.   |
+| `--log-dir`      | `_NX_LOG_FILE_DIR_PATH`   | `None`         | Directory where log files are written.   |
 | `--console-level`| `_NX_CONSOLE_LOG_LEVEL`   | `ERROR`        | Console log level.                       |
 | `--file-level`   | `_NX_FILE_LOG_LEVEL`      | `DEBUG`        | File log level.                          |
 | `--log-file-name`| `_NX_LOG_FILE_NAME`       | `nx_log.log`   | Name of the main log file.               |
 | `--file-max-size`| `_NX_LOG_FILE_MAX_SIZE`   | `10MB`         | Maximum log size before rotation.        |
 | `--backup-count` | `_NX_BACKUP_COUNT`        | `5`            | Number of rotated logs to keep.          |
 | `--enable-console`| `_NX_ENABLE_CONSOLE_LOG` | `True`         | Enable console logging.                  |
-| `--enable-file`  | `_NX_ENABLE_FILE_LOG`     | `True`         | Enable file logging.                     |
 
 Example:
 
@@ -295,8 +294,9 @@ If not provided, a default: '_' is used.
 ## Directory validation requirements
 The CLI validates:
 
-- Log directory (--log-dir)
-- NeXus output directory (--nx-dir)
+- The log directory is validated only when provided via `--log-dir` or `_NX_LOG_FILE_DIR_PATH`; otherwise, validation is skipped.
+
+- NeXus output directory (`--nx-dir`)
 
 Validation behavior:
 
@@ -318,7 +318,6 @@ Validation behavior:
 | `_NX_CONSOLE_LOG_LEVEL`     | Console logging level.       |
 | `_NX_FILE_LOG_LEVEL`        | File logging level.          |
 | `_NX_ENABLE_CONSOLE_LOG`    | Enable console logging.      |
-| `_NX_ENABLE_FILE_LOG`       | Enable file logging.         |
 
 ### ZMQ Backend Environment Variables
 
