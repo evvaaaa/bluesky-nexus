@@ -45,7 +45,6 @@ def test_console_logging_setup(capsys):
     """Verify that console handler actually prints to stderr/stdout."""
     setup_nx_logger(
         console_level=LogLevel.DEBUG,
-        enable_file=False,
         enable_console=True,
     )
 
@@ -144,7 +143,6 @@ def test_logging_info_level_file_only(tmp_path):
         log_file_dir_path=log_dir,
         log_file_name=log_file_name,
         enable_console=False,  # don't use console
-        enable_file=True,
     )
 
     debug_message = "This is a debug message that should NOT be logged."
@@ -160,6 +158,44 @@ def test_logging_info_level_file_only(tmp_path):
         contents = f.read()
     assert debug_message not in contents
     assert info_message in contents
+
+
+def test_no_file_logging_when_dir_is_none_per_default(tmp_path):
+    """File logging must be disabled when log_file_dir_path=None."""
+    # Clean and reset the logger state
+    importlib.reload(logging_utils)
+
+    setup_nx_logger()
+    logger.info("Message that should NOT go to any file")
+
+    # Ensure no file was created in temp directory
+    # Just check the entire directory is empty
+    assert not any(tmp_path.iterdir()), (
+        "No files should be created when log_file_dir_path=None"
+    )
+
+    handlers = logging_utils.logger.handlers
+    assert not any(isinstance(h, logging.FileHandler) for h in handlers)
+
+
+def test_no_file_logging_when_dir_is_none_explicitly(tmp_path):
+    """File logging must be disabled when log_file_dir_path=None."""
+    # Clean and reset the logger state
+    importlib.reload(logging_utils)
+
+    setup_nx_logger(
+        log_file_dir_path=None,  # explicitly None
+    )
+
+    logger.info("Message that should NOT go to any file")
+
+    # Ensure no file was created in temp directory
+    # Just check the entire directory is empty
+    assert not any(tmp_path.iterdir()), (
+        "No files should be created when log_file_dir_path=None"
+    )
+    handlers = logging_utils.logger.handlers
+    assert not any(isinstance(h, logging.FileHandler) for h in handlers)
 
 
 if __name__ == "__main__":
