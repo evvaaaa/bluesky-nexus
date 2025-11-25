@@ -126,6 +126,6 @@ def run_zmq_dispatcher(args) -> None:
         logger.warning("Shutdown requested by user (Ctrl+C).")
         try:
             dispatcher.stop()
-        except Exception as e:
-            logger.error("Error stopping ZMQ dispatcher cleanly: %s", e)
+        except Exception:
+            logger.exception("Error stopping ZMQ dispatcher cleanly.")
         logger.info("ZMQ dispatcher stopped.")
