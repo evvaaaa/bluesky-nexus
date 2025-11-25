@@ -71,12 +71,9 @@ def test_file_logging_creates_file(temp_log_dir):
 
     logger.info("File log message")
     log_path = temp_log_dir / log_file
-
     assert os.path.exists(log_path)
-
-    with open(log_path, encoding="utf-8") as f:
-        content = f.read()
-        assert "File log message" in content
+    content = log_path.read_text(encoding="utf-8")
+    assert "File log message" in content
 
 
 def test_log_rotation_creates_multiple_files(temp_log_dir):
@@ -119,11 +116,9 @@ def test_logger_setup_multiple_times_no_duplicate_logs(temp_log_dir):
     )
 
     logger.info("Log this once")
-
     log_path = temp_log_dir / "multi.log"
-    with open(log_path, encoding="utf-8") as f:
-        content = f.read()
-        assert content.count("Log this once") == 1
+    content = log_path.read_text(encoding="utf-8")
+    assert content.count("Log this once") == 1
 
 
 def test_get_level_value_with_enum_and_int():
@@ -154,8 +149,7 @@ def test_logging_info_level_file_only(tmp_path):
     log_file_path = log_dir / log_file_name
     assert log_file_path.exists()
 
-    with open(log_file_path, "r", encoding="utf-8") as f:
-        contents = f.read()
+    contents = log_file_path.read_text(encoding="utf-8")
     assert debug_message not in contents
     assert info_message in contents
 
