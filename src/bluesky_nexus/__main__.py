@@ -82,7 +82,6 @@ Top-Level Logging Options (must come BEFORE zmq/kafka)
 | --file-max-size | _NX_LOG_FILE_MAX_SIZE  | Rotate logs above this size (default=10MB)|
 | --backup-count  | _NX_BACKUP_COUNT       | Num of rotated logs to keep (default=5)   |
 | --enable-console| _NX_ENABLE_CONSOLE_LOG | Enable console logging (default=True)     |
-| --enable-file   | _NX_ENABLE_FILE_LOG    | Enable file logging (default=True)        |
 
 ⚠️ All logging arguments must appear *before* the backend subcommand.
 
@@ -146,7 +145,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--log-dir",
         required=False,
-        help="Directory for NeXus logs (env: _NX_LOG_FILE_DIR_PATH).",
+        help="Directory for NeXus logs (env: _NX_LOG_FILE_DIR_PATH). Logging to file"
+        " is disabled if --log-dir or env: _NX_LOG_FILE_DIR_PATH is not defined",
     )
 
     parser.add_argument(
@@ -190,14 +190,6 @@ def build_parser() -> argparse.ArgumentParser:
         type=str,
         choices=["True", "False"],
         help="Enable console logging (env: _NX_ENABLE_CONSOLE_LOG). Default: True",
-    )
-
-    parser.add_argument(
-        "--enable-file",
-        required=False,
-        type=str,
-        choices=["True", "False"],
-        help="Enable file logging (env: _NX_ENABLE_FILE_LOG). Default: True",
     )
 
     # -----------------------------------------------------------------------
@@ -297,11 +289,8 @@ def main():
     # -------------------------------------------------------
     # Resolve logging configuration with env fallbacks
     # -------------------------------------------------------
-    log_dir = args.log_dir or os.environ.get("_NX_LOG_FILE_DIR_PATH")
-    if not log_dir:
-        raise ValueError(
-            "Missing log directory (--log-dir or env. var. _NX_LOG_FILE_DIR_PATH)."
-        )
+
+    log_dir = args.log_dir or os.environ.get("_NX_LOG_FILE_DIR_PATH", None)
 
     log_file_name = args.log_file_name or os.environ.get(
         "_NX_LOG_FILE_NAME", "nx_log.log"
@@ -336,14 +325,15 @@ def main():
         args.enable_console or os.environ.get("_NX_ENABLE_CONSOLE_LOG", "True")
     )
 
-    enable_file = _str_to_bool(
-        args.enable_file or os.environ.get("_NX_ENABLE_FILE_LOG", "True")
-    )
-
     # -------------------------------------------------------
     # Validate log directory
     # -------------------------------------------------------
-    log_path = validate_directory(log_dir, "Log directory")
+    log_path = None
+    if log_dir is not None:
+        log_path = validate_directory(log_dir, "Log directory")
+        logger.info("Logging directory %s validated.", log_path)
+    else:
+        logger.info("Logging directory not defined. Logging to file disabled.")
 
     # -------------------------------------------------------
     # Configure logging
@@ -356,10 +346,8 @@ def main():
         log_file_max_size=log_file_max_size,
         backup_count=backup_count,
         enable_console=enable_console,
-        enable_file=enable_file,
     )
 
-    logger.info("Logging initialized. Directory: %s", log_path)
     logger.info("Starting dispatcher: '%s'", args.source)
 
     # -------------------------------------------------------
