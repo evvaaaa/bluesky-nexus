@@ -16,7 +16,7 @@ dependencies = [
   "bluesky",
   "bluesky-kafka",
   "h5py",
-  "event-model",
+  "event-model>=1.23",
   "numpy",
   "pydantic",
   "PyYAML",
