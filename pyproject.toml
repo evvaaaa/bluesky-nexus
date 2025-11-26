@@ -12,7 +12,15 @@ authors = [
 ]
 license = { file = "LICENSE" }
 requires-python = ">=3.10"
-dependencies = ["bluesky", "h5py", "numpy", "pydantic", "PyYAML"]
+dependencies = [
+  "bluesky",
+  "bluesky-kafka",
+  "h5py",
+  "numpy",
+  "pydantic",
+  "PyYAML",
+  "pyzmq",
+]
 
 [tool.setuptools_scm]
 version_file = "src/bluesky_nexus/_version.py"
@@ -20,11 +28,12 @@ version_file = "src/bluesky_nexus/_version.py"
 [project.optional-dependencies]
 dev = [
   "ruff",
-  # For tests
+  "mypy",
+  "types-PyYAML",
   "ophyd",
   "pytest",
   "pre-commit",
-  "pytest-html"
+  "pytest-html",
 ]
 
 [tool.ruff]

@@ -13,6 +13,7 @@ import logging
 import os
 import shutil
 import tempfile
+from pathlib import Path
 
 import pytest
 
@@ -28,7 +29,7 @@ from bluesky_nexus.common.logging_utils import (
 @pytest.fixture
 def temp_log_dir():
     """Fixture for creating and cleaning up a temporary directory."""
-    path = tempfile.mkdtemp()
+    path = Path(tempfile.mkdtemp())
     yield path
     shutil.rmtree(path)
 
@@ -44,7 +45,6 @@ def test_console_logging_setup(capsys):
     """Verify that console handler actually prints to stderr/stdout."""
     setup_nx_logger(
         console_level=LogLevel.DEBUG,
-        enable_file=False,
         enable_console=True,
     )
 
@@ -70,13 +70,10 @@ def test_file_logging_creates_file(temp_log_dir):
     )
 
     logger.info("File log message")
-    log_path = os.path.join(temp_log_dir, log_file)
-
+    log_path = temp_log_dir / log_file
     assert os.path.exists(log_path)
-
-    with open(log_path, encoding="utf-8") as f:
-        content = f.read()
-        assert "File log message" in content
+    content = log_path.read_text(encoding="utf-8")
+    assert "File log message" in content
 
 
 def test_log_rotation_creates_multiple_files(temp_log_dir):
@@ -86,7 +83,7 @@ def test_log_rotation_creates_multiple_files(temp_log_dir):
     setup_nx_logger(
         log_file_dir_path=temp_log_dir,
         log_file_name=log_file,
-        max_file_size=200,  # Small size to force rotation
+        log_file_max_size=200,  # Small size to force rotation
         backup_count=2,
         enable_console=False,
     )
@@ -119,11 +116,9 @@ def test_logger_setup_multiple_times_no_duplicate_logs(temp_log_dir):
     )
 
     logger.info("Log this once")
-
-    log_path = os.path.join(temp_log_dir, "multi.log")
-    with open(log_path, encoding="utf-8") as f:
-        content = f.read()
-        assert content.count("Log this once") == 1
+    log_path = temp_log_dir / "multi.log"
+    content = log_path.read_text(encoding="utf-8")
+    assert content.count("Log this once") == 1
 
 
 def test_get_level_value_with_enum_and_int():
@@ -134,16 +129,15 @@ def test_get_level_value_with_enum_and_int():
 
 def test_logging_info_level_file_only(tmp_path):
     """Verify file logging at INFO level captures INFO, not DEBUG."""
-    log_dir = tmp_path
+    log_dir = Path(tmp_path)
     log_file_name = "test_nx_log.log"
 
     setup_nx_logger(
         console_level=LogLevel.INFO,
         file_level=LogLevel.INFO,
-        log_file_dir_path=str(log_dir),
+        log_file_dir_path=log_dir,
         log_file_name=log_file_name,
         enable_console=False,  # don't use console
-        enable_file=True,
     )
 
     debug_message = "This is a debug message that should NOT be logged."
@@ -155,10 +149,47 @@ def test_logging_info_level_file_only(tmp_path):
     log_file_path = log_dir / log_file_name
     assert log_file_path.exists()
 
-    with open(log_file_path, "r", encoding="utf-8") as f:
-        contents = f.read()
+    contents = log_file_path.read_text(encoding="utf-8")
     assert debug_message not in contents
     assert info_message in contents
+
+
+def test_no_file_logging_when_dir_is_none_per_default(tmp_path):
+    """File logging must be disabled when log_file_dir_path=None."""
+    # Clean and reset the logger state
+    importlib.reload(logging_utils)
+
+    setup_nx_logger()
+    logger.info("Message that should NOT go to any file")
+
+    # Ensure no file was created in temp directory
+    # Just check the entire directory is empty
+    assert not any(tmp_path.iterdir()), (
+        "No files should be created when log_file_dir_path=None"
+    )
+
+    handlers = logging_utils.logger.handlers
+    assert not any(isinstance(h, logging.FileHandler) for h in handlers)
+
+
+def test_no_file_logging_when_dir_is_none_explicitly(tmp_path):
+    """File logging must be disabled when log_file_dir_path=None."""
+    # Clean and reset the logger state
+    importlib.reload(logging_utils)
+
+    setup_nx_logger(
+        log_file_dir_path=None,  # explicitly None
+    )
+
+    logger.info("Message that should NOT go to any file")
+
+    # Ensure no file was created in temp directory
+    # Just check the entire directory is empty
+    assert not any(tmp_path.iterdir()), (
+        "No files should be created when log_file_dir_path=None"
+    )
+    handlers = logging_utils.logger.handlers
+    assert not any(isinstance(h, logging.FileHandler) for h in handlers)
 
 
 if __name__ == "__main__":

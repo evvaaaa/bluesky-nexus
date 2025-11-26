@@ -1,59 +1,70 @@
-"""logging_utils.py.
+"""Utilities for configuring and managing logging in `bluesky_nexus`.
 
-This module provides utilities for setting up and managing logging for the
-`bluesky_nexus` package. It supports both console-based logging and file-based
-logging with automatic log rotation. The module is designed to simplify
-logging configuration and ensure robust log management in both development and
+This module centralizes all logging configuration used across the
+`bluesky_nexus` package. It provides a consistent, flexible logging setup
+that supports both console logging and file logging with automatic
+rotation, making it suitable for development, service deployments, and
 production environments.
 
-Features:
-    - A pre-configured logger (`bluesky_nexus`) with a default `NullHandler`
-      to prevent accidental log output.
-    - The `setup_nx_logger` function to configure logging with:
-        - Customizable logging levels for console and file outputs.
-        - Console and file logging.
-        - Automatic file naming and log rotation for file-based logging.
+Main Features
+-------------
+- Provides a package-level logger (`bluesky_nexus`) with a default
+  `NullHandler` to avoid emitting logs until explicitly configured.
+- Offers `setup_nx_logger()`, a high-level function that configures:
+    * Console logging with a selectable log level.
+    * File logging with automatic directory creation.
+    * Rotating log files to prevent unbounded log growth.
+    * Customizable log formats and file names.
 
-File-based Logging:
-    - Log files are created in a specified directory.
-    - A consistent filename is used (e.g., `nx_log.log`).
-    - Log rotation is handled automatically when files exceed
-      a specified size.
-    - A fixed number of backup log files are retained to manage storage
-      efficiently.
+File Logging & Rotation
+-----------------------
+When file logging is enabled:
+- Log files are written to the directory specified via `log_file_dir_path`.
+- A single main log file is maintained (default: ``nx_log.log``).
+- Rotation occurs automatically when the file exceeds the configured
+  ``max_file_size``.
+- A fixed number of rotated backups (``backup_count``) are retained.
 
-Usage:
-    1. Import the logger and setup function in your application:
-        >>> from logging_utils import setup_nx_logger, logger, LogLevel
-    2. Configure the logger at the start of your application:
-        >>> setup_nx_logger(
-                console_level=LogLevel.DEBUG,
-                file_level=LogLevel.INFO,
-                log_file_dir_path="/path/to/logs", # Set to None to disable file logging
-                log_file_name="myapp.log",         # Optional custom log filename
-                max_file_size=5 * 1024 * 1024,     # 5 MB max per log file
-                backup_count=3                     # Keep 3 rotated backups
-            )
-    3. Use `logger` anywhere in your code:
-        >>> logger.debug("This is a debug message.")
-        >>> logger.info("Starting application.")
-        >>> logger.warning("This might be a problem.")
-        >>> logger.error("An error occurred.")
-        >>> logger.critical("Critical failure!")
+Usage Example
+-------------
+Typical application setup:
 
-Notes:
-    - If `log_file_dir_path` is None or the directory cannot be created,
-      file logging will be disabled automatically.
-    - Log rotation helps prevent log files from growing too large.
-    - Customize the log format via `log_format` parameter in `setup_nx_logger`.
-    - By default, console logs show ERROR level and above, file logs DEBUG and above.
+    >>> from bluesky_nexus.common.logging_utils import (
+    ...     setup_nx_logger, logger, LogLevel
+    ... )
+    >>> setup_nx_logger(
+    ...     console_level=LogLevel.INFO,
+    ...     file_level=LogLevel.DEBUG,
+    ...     log_file_dir_path=Path("/path/to/logs"),
+    ...     log_file_name="service.log",
+    ...     max_file_size=5 * 1024 * 1024,
+    ...     backup_count=3,
+    ... )
+    >>> logger.info("Application started.")
+    >>> logger.debug("Detailed diagnostics message.")
+
+Notes
+-----
+- If ``log_file_dir_path`` is ``None``, file logging is disabled.
+- If ``log_file_dir_path`` is provided but the directory cannot be created or
+  the log file cannot be opened, a ``RuntimeError`` is raised to avoid silent
+  loss of file logging.
+- Console and file logging can be independently enabled or disabled.
+- If both output channels are disabled (no console, no file), a `NullHandler`
+  is installed.
+- The module uses `DEFAULT_NX_LOG_FORMAT` unless a custom format is provided.
+
+Public API
+----------
+- setup_nx_logger
+- logger
+- LogLevel
 """
 
 import logging
-import os
-import traceback
 from enum import Enum
 from logging.handlers import RotatingFileHandler
+from pathlib import Path
 from typing import Optional, Union
 
 from bluesky_nexus.bluesky_nexus_const import DEFAULT_NX_LOG_FORMAT
@@ -94,13 +105,12 @@ logger.addHandler(logging.NullHandler())
 def setup_nx_logger(
     console_level: Union[int, LogLevel] = LogLevel.ERROR,
     file_level: Union[int, LogLevel] = LogLevel.DEBUG,
-    log_file_dir_path: Optional[str] = None,
+    log_file_dir_path: Optional[Path] = None,
     log_file_name: str = "nx_log.log",
     log_format: Optional[str] = None,
-    max_file_size: int = 10 * 1024 * 1024,
+    log_file_max_size: int = 10 * 1024 * 1024,
     backup_count: int = 5,
     enable_console: bool = True,
-    enable_file: bool = True,
 ) -> None:
     """Configure the logger with console and file handlers.
 
@@ -108,21 +118,23 @@ def setup_nx_logger(
     logging levels for console and file output. File logging includes
     automatic log rotation and retention of backup log files.
 
+    File logging is enabled *only if* ``log_file_dir_path`` is not None.
+    If ``log_file_dir_path`` is None, file logging is disabled.
+
     Parameters:
         console_level (int or LogLevel, optional): Logging level for console output.
         file_level (int or LogLevel, optional): Logging level for file output.
-        log_file_dir_path (str, optional): Directory where log files will
+        log_file_dir_path (Path | None, optional): Directory where log files will
             be stored. If None, file logging is disabled.
         log_file_name (str, optional): Name of the log file.
             Defaults to "nx_log.log".
         log_format (str, optional): Log message format. If not provided,
             uses DEFAULT_NX_LOG_FORMAT.
-        max_file_size (int, optional): Maximum size (in bytes) of a log file
+        log_file_max_size (int, optional): Maximum size (in bytes) of a log file
             before it is rotated. Defaults to 10 MB.
         backup_count (int, optional): Number of backup log files to keep
             after rotation. Defaults to 5.
         enable_console (bool, optional): Enable console logging. Defaults to True.
-        enable_file (bool, optional): Enable file logging. Defaults to True.
     """
     # Convert LogLevel enums to their int values since setLevel()
     # expects an int, not an enum.
@@ -147,40 +159,43 @@ def setup_nx_logger(
     logger.propagate = False
 
     # Add NullHandler if no output is desired
-    if not enable_console and not enable_file:
+    if not enable_console and log_file_dir_path is None:
         logger.addHandler(logging.NullHandler())
         return
 
-    # Configure file logging if log_file_dir_path is provided
-    if enable_file and log_file_dir_path:
+    # -------------------------
+    # File logging (only when log_file_dir_path is defined)
+    # -------------------------
+    if log_file_dir_path is not None:
         try:
             # Ensure the directory exists
-            os.makedirs(log_file_dir_path, exist_ok=True)
-        except OSError as e:
-            logger.error(
-                "Failed to create log directory '%s': %s. File logging disabled.",
-                log_file_dir_path,
-                e,
-            )
-            # Optional: Log the full traceback for deeper debugging
-            logger.debug(
-                "Traceback for directory creation failure:\n%s", traceback.format_exc()
-            )
-            enable_file = False  # disable file logging
+            log_file_dir_path.mkdir(parents=True, exist_ok=True)
 
-        if enable_file:
-            log_file_path = os.path.join(log_file_dir_path, log_file_name)
-            # Create a RotatingFileHandler for log rotation
+        # Hard fail if mkdir fails
+        except OSError as e:
+            raise RuntimeError(
+                f"Failed to create log directory '{log_file_dir_path}': {e}"
+            ) from e
+
+        log_file_path: Path = log_file_dir_path / log_file_name
+
+        try:
             file_handler = RotatingFileHandler(
                 log_file_path,
                 mode="a",
-                maxBytes=max_file_size,
+                maxBytes=log_file_max_size,
                 backupCount=backup_count,
                 encoding="utf-8",
             )
-            file_handler.setLevel(file_level)
-            file_handler.setFormatter(formatter)
-            logger.addHandler(file_handler)
+        # Hard fail if opening the log file fails
+        except OSError as e:
+            raise RuntimeError(
+                f"Failed to create/open log file '{log_file_path}': {e}"
+            ) from e
+
+        file_handler.setLevel(file_level)
+        file_handler.setFormatter(formatter)
+        logger.addHandler(file_handler)
 
     if enable_console:
         # Configure console logging
@@ -194,7 +209,7 @@ def setup_nx_logger(
         "File logging: %s (level: %s)",
         "enabled" if enable_console else "disabled",
         logging.getLevelName(console_level),
-        "enabled" if enable_file else "disabled",
+        "enabled" if log_file_dir_path is not None else "disabled",
         logging.getLevelName(file_level),
     )
 
