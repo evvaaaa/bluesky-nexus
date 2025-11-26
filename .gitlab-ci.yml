@@ -1,5 +1,5 @@
 # Define a global default image for all jobs
-image: python:3.10
+image: registry.hzdr.de/hzb/bluesky/core/images/bluesky_container:${BLUESKY_CONTAINER_TAG}
 
 # Define stages
 stages:
