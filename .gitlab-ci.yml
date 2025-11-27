@@ -11,7 +11,7 @@ pytest:
   before_script:
     - pip install --upgrade pip # Upgrade pip before installing dependencies
     - pip install uv
-    - uv pip install -e .[dev] # Install the current package in editable mode
+    - uv pip install --system -e '.[dev]' # Install the current package in editable mode
   script:
     - pytest --html=report.html --junitxml=report.xml -v --capture=fd # Run pytest and generate reports
   artifacts:
