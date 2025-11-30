@@ -43,7 +43,8 @@
 # Kafka Mode:
 #   _KAFKA_BROKERS            Kafka bootstrap servers (required)
 #   _KAFKA_TOPIC              Kafka topic for Bluesky documents (required)
-#   _KAFKA_GROUP              Kafka consumer group (optional, default: "default")
+#   _KAFKA_GROUP              Kafka consumer group (optional, default: value set
+#                                                   in this script)
 #   _NX_FILE_DIR_PATH         Directory where NeXus files are written
 #
 # Optional:
@@ -93,6 +94,13 @@ KAFKA_TOPIC="bluesky.documents" # required for Kafka mode
 
 # ------------------------- Optional ophyd delimiter ---------------------------
 OPHYD_CPT_NAME_DELIMITER=""
+
+
+
+if [[ "$DISPATCHER_MODE" != "zmq" && "$DISPATCHER_MODE" != "kafka" ]]; then
+    echo "ERROR: DISPATCHER_MODE must be 'zmq' or 'kafka'"
+    exit 1
+fi
 
 
 # =============================================================================
@@ -178,7 +186,7 @@ if [[ -n "$OPHYD_CPT_NAME_DELIMITER" ]]; then
     echo "Using OPHYD_CPT_NAME_DELIMITER='$OPHYD_CPT_NAME_DELIMITER'"
     ENV_VARS+=( --env _OPHYD_CPT_NAME_DELIMITER="$OPHYD_CPT_NAME_DELIMITER" )
 else
-    echo "OPHYD_CPT_NAME_DELIMITER empty or unset -> default behavior"
+    echo "No OPHYD_CPT_NAME_DELIMITER provided -> using default"
 fi
 
 
