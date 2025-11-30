@@ -143,7 +143,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--log-dir",
         required=False,
         help="Directory for NeXus logs (env: _NX_LOG_FILE_DIR_PATH). Logging to file"
-        " is disabled if --log-dir or env: _NX_LOG_FILE_DIR_PATH is not defined",
+        " is disabled if --log-dir and env: _NX_LOG_FILE_DIR_PATH are not defined",
     )
 
     parser.add_argument(
@@ -325,12 +325,7 @@ def main():
     # -------------------------------------------------------
     # Validate log directory
     # -------------------------------------------------------
-    log_path = None
-    if log_dir is not None:
-        log_path = validate_directory(log_dir, "Log directory")
-        logger.info("Logging directory %s validated.", log_path)
-    else:
-        logger.info("Logging directory not defined. Logging to file disabled.")
+    log_path = validate_directory(log_dir, "Log directory") if log_dir else None
 
     # -------------------------------------------------------
     # Configure logging
@@ -344,6 +339,10 @@ def main():
         backup_count=backup_count,
         enable_console=enable_console,
     )
+    if log_path:
+        logger.info("Logging directory validated: %s", log_path)
+    else:
+        logger.info("Logging directory not defined. Logging to file disabled.")
 
     logger.info("Starting dispatcher: '%s'", args.source)
 
