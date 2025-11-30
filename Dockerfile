@@ -111,7 +111,7 @@ FROM python:3.10-slim AS base
 
 # ---- Build arguments ----
 ARG REPO_URL="https://codebase.helmholtz.cloud/hzb/bluesky/core/source/bluesky_nexus.git"
-ARG REPO_BRANCH="5652_feature"
+ARG REPO_BRANCH="develop"
 
 # ---- System deps ----
 RUN apt-get update && \
