@@ -20,11 +20,15 @@
 # CLI arguments ALWAYS override environment variables.
 #
 # -----------------------------------------------------------------------------
-# Top-Level Logging (must be provided BEFORE the backend subcommand)
+# Top-Level Logging (must be passed BEFORE the backend subcommand)
 # -----------------------------------------------------------------------------
-# These variables configure global logging behaviour:
+# All logging settings are optional. If neither --log-dir nor
+# _NX_LOG_FILE_DIR_PATH is defined, file logging is disabled and only console
+# logging is used (if enabled).
 #
-#   _NX_LOG_FILE_DIR_PATH       (required)      Directory for log file output.
+# Environment variables:
+#
+#   _NX_LOG_FILE_DIR_PATH       (optional)      Directory for log file output.
 #   _NX_CONSOLE_LOG_LEVEL       (optional)      Console log level, (default: ERROR)
 #                                               [DEBUG|INFO|WARNING|ERROR|CRITICAL]
 #   _NX_FILE_LOG_LEVEL          (optional)      File log level (default: DEBUG)
@@ -42,7 +46,7 @@
 # -----------------------------------------------------------------------------
 # ZeroMQ Backend (selected with: `python -m bluesky_nexus zmq ...`)
 # -----------------------------------------------------------------------------
-# Required:
+# Required
 #   _ZMQ_IP                   Publisher IP for Bluesky ZMQ stream
 #   _ZMQ_PORT                 Publisher port
 #   _NX_FILE_DIR_PATH         Directory where NeXus files will be written
@@ -69,15 +73,17 @@
 # =============================================================================
 # • Directories `/data` and `/logs` are created inside the image at build time.
 #   To persist NeXus files or logs, mount external directories with `-v`.
+#       -v /host/data:/data
+#       -v /host/logs:/logs
 #
 # • ENTRYPOINT launches the CLI directly:
 #       ENTRYPOINT ["python", "-m", "bluesky_nexus"]
-#   The CMD simply selects the default backend:
+#   The CMD selects the default backend:
 #       CMD ["zmq"]
 #
 #   Thus:
 #       docker run bluesky_nexus_writer
-#   expands to:
+#   runs:
 #       python -m bluesky_nexus zmq
 #
 # • Example: Run Kafka dispatcher
@@ -87,7 +93,7 @@
 #            --kafka-brokers "localhost:9092" \
 #            --kafka-topic "bluesky.documents"
 #
-# • To use the recommended starter script:
+# • Recommended starter script:
 #       scripts/start_bluesky_nexus_container.sh
 #
 # =============================================================================
