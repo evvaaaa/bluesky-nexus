@@ -29,7 +29,6 @@
 #   _NX_CONSOLE_LOG_LEVEL   Console level (default: ERROR)
 #   _NX_FILE_LOG_LEVEL      File level    (default: DEBUG)
 #   _NX_ENABLE_CONSOLE_LOG  Enable console logging [True|False] (default: True)
-#   _NX_ENABLE_FILE_LOG     Enable file logging    [True|False] (default: True)
 #
 # These override the defaults defined in the Python code.
 #
@@ -153,7 +152,6 @@ ENV_VARS=(
   --env _NX_CONSOLE_LOG_LEVEL="ERROR"
   --env _NX_FILE_LOG_LEVEL="DEBUG"
   --env _NX_ENABLE_CONSOLE_LOG="True"
-  --env _NX_ENABLE_FILE_LOG="True"
 )
 
 
