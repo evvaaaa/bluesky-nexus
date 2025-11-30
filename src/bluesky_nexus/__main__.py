@@ -2,11 +2,13 @@
 
 The CLI writes NeXus files from Bluesky documents using one of two backends:
 
-    • ZeroMQ  (zmq)
-    • Kafka   (kafka)
+    • ZeroMQ  (``zmq``)
+    • Kafka   (``kafka``)
 
 Both backends share the same logging system and accept environment variables
-as fallbacks for most options.
+as fallbacks for most options. If no log directory is provided (and no
+``_NX_LOG_FILE_DIR_PATH`` environment variable is set), file logging is
+disabled and only console logging is used (if enabled).
 
 ===============================================================================
 Quick Start
@@ -49,14 +51,8 @@ Help for the Kafka backend:
 
 
 ===============================================================================
-Required Arguments
+Backend-Specific Required Arguments
 ===============================================================================
-
-Global requirement:
-    A log directory must always be provided, either via:
-        --log-dir
-    or the environment variable:
-        _NX_LOG_FILE_DIR_PATH
 
 ZMQ backend requires:
     --zmq-ip and --zmq-port
@@ -68,14 +64,15 @@ Kafka backend requires:
     or environment variables:
     _KAFKA_BROKERS and _KAFKA_TOPIC
 
+All other backend options are optional and may fall back to environment variables.
 
 ===============================================================================
-Top-Level Logging Options (must come BEFORE zmq/kafka)
+Top-Level Logging Options (must come BEFORE ``zmq``/``kafka``)
 ===============================================================================
 
 | CLI Argument    | Env Variable           | Description                               |
 |-----------------|------------------------|-------------------------------------------|
-| --log-dir       | _NX_LOG_FILE_DIR_PATH  | Directory for log files (required)        |
+| --log-dir       | _NX_LOG_FILE_DIR_PATH  | Directory for log files (optional)        |
 | --console-level | _NX_CONSOLE_LOG_LEVEL  | Console log level (default=ERROR)         |
 | --file-level    | _NX_FILE_LOG_LEVEL     | File log level (default=DEBUG)            |
 | --log-file-name | _NX_LOG_FILE_NAME      | Log filename (default=nx_log.log)         |
@@ -83,11 +80,11 @@ Top-Level Logging Options (must come BEFORE zmq/kafka)
 | --backup-count  | _NX_BACKUP_COUNT       | Num of rotated logs to keep (default=5)   |
 | --enable-console| _NX_ENABLE_CONSOLE_LOG | Enable console logging (default=True)     |
 
-⚠️ All logging arguments must appear *before* the backend subcommand.
+⚠️ All logging arguments must appear *before* the backend (``zmq`` or ``kafka``).
 
 
 ===============================================================================
-ZMQ Backend Options (after `zmq`)
+ZMQ Backend Options (after ``zmq``)
 ===============================================================================
 
 | CLI Argument     | Env Variable             | Description                        |
@@ -99,7 +96,7 @@ ZMQ Backend Options (after `zmq`)
 
 
 ===============================================================================
-Kafka Backend Options (after `kafka`)
+Kafka Backend Options (after ``kafka``)
 ===============================================================================
 
 | CLI Argument     | Env Variable             | Description                         |
