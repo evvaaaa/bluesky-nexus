@@ -154,11 +154,11 @@ def add_group_or_field(group: h5py.Group, data: Union[Dict[str, Any], Any]) -> N
         if isinstance(value, dict):
             # Handle dataset (field) with "value"
             # value["value"] is in "post-run" case always numpy array
-            if "value" in value:
+            if all(k in value for k in ("nxclass", "value", "dtype")):
                 process_dataset(key, value)
 
             # Handle NeXus groups
-            elif "nxclass" in value:
+            elif "nxclass" in value and "dtype" not in value:
                 process_group(key, value)
 
             else:

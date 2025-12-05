@@ -31,6 +31,7 @@ Example usage:
 
 import ast
 import os
+from pathlib import Path
 from types import GeneratorType
 from typing import Any, Dict, Union
 
@@ -59,15 +60,15 @@ NX_SCHEMA_DIR_PATH = os.path.abspath(
 
 
 @pytest.fixture
-def _nx_file_dir_path(tmp_path_factory) -> str:
+def _nx_file_dir_path(tmp_path_factory) -> Path:
     """Return temporary dir for nx_file outputs."""
-    return str(tmp_path_factory.mktemp("nx_file"))
+    return Path(tmp_path_factory.mktemp("nx_file"))
 
 
 @pytest.fixture
-def _callback_file_dir_path(tmp_path_factory) -> str:
+def _callback_file_dir_path(tmp_path_factory) -> Path:
     """Return temporary dir for callback outputs."""
-    return str(tmp_path_factory.mktemp("callback_file"))
+    return Path(tmp_path_factory.mktemp("callback_file"))
 
 
 # Test: Ensure the `nx_schema` directory exists
@@ -218,7 +219,7 @@ def _run_engine():
 
 # Fixture: Subscribe NexusWriter callback to the RunEngine
 @pytest.fixture
-def _run_eng(_run_engine: RunEngine, _nx_file_dir_path: str):
+def _run_eng(_run_engine: RunEngine, _nx_file_dir_path: Path):
     """Subscribe the NexusWriter callback to a given RunEngine.
 
     Returns the configured RunEngine.
@@ -334,26 +335,26 @@ def generate_md(nx_file_name: str, title: str, definition: str, test_dict: dict)
 
 
 # Helper: to get file path to the nexus file
-def get_nx_file_path(file_dir_path: str, file_name: str) -> str:
+def get_nx_file_path(file_dir_path: Path, file_name: str) -> Path:
     """Return nexus file path."""
     # Add extension to file name
     if not file_name.endswith(NX_FILE_EXTENSION):
         file_name = file_name + NX_FILE_EXTENSION
 
     # Define nexus file path
-    file_path: str = os.path.join(file_dir_path, file_name)
+    file_path: Path = file_dir_path / file_name
     return file_path
 
 
 # Helper: to get file path to the callback file
-def get_callback_file_path(file_dir_path: str, file_name: str) -> str:
+def get_callback_file_path(file_dir_path: Path, file_name: str) -> Path:
     """Return callback file path."""
     # Add extension to file name
     if not file_name.endswith(CALLBACK_FILE_EXTENSION):
         file_name = file_name + CALLBACK_FILE_EXTENSION
 
     # Define file path
-    file_path: str = os.path.join(file_dir_path, file_name)
+    file_path: Path = file_dir_path / file_name
     return file_path
 
 
@@ -541,7 +542,7 @@ def _verify_dataset(f: h5py.File, dataset_path: str, expected: Any) -> None:
 
 
 def verify_nexus_file(
-    file_path: str, expected_structure: dict, expected_data: dict
+    file_path: Path, expected_structure: dict, expected_data: dict
 ) -> None:
     """Verify the NeXus file structure and its data."""
     with h5py.File(file_path, "r") as f:
@@ -577,11 +578,14 @@ def test_1(
         "NX_abc",
         {"a": 1, "b": 2, "c": {"d": 3, "e": 4}},
     )
+    # Nexus writer creates additional directories if 'base_name' or 'exp_name' found
+    # in the metadata
+    md["base_name"] = "feu"
+    md["exp_name"] = "chatterton"
 
     callback_file_path = get_callback_file_path(
         _callback_file_dir_path, f"callback_file_{request.node.name}.json"
     )
-
     # Execute plan and write generated documents to a json file
     # using 'WriteToFileFormattedCallback'
     with WriteToFileFormattedCallback(callback_file_path) as callback_writer:
@@ -591,7 +595,9 @@ def test_1(
         )
 
     # Define Nexus file path
-    nx_file_path: str = get_nx_file_path(_nx_file_dir_path, nx_file_name)
+    nx_file_path: Path = get_nx_file_path(
+        _nx_file_dir_path / md["base_name"] / md["exp_name"], nx_file_name
+    )
 
     # Assert file creation
     assert os.path.exists(nx_file_path), (
@@ -1218,7 +1224,7 @@ def test_2(
         )
 
     # Define Nexus file path
-    nx_file_path: str = get_nx_file_path(_nx_file_dir_path, nx_file_name)
+    nx_file_path: Path = get_nx_file_path(_nx_file_dir_path, nx_file_name)
 
     # Assert file creation
     assert os.path.exists(nx_file_path), (
@@ -1691,7 +1697,7 @@ def test_3(
         )
 
     # Define Nexus file path
-    nx_file_path: str = get_nx_file_path(_nx_file_dir_path, nx_file_name)
+    nx_file_path: Path = get_nx_file_path(_nx_file_dir_path, nx_file_name)
 
     # Assert file creation
     assert os.path.exists(nx_file_path), (
@@ -1998,7 +2004,7 @@ def test_4(
         )
 
     # Define Nexus file path
-    nx_file_path: str = get_nx_file_path(_nx_file_dir_path, nx_file_name)
+    nx_file_path: Path = get_nx_file_path(_nx_file_dir_path, nx_file_name)
 
     # Assert file creation
     assert os.path.exists(nx_file_path), (
@@ -2472,7 +2478,7 @@ def test_5(
         )
 
     # Define Nexus file path
-    nx_file_path: str = get_nx_file_path(_nx_file_dir_path, nx_file_name)
+    nx_file_path: Path = get_nx_file_path(_nx_file_dir_path, nx_file_name)
 
     # Assert file creation
     assert os.path.exists(nx_file_path), (
@@ -2612,7 +2618,7 @@ def test_6(
         execute_fly_plan(_run_eng, md, _devices_dictionary["mock_flyer"])
 
     # Define Nexus file path
-    nx_file_path: str = get_nx_file_path(_nx_file_dir_path, nx_file_name)
+    nx_file_path: Path = get_nx_file_path(_nx_file_dir_path, nx_file_name)
 
     # Assert file creation
     assert os.path.exists(nx_file_path), (
