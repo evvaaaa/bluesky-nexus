@@ -52,7 +52,6 @@ from typing import Any, Callable, Dict, Generator, Union
 
 import bluesky.plan_stubs as bps
 from bluesky.preprocessors import SupplementalData, inject_md_wrapper
-from ophyd.device import Device  # type: ignore
 
 from bluesky_nexus.bluesky_nexus_const import (
     DEVICE_INSTANCE_NX_MODEL_ATTRIBUTE_NAME,
@@ -289,7 +288,7 @@ def create_nexus_md(devices_dictionary: dict) -> Generator[None, None, dict]:
 
 
 def create_metadata(
-    devices_dictionary: Dict[str, Device],
+    devices_dictionary: Dict[str, Any],
     extract_fn: Callable,
     metadata_key: str,
 ) -> dict:
@@ -366,7 +365,7 @@ def resolve_pre_run_placeholders(
 
 
 def _resolve_pre_run_placeholders_for_device(
-    device_metadata: dict, device_obj: Device
+    device_metadata: dict, device_obj: Any
 ) -> Generator[None, None, None]:
     """Resolve pre run placeholders for device.
 
@@ -377,7 +376,7 @@ def _resolve_pre_run_placeholders_for_device(
     Args:
         device_metadata (dict): Metadata dictionary for a specific device
             instance object.
-        device_obj (Device): The device instance object associated with the
+        device_obj (Any): The device instance object associated with the
             current metadata.
     """
     for key, value in device_metadata.items():
@@ -393,7 +392,7 @@ def _resolve_pre_run_placeholders_for_device(
             )
 
 
-def resolve_pre_run_placeholder_value(placeholder: str, device_obj: Device) -> Any:
+def resolve_pre_run_placeholder_value(placeholder: str, device_obj: Any) -> Any:
     """Resolve pre run placeholder value.
 
     Resolve a $pre-run-cpt or $pre-run-md placeholder for a specific
