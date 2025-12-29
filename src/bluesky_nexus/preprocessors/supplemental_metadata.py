@@ -176,6 +176,36 @@ class SupplementalMetadata(SupplementalData):
         return (yield from mutated_plan)
 
 
+def extract_device_md(device: Any) -> dict:
+    """Extract metadata from a device instance.
+
+    Supported metadata containers:
+    - ``md.get_attributes()`` (legacy / happi-compatible)
+    - ``md`` as ``dict``
+    - ``md`` as ``SimpleNamespace`` or any object exposing ``__dict__``
+    """
+    if not hasattr(device, "md"):
+        raise AttributeError(f"Device {device} has no 'md' attribute")
+
+    md = device.md
+
+    # Preferred, explicit interface
+    if hasattr(md, "get_attributes") and callable(md.get_attributes):
+        return md.get_attributes()
+
+    # Dict-style metadata
+    if isinstance(md, dict):
+        return md
+
+    # Namespace / object metadata
+    if hasattr(md, "__dict__"):
+        return dict(md.__dict__)
+
+    raise TypeError(
+        f"Unsupported metadata container type for device.md: {type(md).__name__}"
+    )
+
+
 # Create device metadata
 @measure_time
 def create_device_md(devices_dictionary: dict) -> dict:
@@ -184,16 +214,14 @@ def create_device_md(devices_dictionary: dict) -> dict:
     Generate a device metadata dictionary for a collection of device
     instances.
 
-    This function extracts metadata from each device instance in
-    `devices_dictionary` by calling the `get_attributes()` method on each
-    device's `md` attribute. The extracted metadata is organized under a
-    common metadata key.
+    Metadata is extracted using a backward-compatible strategy that
+    supports legacy ``md.get_attributes()``, dictionary-based metadata,
+    and namespace-style metadata objects.
 
     Args:
         devices_dictionary (dict): A dictionary where keys are device names or
             identifiers and values are device instances. Each device instance
-            is expected to have an `md` attribute with a `get_attributes()`
-            method for extracting its metadata.
+            is expected to have an `md` attribute.
 
     Returns:
         dict: A dictionary containing all device metadata under a top-level
@@ -215,22 +243,20 @@ def create_device_md(devices_dictionary: dict) -> dict:
         }
 
         device_metadata = create_device_md(devices)
-        # device_metadata would be structured with metadata from each device's
-        # `get_attributes()` method.
+        # device_metadata would be structured with metadata from each device.
 
     Notes:
         - The function `create_metadata` is used to handle the metadata
           extraction and structuring.
-        - This function assumes that `devices_dictionary` is well-formed, with
-          each device having an `md` attribute and that `md` has a
-          `get_attributes()` method.
+        - This function assumes that `devices_dictionary` is well-formed
+        - Devices must expose an ``md`` attribute; unsupported metadata containers
+          raise a clear error.
     """
-    # The extraction of the md dict from device instance made by
-    # means of the function: get_attributes().
+    # The extraction of the md dict from device instance
     metadata_key: str = DEVICE_MD_KEY
     return create_metadata(
         devices_dictionary,
-        lambda device: device.md.get_attributes(),
+        extract_device_md,
         metadata_key,
     )
 
@@ -432,7 +458,7 @@ def resolve_pre_run_placeholder_value(placeholder: str, device_obj: Any) -> Any:
                 f"{device_obj.name}. Valid placeholder structure: "
                 f"'$pre-run-md:key1: ... keyN-1:keyN'"
             )
-        data: dict = device_obj.md.get_attributes()
+        data: dict = extract_device_md(device_obj)
         value = get_nested_dict_value(data, parts)
         if value is None:
             logger.warning(
