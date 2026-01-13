@@ -814,7 +814,7 @@ This completes the installation and usage in the context of bluesky container (e
 
       ```bash
       docker run -d --rm --name bluesky_zmq --network host \
-      registry.hzdr.de/hzb/bluesky/core/images/zmq-proxy:1-0-0 \
+      registry.hzdr.de/hzb/bluesky/core/images/zmq-proxy:v1.0.1 \
       bluesky-0MQ-proxy 5577 5578
       ```
 
