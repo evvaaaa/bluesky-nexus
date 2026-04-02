@@ -62,20 +62,26 @@ class NexusWriter(CollectThenCompute):
 
     Parameters
     ----------
-    nx_file_dir_path : Path
+    nx_file_dir_path_root : Path
         Base directory where NeXus files are stored.
     cpt_name_delimiter : str, optional
         Delimiter separating component names in device keys.
         Default is "_" (standard for Ophyd).
     """
 
-    def __init__(self, nx_file_dir_path: Path, cpt_name_delimiter: str = "_") -> None:
+    DEFAULT_RELATIVE = Path(".")
+    """The default relative path to write to after the NX_FILE_DIRECTORY_PATH_ROOT"""
+
+    def __init__(
+        self, nx_file_dir_path_root: Path, cpt_name_delimiter: str = "_"
+    ) -> None:
         """Init.
 
         Initialize with NeXus file path and component name delimiter.
         """
         super().__init__()  # Initialize the parent class
-        self.nx_file_dir_path = nx_file_dir_path
+        self._current_relative = self.DEFAULT_RELATIVE
+        self.NX_FILE_DIRECTORY_PATH_ROOT = nx_file_dir_path_root
         self.cpt_name_delimiter = cpt_name_delimiter
 
         # Log the version of the package
@@ -87,7 +93,7 @@ class NexusWriter(CollectThenCompute):
         Only descriptors from the "primary" or "baseline" streams are
         collected. Other streams are ignored for NeXus file generation.
         """
-        if doc["name"] in ("primary", "baseline"):
+        if doc["name"] in ("primary", "baseline"):  # type: ignore
             super().descriptor(doc)
 
     def event(self, doc: Event) -> Event:
@@ -158,6 +164,46 @@ class NexusWriter(CollectThenCompute):
 
         return name, doc
 
+    def start(self, doc: RunStart):
+        """Set the current output directory.
+
+        Uses the keys `project_name` and `sub_project_name` in the run start to set
+
+        """
+        parsed_project_name = doc.get("project_name")
+        parsed_sub_project_name = doc.get("sub_project_name")
+        if not parsed_project_name:
+            self._current_relative = self.DEFAULT_RELATIVE
+            logger.debug(
+                f"Spec writer received run {doc.get('uid')} but it didn't contain a "
+                "`project_name`. The default will be written to instead."
+            )
+        elif not isinstance(parsed_project_name, str):
+            self._current_relative = self.DEFAULT_RELATIVE
+            logger.info(
+                f"Spec writer received run {doc.get('uid')} which contained a"
+                f"`project_name`={parsed_project_name}. But it wasn't a string. "
+                "The default will be written to instead."
+            )
+        else:
+            parsed_relative = [parsed_project_name]
+
+            if isinstance(parsed_sub_project_name, str):
+                parsed_relative.append(parsed_sub_project_name)
+            elif parsed_sub_project_name is not None:
+                logger.info(
+                    f"Spec writer received run {doc.get('uid')} which contained a"
+                    f"`sub_project_name`={parsed_sub_project_name}, but it wasn't a "
+                    "string. The default will be written to instead."
+                )
+            self._current_relative = Path(*parsed_relative)
+
+        (self.NX_FILE_DIRECTORY_PATH_ROOT / self._current_relative).mkdir(
+            mode=0o774, parents=True, exist_ok=True
+        )
+
+        super().start(doc)
+
     def create_nx_file_path(self, dir_path: Path) -> Path:
         """Construct the full NeXus file path.
 
@@ -167,7 +213,7 @@ class NexusWriter(CollectThenCompute):
         by the NexusWriter.
 
         Directory layout:
-            {nx_file_dir_path}/{base_name}/{exp_name}/
+            {NX_FILE_DIRECTORY_PATH_ROOT}/{project_name}/{sub_project_name}/{exp_name}/
 
         Filename format:
             {scan_id:04d}_{plan_name}_{uid8}.nx
@@ -362,7 +408,9 @@ class NexusWriter(CollectThenCompute):
             return
 
         # Create nexus file path
-        nx_file_path: Path = self.create_nx_file_path(self.nx_file_dir_path)
+        nx_file_path: Path = self.create_nx_file_path(
+            self.NX_FILE_DIRECTORY_PATH_ROOT / self._current_relative
+        )
 
         # Copy the start document to be able to modify it.
         # Reason: Documents are immutable.
