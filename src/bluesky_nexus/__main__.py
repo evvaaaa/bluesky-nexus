@@ -120,11 +120,16 @@ What this script does
 
 import argparse
 import os
+import threading
+
+import uvicorn
 
 from bluesky_nexus.common.logging_utils import LogLevel, logger, setup_nx_logger
 from bluesky_nexus.common.validation_utils import validate_directory
 from bluesky_nexus.dispatchers.kafka_dispatcher import run_kafka_dispatcher
 from bluesky_nexus.dispatchers.zmq_dispatcher import run_zmq_dispatcher
+
+from ._health import HealthManager
 
 
 # ---------------------------------------------------------------------------
@@ -350,6 +355,20 @@ def main():
     # Dispatch to backend
     # -------------------------------------------------------
     if args.source == "zmq":
+        zmq_ip = args.zmq_ip or os.environ.get("_ZMQ_IP")
+        zmq_port = args.zmq_port or os.environ.get("_ZMQ_PORT")
+        health = HealthManager(zmq_ip, zmq_port, interval=10)
+        health.start()
+
+        def _run_health_api() -> None:
+            # Bind to localhost by default to avoid exposing the health
+            # endpoint on all network interfaces (Bandit B104).
+            uvicorn.run(health.app, host="127.0.0.1", port=8080, log_level="warning")
+
+        thread = threading.Thread(target=_run_health_api, daemon=True)
+        thread.start()
+        logger.info("Healthcheck endpoint running at /health on port 8080.")
+
         run_zmq_dispatcher(args)
     elif args.source == "kafka":
         run_kafka_dispatcher(args)
