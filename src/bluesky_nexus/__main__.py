@@ -87,12 +87,15 @@ Top-Level Logging Options (must come BEFORE ``zmq``/``kafka``)
 ZMQ Backend Options (after ``zmq``)
 ===============================================================================
 
-| CLI Argument     | Env Variable             | Description                        |
-|------------------|---------------------------|-----------------------------------|
-| --zmq-ip         | _ZMQ_IP                   | IP of the Bluesky ZMQ publisher   |
-| --zmq-port       | _ZMQ_PORT                 | Port of the Bluesky ZMQ publisher |
-| --nx-dir         | _NX_FILE_DIR_PATH         | Output directory for NeXus files  |
-| --cpt-delimiter  | _OPHYD_CPT_NAME_DELIMITER | Ophyd component name delimiter    |
+| CLI Argument          | Env Variable             | Description                        |
+|-----------------------|---------------------------|-----------------------------------|
+| --zmq-ip              | _ZMQ_IP                   | IP of the Bluesky ZMQ publisher   |
+| --zmq-port            | _ZMQ_PORT                 | Port of the Bluesky ZMQ publisher |
+| --nx-dir              | _NX_FILE_DIR_PATH         | Output directory for NeXus files  |
+| --cpt-delimiter       | _OPHYD_CPT_NAME_DELIMITER | Ophyd component name delimiter    |
+| --zmq-health-host     | _ZMQ_HEALTH_HOST          | Host interface for /health        |
+| --zmq-health-port     | _ZMQ_HEALTH_PORT          | Port for /health                  |
+| --zmq-health-interval | _ZMQ_HEALTH_INTERVAL      | ZMQ health probe interval         |
 
 
 ===============================================================================
@@ -130,6 +133,27 @@ from bluesky_nexus.dispatchers.kafka_dispatcher import run_kafka_dispatcher
 from bluesky_nexus.dispatchers.zmq_dispatcher import run_zmq_dispatcher
 
 from ._health import HealthManager
+
+
+DEFAULT_HEALTH_HOST = "127.0.0.1"
+DEFAULT_HEALTH_PORT = 8080
+DEFAULT_HEALTH_INTERVAL = 10.0
+
+
+def validate_port(port: str) -> int:
+    """Validate a TCP port number."""
+    parsed_port = int(port)
+    if parsed_port < 1 or parsed_port > 65535:
+        raise argparse.ArgumentTypeError("Port must be in the range 1-65535.")
+    return parsed_port
+
+
+def validate_interval(interval: str) -> float:
+    """Validate a positive health polling interval."""
+    parsed_interval = float(interval)
+    if parsed_interval <= 0:
+        raise argparse.ArgumentTypeError("Health interval must be positive.")
+    return parsed_interval
 
 
 # ---------------------------------------------------------------------------
@@ -236,6 +260,36 @@ def build_parser() -> argparse.ArgumentParser:
         required=False,
         help="Delimiter for ophyd component names "
         "(env: ``_OPHYD_CPT_NAME_DELIMITER``).",
+    )
+
+    zmq_parser.add_argument(
+        "--zmq-health-host",
+        type=str,
+        default=None,
+        help=(
+            "Host interface for the health endpoint "
+            f"(env: _ZMQ_HEALTH_HOST, default: {DEFAULT_HEALTH_HOST})."
+        ),
+    )
+
+    zmq_parser.add_argument(
+        "--zmq-health-port",
+        type=validate_port,
+        default=None,
+        help=(
+            "Port for the health endpoint "
+            f"(env: _ZMQ_HEALTH_PORT, default: {DEFAULT_HEALTH_PORT})."
+        ),
+    )
+
+    zmq_parser.add_argument(
+        "--zmq-health-interval",
+        type=validate_interval,
+        default=None,
+        help=(
+            "Polling interval in seconds for the ZMQ reachability probe "
+            f"(env: _ZMQ_HEALTH_INTERVAL, default: {DEFAULT_HEALTH_INTERVAL})."
+        ),
     )
 
     # -----------------------------
@@ -356,18 +410,51 @@ def main():
     # -------------------------------------------------------
     if args.source == "zmq":
         zmq_ip = args.zmq_ip or os.environ.get("_ZMQ_IP")
-        zmq_port = args.zmq_port or os.environ.get("_ZMQ_PORT")
-        health = HealthManager(zmq_ip, zmq_port, interval=10)
-        health.start()
+        zmq_port = validate_port(args.zmq_port or os.environ.get("_ZMQ_PORT"))
 
-        def _run_health_api() -> None:
-            # Bind to localhost by default to avoid exposing the health
-            # endpoint on all network interfaces (Bandit B104).
-            uvicorn.run(health.app, host="127.0.0.1", port=8080, log_level="warning")
+        zmq_health_host = (
+            args.zmq_health_host
+            if args.zmq_health_host is not None
+            else os.environ.get("_ZMQ_HEALTH_HOST") or DEFAULT_HEALTH_HOST
+        )
+        zmq_health_port = (
+            args.zmq_health_port
+            if args.zmq_health_port is not None
+            else validate_port(
+                os.environ.get("_ZMQ_HEALTH_PORT", str(DEFAULT_HEALTH_PORT))
+            )
+        )
+        zmq_health_interval = validate_interval(
+            args.zmq_health_interval
+            if args.zmq_health_interval is not None
+            else
+                os.environ.get(
+                    "_ZMQ_HEALTH_INTERVAL", str(DEFAULT_HEALTH_INTERVAL)
+            )
+        )
 
-        thread = threading.Thread(target=_run_health_api, daemon=True)
+        health_manager = HealthManager(
+            zmq_host=zmq_ip,
+            zmq_port=zmq_port,
+            interval=zmq_health_interval,
+        )
+        health_manager.start()
+
+        def _run_health_api(manager: HealthManager, host: str, port: int) -> None:
+            """Serve the FastAPI health endpoint."""
+            uvicorn.run(manager.app, host=host, port=port, log_level="warning")
+
+        thread = threading.Thread(
+            target=_run_health_api,
+            args=(health_manager, zmq_health_host, zmq_health_port),
+            daemon=True,
+        )
         thread.start()
-        logger.info("Healthcheck endpoint running at /health on port 8080.")
+        logger.info(
+            "Healthcheck endpoint listening on http://%s:%s/health.",
+            zmq_health_host,
+            zmq_health_port,
+        )
 
         run_zmq_dispatcher(args)
     elif args.source == "kafka":
