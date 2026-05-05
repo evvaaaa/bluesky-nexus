@@ -81,6 +81,7 @@ class HealthManager:
                         f" Marking as unhealthy."
                     )
                 self._healthy = False
+            self._stop_event.wait(self.interval)
 
     @property
     def zmq_healthy(self) -> bool:
