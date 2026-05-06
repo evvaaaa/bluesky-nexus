@@ -80,8 +80,13 @@ class NexusWriter(CollectThenCompute):
         self.nx_file_root_dir_path = nx_file_root_dir_path
         self.cpt_name_delimiter = cpt_name_delimiter
 
+        # Check if 'nx_file_root_dir_path' is pointing to existing directory
+        if not nx_file_root_dir_path.is_dir():
+            raise ValueError(f"Nexus root dir path: {nx_file_root_dir_path} is not a directory.")
+
         # Log the version of the package
         log_package_version()
+
 
     def descriptor(self, doc: EventDescriptor):
         """Handle descriptor documents for streams relevant to NeXus.
@@ -161,7 +166,7 @@ class NexusWriter(CollectThenCompute):
         return name, doc
 
 
-    def create_nx_file_path(self, root_dir_path: Path) -> Path:
+    def create_nx_file_path(self) -> Path:
         """Construct the full NeXus file path.
 
         This method builds the hierarchical directory structure and the final
@@ -170,9 +175,9 @@ class NexusWriter(CollectThenCompute):
         by the NexusWriter.
 
         Directory layout:
-            {root_dir_path}/{project_name}/{sub_project_name}/
-            {root_dir_path}/{project_name}/
-            {root_dir_path}/
+            {self.nx_file_root_dir_path}/{project_name}/{sub_project_name}/
+            {self.nx_file_root_dir_path}/{project_name}/
+            {self.nx_file_root_dir_path}/
 
         Filename format:
             {scan_id:04d}_{plan_name}_{uid8}.nx
@@ -182,11 +187,6 @@ class NexusWriter(CollectThenCompute):
             - plan_name is taken from the start document
             - If `nx_file_name` is provided in the metadata, it overrides the
             auto-generated name (extension is appended if missing)
-
-        Parameters
-        ----------
-        root_dir_path : Path
-            Root directory where the NeXus file hierarchy should be created.
 
         Returns
         -------
@@ -207,15 +207,11 @@ class NexusWriter(CollectThenCompute):
         - This function does not open or write the file; it only returns a valid path.
         """
 
-        # Check if 'root_dir_path' is pointing to existing directory
-        if not root_dir_path.is_dir():
-            raise ValueError(f"Nexus dir path {root_dir_path} is not a directory.")
-
         # Extract 'project_name' and 'sub_project_name' from metadata passed to the run
         project_name = self._start_doc.get("project_name")
         sub_project_name = self._start_doc.get("sub_project_name")
 
-        dir_path: Path = root_dir_path
+        dir_path: Path = self.nx_file_root_dir_path
         if isinstance(project_name, str) and project_name.strip():
             dir_path = dir_path / project_name.strip()
 
@@ -392,7 +388,7 @@ class NexusWriter(CollectThenCompute):
             return
 
         # Create nexus file path
-        nx_file_path: Path = self.create_nx_file_path(self.nx_file_root_dir_path)
+        nx_file_path: Path = self.create_nx_file_path()
 
         # Copy the start document to be able to modify it.
         # Reason: Documents are immutable.
