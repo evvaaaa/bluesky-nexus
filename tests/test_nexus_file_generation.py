@@ -224,7 +224,7 @@ def _run_eng(_run_engine: RunEngine, _nx_file_dir_path: Path):
 
     Returns the configured RunEngine.
     """
-    nexus_writer = NexusWriter(nx_file_dir_path=_nx_file_dir_path)
+    nexus_writer = NexusWriter(nx_file_root_dir_path=_nx_file_dir_path)
 
     _run_engine.subscribe(nexus_writer)
     return _run_engine
@@ -578,10 +578,11 @@ def test_1(
         "NX_abc",
         {"a": 1, "b": 2, "c": {"d": 3, "e": 4}},
     )
-    # Nexus writer creates additional directories if 'base_name' or 'exp_name' found
-    # in the metadata
-    md["base_name"] = "feu"
-    md["exp_name"] = "chatterton"
+
+    # Nexus writer creates project/sub-project directories from metadata.
+    # sub_project_name creates an extra directory only when project_name is valid.
+    md["project_name"] = "feu"
+    md["sub_project_name"] = "chatterton"
 
     callback_file_path = get_callback_file_path(
         _callback_file_dir_path, f"callback_file_{request.node.name}.json"
@@ -596,7 +597,7 @@ def test_1(
 
     # Define Nexus file path
     nx_file_path: Path = get_nx_file_path(
-        _nx_file_dir_path / md["base_name"] / md["exp_name"], nx_file_name
+        _nx_file_dir_path / md["project_name"] / md["sub_project_name"], nx_file_name
     )
 
     # Assert file creation
@@ -2829,8 +2830,75 @@ def test_6(
     verify_nexus_file(nx_file_path, expected_structure, expected_data)
 
 
-if __name__ == "__main__":
-    # Execute all test cases in the script when run directly.
-    # import pytest
+def test_swapping_relative_output_directory(_devices_dictionary, _nx_file_dir_path):
+    relative_path_metadatas = (
+        {
+            "project_name": "AProjectName",
+        },
+        {
+            "project_name": "AProjectName",
+            "sub_project_name": "ASubProjectName",
+        },
+        {},  # Will go back to nx_file_root_dir_path
+        {
+            "project_name": "AProjectName",
+            "sub_project_name": "BSubProjectName",
+        },
+        {
+            "project_name": "BProjectName",
+            "sub_project_name": "BSubProjectName",
+        },
+        {},
+        {
+            "project_name": "AProjectName",
+            "sub_project_name": "ASubProjectName",
+        },
+    )
+    from pprint import pprint
 
-    pytest.main([__file__])
+    RE = RunEngine()
+    RE.subscribe(NexusWriter(_nx_file_dir_path))
+    metadata = SupplementalMetadata(
+        _devices_dictionary, SupplementalMetadata.MetadataType.NEXUS_MD
+    )
+    RE.preprocessors.append(metadata)
+    RE.subscribe(lambda k, v: pprint(v))
+
+    for i, relative_path_metadata in enumerate(relative_path_metadatas):
+        md = generate_md(
+            f"{i}.nxs",
+            "bluesky run test 6",
+            "NX_fly",
+            {"a": 35, "b": 36, "c": {"d": 37, "e": 38}},
+        )
+        md.update(relative_path_metadata)
+        RE(count([_devices_dictionary["sim_motor"]], md=md))
+
+    for expected_path, expected_files in [
+        (
+            (".",),
+            (
+                "2.nxs",
+                "5.nxs",
+            ),
+        ),
+        (("AProjectName",), ("0.nxs",)),
+        (
+            ("AProjectName", "ASubProjectName"),
+            ("1.nxs", "6.nxs"),
+        ),
+        (("AProjectName", "BSubProjectName"), ("3.nxs",)),
+        (("BProjectName", "BSubProjectName"), ("4.nxs",)),
+    ]:
+        created_path = _nx_file_dir_path / Path(*expected_path)
+        assert created_path.is_dir()
+
+        nexus_files = tuple(
+            str(path.name)
+            for path in sorted(
+                list(created_path.iterdir()), key=lambda p: p.stat().st_mtime
+            )
+            if path.suffix == ".nxs"
+        )
+        assert nexus_files == expected_files
+        print(created_path)

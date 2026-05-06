@@ -21,6 +21,8 @@ dependencies = [
   "pydantic",
   "PyYAML",
   "pyzmq",
+  "uvicorn",
+  "fastapi",
 ]
 
 [tool.setuptools_scm]
