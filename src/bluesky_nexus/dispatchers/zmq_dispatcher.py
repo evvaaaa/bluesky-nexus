@@ -11,11 +11,11 @@ CLI arguments take precedence over environment variables.
 Required Configuration
 ---------------------------------------------------------------------------
 
-| CLI Argument   | Environment Variable  | Description                       |
-|----------------|-----------------------|-----------------------------------|
-| --zmq-ip       | _ZMQ_IP               | ZeroMQ publisher IP address       |
-| --zmq-port     | _ZMQ_PORT             | ZeroMQ publisher port             |
-| --nx-dir       | _NX_FILE_DIR_PATH     | Directory for NeXus output files  |
+| CLI Argument            | Environment Variable   | Description                       |
+|-------------------------|------------------------|-----------------------------------|
+| --zmq-ip                | _ZMQ_IP                | ZeroMQ publisher IP address       |
+| --zmq-port              | _ZMQ_PORT              | ZeroMQ publisher port             |
+| --nx-file-root-dir-path | _NX_FILE_ROOT_DIR_PATH | Root dir for NeXus output files   |
 
 ---------------------------------------------------------------------------
 Optional Configuration
@@ -40,6 +40,7 @@ Runtime Behaviour
 """
 
 import os
+from pathlib import Path
 
 from bluesky.callbacks.zmq import RemoteDispatcher as ZMQDispatcher
 
@@ -76,7 +77,7 @@ def run_zmq_dispatcher(args) -> None:
     # ---------------------------------------------------------------------------
     zmq_ip = args.zmq_ip or os.environ.get("_ZMQ_IP")
     zmq_port = args.zmq_port or os.environ.get("_ZMQ_PORT")
-    nx_dir = args.nx_dir or os.environ.get("_NX_FILE_DIR_PATH")
+    nx_file_root_dir_path = args.nx_file_root_dir_path or os.environ.get("_NX_FILE_ROOT_DIR_PATH")
     cpt_delimiter = args.cpt_delimiter or os.environ.get("_OPHYD_CPT_NAME_DELIMITER")
 
     # ---------------------------------------------------------------------------
@@ -88,26 +89,26 @@ def run_zmq_dispatcher(args) -> None:
     if not zmq_port:
         raise ValueError("Missing ZeroMQ port (--zmq-port or env. var. _ZMQ_PORT).")
 
-    if not nx_dir:
+    if not nx_file_root_dir_path:
         raise ValueError(
-            "Missing NeXus file output directory "
-            "(--nx-dir or env. var. _NX_FILE_DIR_PATH)."
+            "Missing NeXus file root directory "
+            "(--nx-file-root-dir-path or env. var. _NX_FILE_ROOT_DIR_PATH)."
         )
 
     # ---------------------------------------------------------------------------
     # Validate NeXus file output directory
     # ---------------------------------------------------------------------------
-    nx_path = validate_directory(nx_dir, "NeXus output directory")
-    logger.info("Validated NeXus output directory: %s", nx_path)
+    nx_dir: Path = validate_directory(nx_file_root_dir_path, "NeXus file root directory")
+    logger.info("Validated NeXus root directory: %s", nx_dir)
 
     # ---------------------------------------------------------------------------
     # Initialize NexusWriter callback
     # ---------------------------------------------------------------------------
     if cpt_delimiter:
         logger.info("Using ophyd component delimiter: %s", cpt_delimiter)
-        writer = NexusWriter(nx_file_dir_path=nx_path, cpt_name_delimiter=cpt_delimiter)
+        writer = NexusWriter(nx_file_root_dir_path=nx_dir, cpt_name_delimiter=cpt_delimiter)
     else:
-        writer = NexusWriter(nx_file_dir_path=nx_path)
+        writer = NexusWriter(nx_file_root_dir_path=nx_dir)
 
     # ---------------------------------------------------------------------------
     # Create and start the RemoteDispatcher
