@@ -21,7 +21,7 @@ python -m bluesky_nexus \
     zmq \
         --zmq-ip localhost \
         --zmq-port 5578 \
-        --nx-dir /home/user/nexus_output
+        --nx-file-root-dir-path /home/user/nexus_output
 
 
 Run the Kafka backend:
@@ -31,7 +31,7 @@ python -m bluesky_nexus \
     kafka \
         --kafka-brokers localhost:9092 \
         --kafka-topic bluesky.documents \
-        --nx-dir /home/user/nexus_output
+        --nx-file-root-dir-path /home/user/nexus_output
 
 ===============================================================================
 Viewing Help
@@ -87,28 +87,28 @@ Top-Level Logging Options (must come BEFORE ``zmq``/``kafka``)
 ZMQ Backend Options (after ``zmq``)
 ===============================================================================
 
-| CLI Argument          | Env Variable             | Description                        |
-|-----------------------|---------------------------|-----------------------------------|
-| --zmq-ip              | _ZMQ_IP                   | IP of the Bluesky ZMQ publisher   |
-| --zmq-port            | _ZMQ_PORT                 | Port of the Bluesky ZMQ publisher |
-| --nx-dir              | _NX_FILE_DIR_PATH         | Output directory for NeXus files  |
-| --cpt-delimiter       | _OPHYD_CPT_NAME_DELIMITER | Ophyd component name delimiter    |
-| --zmq-health-host     | _ZMQ_HEALTH_HOST          | Host interface for /health        |
-| --zmq-health-port     | _ZMQ_HEALTH_PORT          | Port for /health                  |
-| --zmq-health-interval | _ZMQ_HEALTH_INTERVAL      | ZMQ health probe interval         |
+| CLI Argument            | Env Variable              | Description                       |
+|-------------------------|---------------------------|-----------------------------------|
+| --zmq-ip                | _ZMQ_IP                   | IP of the Bluesky ZMQ publisher   |
+| --zmq-port              | _ZMQ_PORT                 | Port of the Bluesky ZMQ publisher |
+| --nx-file-root-dir-path | _NX_FILE_ROOT_DIR_PATH    | Root dir for NeXus output files   |
+| --cpt-delimiter         | _OPHYD_CPT_NAME_DELIMITER | Ophyd component name delimiter    |
+| --zmq-health-host       | _ZMQ_HEALTH_HOST          | Host interface for /health        |
+| --zmq-health-port       | _ZMQ_HEALTH_PORT          | Port for /health                  |
+| --zmq-health-interval   | _ZMQ_HEALTH_INTERVAL      | ZMQ health probe interval         |
 
 
 ===============================================================================
 Kafka Backend Options (after ``kafka``)
 ===============================================================================
 
-| CLI Argument     | Env Variable             | Description                         |
-|------------------|---------------------------|------------------------------------|
-| --kafka-brokers  | _KAFKA_BROKERS            | Comma-separated Kafka servers      |
-| --kafka-group    | _KAFKA_GROUP              | Kafka consumer group               |
-| --kafka-topic    | _KAFKA_TOPIC              | Topic containing Bluesky documents |
-| --nx-dir         | _NX_FILE_DIR_PATH         | Output directory for NeXus files   |
-| --cpt-delimiter  | _OPHYD_CPT_NAME_DELIMITER | Ophyd component name delimiter     |
+| CLI Argument            | Env Variable              | Description                        |
+|-------------------------|---------------------------|------------------------------------|
+| --kafka-brokers         | _KAFKA_BROKERS            | Comma-separated Kafka servers      |
+| --kafka-group           | _KAFKA_GROUP              | Kafka consumer group               |
+| --kafka-topic           | _KAFKA_TOPIC              | Topic containing Bluesky documents |
+| --nx-file-root-dir-path | _NX_FILE_ROOT_DIR_PATH    | Root dir for NeXus output files    |
+| --cpt-delimiter         | _OPHYD_CPT_NAME_DELIMITER | Ophyd component name delimiter     |
 
 
 ===============================================================================
@@ -250,9 +250,9 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     zmq_parser.add_argument(
-        "--nx-dir",
+        "--nx-file-root-dir-path",
         required=False,
-        help="Directory for NeXus files (env: ``_NX_FILE_DIR_PATH``).",
+        help="Root directory for NeXus files (env: ``_NX_FILE_ROOT_DIR_PATH``).",
     )
 
     zmq_parser.add_argument(
@@ -320,9 +320,9 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     kafka_parser.add_argument(
-        "--nx-dir",
+        "--nx-file-root-dir-path",
         required=False,
-        help="Directory for NeXus files (env: ``_NX_FILE_DIR_PATH``).",
+        help="Root directory for NeXus files (env: ``_NX_FILE_ROOT_DIR_PATH``).",
     )
 
     kafka_parser.add_argument(
