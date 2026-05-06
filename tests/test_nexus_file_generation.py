@@ -578,8 +578,9 @@ def test_1(
         "NX_abc",
         {"a": 1, "b": 2, "c": {"d": 3, "e": 4}},
     )
-    # Nexus writer creates additional directories if 'base_name' or 'exp_name' found
-    # in the metadata
+
+    # Nexus writer creates project/sub-project directories from metadata.
+    # sub_project_name creates an extra directory only when project_name is valid.
     md["project_name"] = "feu"
     md["sub_project_name"] = "chatterton"
 
@@ -2838,7 +2839,7 @@ def test_swapping_relative_output_directory(_devices_dictionary, _nx_file_dir_pa
             "project_name": "AProjectName",
             "sub_project_name": "ASubProjectName",
         },
-        {},  # Will go back to NX_FILE_DIRECTORY_PATH_ROOT
+        {},  # Will go back to nx_file_root_dir_path
         {
             "project_name": "AProjectName",
             "sub_project_name": "BSubProjectName",
