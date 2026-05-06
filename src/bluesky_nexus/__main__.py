@@ -417,20 +417,15 @@ def main():
             if args.zmq_health_host is not None
             else os.environ.get("_ZMQ_HEALTH_HOST") or DEFAULT_HEALTH_HOST
         )
-        zmq_health_port = (
+        zmq_health_port = validate_port(
             args.zmq_health_port
             if args.zmq_health_port is not None
-            else validate_port(
-                os.environ.get("_ZMQ_HEALTH_PORT", str(DEFAULT_HEALTH_PORT))
-            )
+            else os.environ.get("_ZMQ_HEALTH_PORT", str(DEFAULT_HEALTH_PORT))
         )
         zmq_health_interval = validate_interval(
             args.zmq_health_interval
             if args.zmq_health_interval is not None
-            else
-                os.environ.get(
-                    "_ZMQ_HEALTH_INTERVAL", str(DEFAULT_HEALTH_INTERVAL)
-            )
+            else os.environ.get("_ZMQ_HEALTH_INTERVAL", str(DEFAULT_HEALTH_INTERVAL))
         )
 
         health_manager = HealthManager(
