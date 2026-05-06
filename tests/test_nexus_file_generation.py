@@ -224,7 +224,7 @@ def _run_eng(_run_engine: RunEngine, _nx_file_dir_path: Path):
 
     Returns the configured RunEngine.
     """
-    nexus_writer = NexusWriter(nx_file_dir_path_root=_nx_file_dir_path)
+    nexus_writer = NexusWriter(nx_file_root_dir_path=_nx_file_dir_path)
 
     _run_engine.subscribe(nexus_writer)
     return _run_engine
@@ -580,8 +580,8 @@ def test_1(
     )
     # Nexus writer creates additional directories if 'base_name' or 'exp_name' found
     # in the metadata
-    md["base_name"] = "feu"
-    md["exp_name"] = "chatterton"
+    md["project_name"] = "feu"
+    md["sub_project_name"] = "chatterton"
 
     callback_file_path = get_callback_file_path(
         _callback_file_dir_path, f"callback_file_{request.node.name}.json"
@@ -596,7 +596,7 @@ def test_1(
 
     # Define Nexus file path
     nx_file_path: Path = get_nx_file_path(
-        _nx_file_dir_path / md["base_name"] / md["exp_name"], nx_file_name
+        _nx_file_dir_path / md["project_name"] / md["sub_project_name"], nx_file_name
     )
 
     # Assert file creation
