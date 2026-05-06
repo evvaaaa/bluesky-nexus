@@ -10,7 +10,7 @@ It implements the logic used by the `NexusWriter` callback, including:
     • filtering out unused devices based on descriptors
     • constructing standardized NeXus file paths and filenames
     • writing the NeXus hierarchy (NXentry, NXinstrument, NXcollection)
-    • automatic directory creation for base_name/exp_name
+    • automatic directory creation for project_name/sub_project_name
 
 The module follows the NeXus standard and produces files suitable for
 data archival and beamline data workflows.
@@ -55,33 +55,29 @@ class NexusWriter(CollectThenCompute):
         - Collect run documents through the Bluesky callback interface.
         - Filter device metadata to include only devices present in descriptors.
         - Resolve post-run metadata placeholders using descriptors and events.
-        - Create hierarchical directories based on `base_name` and `exp_name`.
+        - Create hierarchical directories based on `project_name` and `sub_project_name`.
         - Construct standardized filenames:
               {scan_id:04d}_{plan_name}_{uid8}.nx
         - Write NeXus groups: NXentry, NXinstrument, NXcollection.
 
     Parameters
     ----------
-    nx_file_dir_path_root : Path
-        Base directory where NeXus files are stored.
+    nx_file_root_dir_path : Path
+        Root directory where NeXus files are stored in a structured way
     cpt_name_delimiter : str, optional
         Delimiter separating component names in device keys.
         Default is "_" (standard for Ophyd).
     """
 
-    DEFAULT_RELATIVE = Path(".")
-    """The default relative path to write to after the NX_FILE_DIRECTORY_PATH_ROOT"""
-
     def __init__(
-        self, nx_file_dir_path_root: Path, cpt_name_delimiter: str = "_"
+        self, nx_file_root_dir_path: Path, cpt_name_delimiter: str = "_"
     ) -> None:
         """Init.
 
         Initialize with NeXus file path and component name delimiter.
         """
         super().__init__()  # Initialize the parent class
-        self._current_relative = self.DEFAULT_RELATIVE
-        self.NX_FILE_DIRECTORY_PATH_ROOT = nx_file_dir_path_root
+        self.nx_file_root_dir_path = nx_file_root_dir_path
         self.cpt_name_delimiter = cpt_name_delimiter
 
         # Log the version of the package
@@ -164,47 +160,8 @@ class NexusWriter(CollectThenCompute):
 
         return name, doc
 
-    def start(self, doc: RunStart):
-        """Set the current output directory.
 
-        Uses the keys `project_name` and `sub_project_name` in the run start to set
-
-        """
-        parsed_project_name = doc.get("project_name")
-        parsed_sub_project_name = doc.get("sub_project_name")
-        if not parsed_project_name:
-            self._current_relative = self.DEFAULT_RELATIVE
-            logger.debug(
-                f"Spec writer received run {doc.get('uid')} but it didn't contain a "
-                "`project_name`. The default will be written to instead."
-            )
-        elif not isinstance(parsed_project_name, str):
-            self._current_relative = self.DEFAULT_RELATIVE
-            logger.info(
-                f"Spec writer received run {doc.get('uid')} which contained a"
-                f"`project_name`={parsed_project_name}. But it wasn't a string. "
-                "The default will be written to instead."
-            )
-        else:
-            parsed_relative = [parsed_project_name]
-
-            if isinstance(parsed_sub_project_name, str):
-                parsed_relative.append(parsed_sub_project_name)
-            elif parsed_sub_project_name is not None:
-                logger.info(
-                    f"Spec writer received run {doc.get('uid')} which contained a"
-                    f"`sub_project_name`={parsed_sub_project_name}, but it wasn't a "
-                    "string. The default will be written to instead."
-                )
-            self._current_relative = Path(*parsed_relative)
-
-        (self.NX_FILE_DIRECTORY_PATH_ROOT / self._current_relative).mkdir(
-            mode=0o774, parents=True, exist_ok=True
-        )
-
-        super().start(doc)
-
-    def create_nx_file_path(self, dir_path: Path) -> Path:
+    def create_nx_file_path(self, root_dir_path: Path) -> Path:
         """Construct the full NeXus file path.
 
         This method builds the hierarchical directory structure and the final
@@ -213,7 +170,9 @@ class NexusWriter(CollectThenCompute):
         by the NexusWriter.
 
         Directory layout:
-            {NX_FILE_DIRECTORY_PATH_ROOT}/{project_name}/{sub_project_name}/{exp_name}/
+            {root_dir_path}/{project_name}/{sub_project_name}/
+            {root_dir_path}/{project_name}/
+            {root_dir_path}/
 
         Filename format:
             {scan_id:04d}_{plan_name}_{uid8}.nx
@@ -226,8 +185,8 @@ class NexusWriter(CollectThenCompute):
 
         Parameters
         ----------
-        dir_path : Path
-            Base directory where the NeXus file hierarchy should be created.
+        root_dir_path : Path
+            Root directory where the NeXus file hierarchy should be created.
 
         Returns
         -------
@@ -238,27 +197,52 @@ class NexusWriter(CollectThenCompute):
         Raises
         ------
         ValueError
-            If the base directory path does not exist.
+            If the root directory path does not exist.
 
         Notes
         -----
-        - Directories `{base_name}` and `{exp_name}` are created automatically.
+        - When present and valid directories `{project_name}` and `{sub_project_name}`
+            are created automatically.
         - The `.nx` extension is appended if missing.
         - This function does not open or write the file; it only returns a valid path.
         """
-        # Check if 'dir_path' is pointing to existing directory
-        if not dir_path.is_dir():
-            raise ValueError(f"Nexus dir path {dir_path} is not a directory.")
 
-        # Extract 'base_name' from metadata passed to the run
-        base_name: str = self._start_doc.get("base_name", None)
-        if base_name and base_name.strip():
-            dir_path = dir_path / base_name.strip()
+        # Check if 'root_dir_path' is pointing to existing directory
+        if not root_dir_path.is_dir():
+            raise ValueError(f"Nexus dir path {root_dir_path} is not a directory.")
 
-        # Extract 'exp_name' from metadata passed to the run
-        exp_name: str = self._start_doc.get("exp_name", None)
-        if exp_name and exp_name.strip():
-            dir_path = dir_path / exp_name.strip()
+        # Extract 'project_name' and 'sub_project_name' from metadata passed to the run
+        project_name = self._start_doc.get("project_name")
+        sub_project_name = self._start_doc.get("sub_project_name")
+
+        dir_path: Path = root_dir_path
+        if isinstance(project_name, str) and project_name.strip():
+            dir_path = dir_path / project_name.strip()
+
+            if isinstance(sub_project_name, str) and sub_project_name.strip():
+                dir_path = dir_path / sub_project_name.strip()
+            elif sub_project_name is not None:
+                logger.info(
+                    "Run %s contained sub_project_name=%r, but it was not a non-empty string. "
+                    "Writing under project directory %s only.",
+                    self._start_doc.get("uid"),
+                    sub_project_name,
+                    dir_path,
+                )
+        elif project_name is not None:
+            logger.info(
+                "Run %s contained project_name=%r, but it was not a non-empty string. "
+                "Writing under root output directory %s.",
+                self._start_doc.get("uid"),
+                project_name,
+                dir_path,
+            )
+        else:
+            logger.debug(
+                "Run %s did not contain project_name. Writing under root output directory %s.",
+                self._start_doc.get("uid"),
+                dir_path,
+            )
 
         # Create the directories if they do not exist
         dir_path.mkdir(parents=True, exist_ok=True)
@@ -408,9 +392,7 @@ class NexusWriter(CollectThenCompute):
             return
 
         # Create nexus file path
-        nx_file_path: Path = self.create_nx_file_path(
-            self.NX_FILE_DIRECTORY_PATH_ROOT / self._current_relative
-        )
+        nx_file_path: Path = self.create_nx_file_path(self.nx_file_root_dir_path)
 
         # Copy the start document to be able to modify it.
         # Reason: Documents are immutable.
@@ -564,13 +546,13 @@ def extract_run_info(start: dict, stop: dict) -> dict:
     Returns:
         dict: A dictionary with two keys, 'start' and 'stop', each
             containing the relevant data. The 'start' key will include data
-            from the start document, excluding the 'nexus_md' and
-            'device_md' keys. The 'stop' key will include the entire stop
+            from the start document, excluding the 'nexus_md' key.
+            The 'stop' key will include the entire stop
             document.
 
     Notes:
-        - The 'nexus_md' and 'device_md' keys are intentionally excluded
-        from the 'start' document in the resulting dictionary.
+        - The 'nexus_md' key is intentionally excluded
+            from the 'start' document in the resulting dictionary.
     """
     start_label: str = "start"
     stop_label: str = "stop"
