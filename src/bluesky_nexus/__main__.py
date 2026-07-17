@@ -34,23 +34,6 @@ python -m bluesky_nexus \
         --nx-file-root-dir-path /home/user/nexus_output
 
 ===============================================================================
-Viewing Help
-===============================================================================
-
-Global help (logging options + subcommands):
-
-    python -m bluesky_nexus --help
-
-Help for the ZMQ backend:
-
-    python -m bluesky_nexus zmq --help
-
-Help for the Kafka backend:
-
-    python -m bluesky_nexus kafka --help
-
-
-===============================================================================
 Backend-Specific Required Arguments
 ===============================================================================
 
@@ -63,53 +46,6 @@ Kafka backend requires:
     --kafka-brokers and --kafka-topic
     or environment variables:
     _KAFKA_BROKERS and _KAFKA_TOPIC
-
-All other backend options are optional and may fall back to environment variables.
-
-===============================================================================
-Top-Level Logging Options (must come BEFORE ``zmq``/``kafka``)
-===============================================================================
-
-| CLI Argument    | Env Variable           | Description                               |
-|-----------------|------------------------|-------------------------------------------|
-| --log-dir       | _NX_LOG_FILE_DIR_PATH  | Directory for log files (optional)        |
-| --console-level | _NX_CONSOLE_LOG_LEVEL  | Console log level (default=ERROR)         |
-| --file-level    | _NX_FILE_LOG_LEVEL     | File log level (default=DEBUG)            |
-| --log-file-name | _NX_LOG_FILE_NAME      | Log filename (default=nx_log.log)         |
-| --file-max-size | _NX_LOG_FILE_MAX_SIZE  | Rotate logs above this size (default=10MB)|
-| --backup-count  | _NX_BACKUP_COUNT       | Num of rotated logs to keep (default=5)   |
-| --enable-console| _NX_ENABLE_CONSOLE_LOG | Enable console logging (default=True)     |
-
-⚠️ All logging arguments must appear *before* the backend (``zmq`` or ``kafka``).
-
-
-===============================================================================
-ZMQ Backend Options (after ``zmq``)
-===============================================================================
-
-| CLI Argument            | Env Variable              | Description                       |
-|-------------------------|---------------------------|-----------------------------------|
-| --zmq-ip                | _ZMQ_IP                   | IP of the Bluesky ZMQ publisher   |
-| --zmq-port              | _ZMQ_PORT                 | Port of the Bluesky ZMQ publisher |
-| --nx-file-root-dir-path | _NX_FILE_ROOT_DIR_PATH    | Root dir for NeXus output files   |
-| --cpt-delimiter         | _OPHYD_CPT_NAME_DELIMITER | Ophyd component name delimiter    |
-| --zmq-health-host       | _ZMQ_HEALTH_HOST          | Host interface for /health        |
-| --zmq-health-port       | _ZMQ_HEALTH_PORT          | Port for /health                  |
-| --zmq-health-interval   | _ZMQ_HEALTH_INTERVAL      | ZMQ health probe interval         |
-
-
-===============================================================================
-Kafka Backend Options (after ``kafka``)
-===============================================================================
-
-| CLI Argument            | Env Variable              | Description                        |
-|-------------------------|---------------------------|------------------------------------|
-| --kafka-brokers         | _KAFKA_BROKERS            | Comma-separated Kafka servers      |
-| --kafka-group           | _KAFKA_GROUP              | Kafka consumer group               |
-| --kafka-topic           | _KAFKA_TOPIC              | Topic containing Bluesky documents |
-| --nx-file-root-dir-path | _NX_FILE_ROOT_DIR_PATH    | Root dir for NeXus output files    |
-| --cpt-delimiter         | _OPHYD_CPT_NAME_DELIMITER | Ophyd component name delimiter     |
-
 
 ===============================================================================
 What this script does
@@ -133,7 +69,6 @@ from bluesky_nexus.dispatchers.kafka_dispatcher import run_kafka_dispatcher
 from bluesky_nexus.dispatchers.zmq_dispatcher import run_zmq_dispatcher
 
 from ._health import HealthManager
-
 
 DEFAULT_HEALTH_HOST = "127.0.0.1"
 DEFAULT_HEALTH_PORT = 8080

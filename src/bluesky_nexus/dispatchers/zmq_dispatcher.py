@@ -44,9 +44,9 @@ from pathlib import Path
 
 from bluesky.callbacks.zmq import RemoteDispatcher as ZMQDispatcher
 
-from bluesky_nexus.callbacks.nexus_writer.writer_core import NexusWriter
 from bluesky_nexus.common.logging_utils import logger
 from bluesky_nexus.common.validation_utils import validate_directory
+from bluesky_nexus.nx_writer import NexusWriter
 
 
 def run_zmq_dispatcher(args) -> None:
@@ -77,7 +77,9 @@ def run_zmq_dispatcher(args) -> None:
     # ---------------------------------------------------------------------------
     zmq_ip = args.zmq_ip or os.environ.get("_ZMQ_IP")
     zmq_port = args.zmq_port or os.environ.get("_ZMQ_PORT")
-    nx_file_root_dir_path = args.nx_file_root_dir_path or os.environ.get("_NX_FILE_ROOT_DIR_PATH")
+    nx_file_root_dir_path = args.nx_file_root_dir_path or os.environ.get(
+        "_NX_FILE_ROOT_DIR_PATH"
+    )
     cpt_delimiter = args.cpt_delimiter or os.environ.get("_OPHYD_CPT_NAME_DELIMITER")
 
     # ---------------------------------------------------------------------------
@@ -98,7 +100,9 @@ def run_zmq_dispatcher(args) -> None:
     # ---------------------------------------------------------------------------
     # Validate NeXus file output directory
     # ---------------------------------------------------------------------------
-    nx_dir: Path = validate_directory(nx_file_root_dir_path, "NeXus file root directory")
+    nx_dir: Path = validate_directory(
+        nx_file_root_dir_path, "NeXus file root directory"
+    )
     logger.info("Validated NeXus root directory: %s", nx_dir)
 
     # ---------------------------------------------------------------------------
@@ -106,7 +110,9 @@ def run_zmq_dispatcher(args) -> None:
     # ---------------------------------------------------------------------------
     if cpt_delimiter:
         logger.info("Using ophyd component delimiter: %s", cpt_delimiter)
-        writer = NexusWriter(nx_file_root_dir_path=nx_dir, cpt_name_delimiter=cpt_delimiter)
+        writer = NexusWriter(
+            nx_file_root_dir_path=nx_dir, cpt_name_delimiter=cpt_delimiter
+        )
     else:
         writer = NexusWriter(nx_file_root_dir_path=nx_dir)
 

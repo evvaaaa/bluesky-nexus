@@ -1,1 +1,1 @@
-"""Common utilities for the bluesky_nexus package."""
+"""Common utils used across submodules."""

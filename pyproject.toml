@@ -53,6 +53,7 @@ extend-select = [
   "I", # isort
   "B", # flake8-bugbear
 ]
+ignore = ["D205"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "pep257"

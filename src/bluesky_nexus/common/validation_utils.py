@@ -1,14 +1,4 @@
-"""Utilities for validating filesystem paths.
-
-This module provides helper functions to ensure that user-specified
-directories are valid before starting the data-writing service.
-
-Currently, the module exposes:
-
-validate_directory(path, name)     Normalize and validate a directory
-path, raising a ValueError if the     path is missing, not a directory,
-or not writable.
-"""
+"""Utilities for validating arguments to methods with more pleasant errors."""
 
 import os
 from pathlib import Path

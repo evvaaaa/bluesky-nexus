@@ -62,12 +62,15 @@ Public API
 """
 
 import logging
+import time
 from enum import Enum
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from typing import Optional, Union
 
-from bluesky_nexus.bluesky_nexus_const import DEFAULT_NX_LOG_FORMAT
+DEFAULT_NX_LOG_FORMAT: str = (
+    "%(asctime)s - %(name)s - %(levelname)s - %(module)s - %(funcName)s  %(message)s"
+)
 
 
 class LogLevel(Enum):
@@ -253,3 +256,39 @@ def _get_level_value(level: Union[int, Enum]) -> int:
 
     assert not isinstance(level, Enum), "level should not be Enum here"
     return level
+
+
+def log_time_taken(func):
+    """Measure time.
+
+    A decorator that measures the execution time of the decorated
+    function.
+
+    This decorator uses time.perf_counter() to calculate the time elapsed
+    during the execution of the function and logs the result in seconds
+    with six decimal places of precision.
+
+    Args:
+        func (callable): The function whose execution time is to be measured.
+
+    Returns:
+        callable: A wrapper function that measures execution time and calls
+                  the original function.
+
+    Example:
+        >>> @log_time_taken
+        >>> def example_function():
+        >>>     time.sleep(1)
+        >>> example_function()
+        example_function executed in 1.000123 seconds
+    """
+
+    def measure_time_wrapper(*args, **kwargs):
+        start_time = time.perf_counter()
+        result = func(*args, **kwargs)
+        end_time = time.perf_counter()
+        elapsed_time = end_time - start_time
+        logger.debug("%s executed in %.6f seconds", func.__name__, elapsed_time)
+        return result
+
+    return measure_time_wrapper
