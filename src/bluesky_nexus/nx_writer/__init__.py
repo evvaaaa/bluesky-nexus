@@ -1,5 +1,5 @@
 """nx_writer: contains the NexusWriter callback logic."""
 
-from .writer_core import NexusWriter
+from .callback import NexusWriter
 
 __all__ = ["NexusWriter"]

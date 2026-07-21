@@ -1,75 +1,67 @@
 """A decorator for applying nexus schema to device."""
 
-from typing import Callable, Type
+import copy
+from pathlib import Path
+from typing import Callable, Mapping, TypeVar
 
 import yaml
+from bluesky.protocols import HasHints
+
+# from .model_schema.nx_models import validate_schema
+
+T = TypeVar("T", bound=type)
 
 
-# pylint: disable=invalid-name
-def NexusDevice(yaml_string: str) -> Callable[[Type], Type]:
-    r"""NxSchema loader.
+def deep_update(dest: dict, src: Mapping) -> dict:
+    """Recursively update `dest` with values from `src` (mutates dest)."""
+    for k, v in src.items():
+        if k in dest and isinstance(dest[k], dict) and isinstance(v, Mapping):
+            deep_update(dest[k], v)
+        else:
+            dest[k] = copy.deepcopy(v)
+    return dest
 
-    Decorator that parses a YAML string and adds it as a dictionary
-    attribute to the decorated class.
 
-    This decorator extracts key-value pairs from the provided YAML string and
-    assigns the resulting dictionary to a class attribute named `nx_schema`.
-    This attribute can then be accessed by instances or other parts of the
-    program to facilitate Nexus file generation.
+def _add_nx_schema_to_hints(device_cls: type[HasHints], schema: dict) -> None:
+    original = device_cls.hints  # type: ignore
 
-    Args:
-        yaml_string (str): A string containing YAML-formatted data.
+    @property
+    def new_hints(self):
+        hints = original.__get__(self).copy()
+        hints["NX_class"] = schema.get("nxclass", hints.get("nxclass", "NXobject"))
+        if "NX_schema" in hints:
+            # Allows for inherited schema.
+            deep_update(hints["NX_schema"], schema)
+        else:
+            hints["NX_schema"] = schema
 
-    Returns:
-        function: A class decorator that attaches the parsed YAML data to the
-                  class.
+        return hints
 
-    Validation:
-    - The `yaml_string` argument must be a **non-empty string**.
-    - If `yaml_string` is `None`, a number, a list, a dictionary, or any other
-      type, a `ValueError` is raised.
-    - If `yaml_string` consists only of whitespace (e.g., `"   "`, `"\n\n"`),
-        a `ValueError` is raised.
+    device_cls.hints = new_hints  # type: ignore
 
-    Special Cases:
-    - If `yaml_string` is empty, contains only whitespace, or only comments,
-      `nx_schema` will be `{}`.
-    - If `yaml_string` contains only `null` (explicitly or implicitly),
-      `nx_schema` will be `{}`.
-    - If `yaml_string` is malformed, an exception will be raised instead of
-      assigning `{}`.
 
-    Example:
-        @NxSchemaLoader('''
-        name: ExampleDevice
-        properties:
-            field1: value1
-            field2: value2
-        ''')
-        class ExampleDevice:
-            pass
-
-        print(ExampleDevice.nx_schema)  # Access the parsed YAML schema
+class NexusDevice:
     """
-    if not isinstance(yaml_string, str) or not yaml_string.strip():
-        raise ValueError(
-            f"Provided YAML string must be a non-empty string. "
-            f"Received: {repr(yaml_string[:30])}..."
-        )
+    Decorator for adding nexus schema to the device.
+    This can be done `from_path` or `from_dictionary` directly.
+    """
 
-    def decorator(cls: Type) -> Type:
-        try:
-            parsed_data: dict = yaml.safe_load(yaml_string) or {}
-        except yaml.YAMLError as e:
-            raise ValueError(
-                f"YAML parsing error in class `{cls.__name__}`: {e}"
-            ) from e
-        except Exception as e:
-            raise RuntimeError(
-                f"Unexpected error in class `{cls.__name__}` during YAML parsing: {e}"
-            ) from e
+    @classmethod
+    def from_dictionary(cls, nx_schema: dict) -> Callable[[T], T]:
+        # TODO: adjust the schema to be validated
+        # validate_schema(nx_schema)
 
-        cls.nx_schema = parsed_data
-        return cls
+        def decorator(device_cls: T) -> T:
+            _add_nx_schema_to_hints(device_cls, nx_schema)
+            return device_cls
 
-    return decorator
+        return decorator
+
+    @classmethod
+    def from_path(cls, path: str | Path) -> Callable[[T], T]:
+        path = Path(path)
+        if not path.exists():
+            raise ValueError(f"Path `{path}` does not exist.")
+        with path.open("r") as f:
+            nx_schema = yaml.safe_load(f)
+        return cls.from_dictionary(nx_schema)

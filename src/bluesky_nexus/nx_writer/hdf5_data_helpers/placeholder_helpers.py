@@ -33,8 +33,6 @@ Dependencies:
     from descriptors and events.
 - `bluesky_nexus.callbacks.nexus_writer.metadata_helpers` for dtype resolution and
     attribute assignment.
-- `bluesky_nexus.callbacks.nexus_writer.symbolic_transformation_helpers` for
-    transforming numeric data using expressions.
 """
 
 import re
@@ -46,9 +44,6 @@ from .data_extraction_helpers import extract_data
 from .metadata_helpers import (
     assign_optional_attrs,
     resolve_dtype,
-)
-from .symbolic_transformation_helpers import (
-    apply_symbolic_transformation,
 )
 
 

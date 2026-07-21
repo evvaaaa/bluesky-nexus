@@ -742,52 +742,6 @@ class Mono(Device):
   See the section [Explanations on the optional NeXus logger](#explanations-on-the-optional-nexus-logger)
   for detailed information on the logger configuration.
 
-- Add NeXus metadata to the start document
-
-  ```python
-  # Note: `SupplementalMetadata` accepts `devices_dictionary` and `md_type` either as positional or keyword arguments
-  # For clarity, keyword arguments are recommended
-
-  # Let the preprocessor append NeXus metadata to the start document
-
-  # using keyword arguments (recommended)
-  metadata = SupplementalMetadata(devices_dictionary=devices_dictionary, md_type=SupplementalMetadata.MetadataType.NEXUS_MD)
-  # or using positional arguments
-  metadata = SupplementalMetadata(devices_dictionary, SupplementalMetadata.MetadataType.NEXUS_MD)
-  RE.preprocessors.append(metadata)
-  ```
-
-- Add device metadata to the start document
-
-  ```python
-  # Let the preprocessor append devices metadata to the start document
-
-  # using keyword arguments (recommended)
-  metadata = SupplementalMetadata(devices_dictionary=devices_dictionary, md_type=SupplementalMetadata.MetadataType.DEVICE_MD)
-  # or using positional arguments
-  metadata = SupplementalMetadata(devices_dictionary, SupplementalMetadata.MetadataType.DEVICE_MD)
-  RE.preprocessors.append(metadata)
-  ```
-
-- Subscribe the NexusWriter
-
-  ```python
-  # Subscribe the callback: 'NexusWriter'
-  nx_file_dir_path: str = get_nx_file_dir_path()
-  cpt_name_delimiter: str = "*" # Optionally specify a delimiter used in Bluesky documents to separate device components. If not specified, the default is "*".
-  nexus_writer = NexusWriter(nx_file_dir_path=nx_file_dir_path, cpt_name_delimiter = cpt_name_delimiter)
-  RE.subscribe(nexus_writer)
-  ```
-
-Please ensure that the file [init.py](https://codebase.helmholtz.cloud/hzb/bluesky/beamlines_endstations/vanilla_beamline/source/beamlinetools/-/blob/develop/beamlinetools/beamline_config/__init__.py?ref_type=heads#L7) file contains:
-
-```python
-from .nexus import *
-```
-
-This completes the installation and usage in the context of bluesky container (embedded NexusWriter mode)
-
----
 
 ## Installation and usage when NexusWriter runs as a separate service
 

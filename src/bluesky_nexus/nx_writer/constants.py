@@ -1,5 +1,4 @@
-"""Module bluesky_nexus_const.
-
+"""
 This module defines a collection of constants and mappings used
 throughout the application, particularly related to Nexus data files,
 metadata, device schemas, and other configuration-related information.
@@ -9,7 +8,7 @@ maintainability by avoiding the use of hard-coded values.
 """
 
 import numpy as np
-from h5py import string_dtype  # type: ignore
+from h5py import string_dtype
 from numpy import dtype
 
 NOT_AVAILABLE_LABEL: str = "NotAvailable"

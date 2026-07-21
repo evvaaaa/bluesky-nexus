@@ -171,7 +171,7 @@ class NXobjectModel(BaseModel):
     """
 
     nxclass: Optional[str] = Field("NXobject", description="The class of the NXobject.")
-    nx_model: Optional[str] = Field(None, description="The name of the model.")
+    nxmodel: Optional[str] = Field(None, description="The name of the model.")
     nxname: Optional[str] = Field(None, description="The name of the NXobject.")
     nxgroup: Optional["NXgroupModel"] = Field(
         None,
