@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Callable, Mapping, TypeVar
 
 import yaml
+from bluesky_nexus.schema import NxBase
 from bluesky.protocols import HasHints
 
 # from .model_schema.nx_models import validate_schema
@@ -28,7 +29,7 @@ def _add_nx_schema_to_hints(device_cls: type[HasHints], schema: dict) -> None:
     @property
     def new_hints(self):
         hints = original.__get__(self).copy()
-        hints["NX_class"] = schema.get("nxclass", hints.get("nxclass", "NXobject"))
+        hints["NX_class"] = schema.get("nx_class", hints.get("nx_class", "NX_object"))
         if "NX_schema" in hints:
             # Allows for inherited schema.
             deep_update(hints["NX_schema"], schema)
@@ -48,8 +49,7 @@ class NexusDevice:
 
     @classmethod
     def from_dictionary(cls, nx_schema: dict) -> Callable[[T], T]:
-        # TODO: adjust the schema to be validated
-        # validate_schema(nx_schema)
+        NxBase.from_dict(nx_schema)  # Validates
 
         def decorator(device_cls: T) -> T:
             _add_nx_schema_to_hints(device_cls, nx_schema)
