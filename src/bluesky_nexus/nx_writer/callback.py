@@ -16,23 +16,18 @@ The module follows the NeXus standard and produces files suitable for
 data archival and beamline data workflows.
 """
 
-import copy
-from collections import deque
 from pathlib import Path
-from typing import cast
 
-from bluesky.callbacks.core import CollectThenCompute
-from event_model import PerObjectHint
-from event_model.documents import Event, EventDescriptor, RunStart
+from event_model import RunStop, documents
+from event_model.documents import Document, RunStart
 
 from bluesky_nexus import __version__
 from bluesky_nexus.common.logging_utils import logger
-from bluesky_nexus.nx_writer._document_parser import ParsedDevice
 from bluesky_nexus.nx_writer._file_writer import NexusFileWriter
 
+from ._data_extractor import RunData
 from .constants import (
     NX_FILE_EXTENSION,
-    NX_MD_KEY,
 )
 
 
@@ -134,61 +129,8 @@ def _create_nx_file_path(root_directory: Path, start: RunStart) -> Path:
     return dir_path / file_name
 
 
-def _get_schemas(descriptors: deque[EventDescriptor]) -> dict[str, dict]:
-    schemas = {}
-    for descriptor in descriptors:
-        for object_key, hint in descriptor.get("hints", {}).items():
-            hint = cast(PerObjectHint, hint)
-            if "NX_schema" in hint:
-                schemas.update({object_key: hint["NX_schema"]})
-    return schemas
-
-
-def _get_datakeys(descriptors: deque[EventDescriptor]) -> set:
-    """Find out devices/objects of a run.
-
-    Collects all unique keys from 'configuration' and
-    'object_keys' in a deque of Bluesky descriptors.
-
-    Args:
-        descriptors (deque): deque containing descriptor dictionaries
-
-    Returns:
-        set: a set of unique keys found under 'configuration' and 'object_keys'
-    """
-    keys = set()
-
-    for descriptor in descriptors:
-        # Collect keys under 'configuration'
-        configuration = descriptor.get("configuration", {})
-        keys.update(configuration.keys())
-
-        # Collect keys under 'object_keys'
-        datakeys = descriptor.get("data_keys", {})
-        keys.update(datakeys.keys())
-
-    logger.debug("Collected unique descriptor keys: %s", keys)
-    return keys
-
-
-class NexusWriter(CollectThenCompute):
+class NexusWriter:
     """Callback that builds NeXus files from Bluesky run documents.
-
-    The NexusWriter collects metadata and data from the RunEngine
-    (start, descriptor, event, and stop documents), processes NeXus metadata
-    templates (`nexus_md`), resolves $post-run placeholders, filters out devices
-    not used in the run, constructs the output directory and filename, and
-    finally generates a valid NeXus file in HDF5 format.
-
-    Key responsibilities:
-        - Collect run documents through the Bluesky callback interface.
-        - Filter device metadata to include only devices present in descriptors.
-        - Resolve post-run metadata placeholders using descriptors and events.
-        - Create hierarchical directories based on `project_name` and
-          `sub_project_name`.
-        - Construct standardized filenames:
-              {scan_id:04d}_{plan_name}_{uid8}.nx
-        - Write NeXus groups: NXentry, NXinstrument, NXcollection.
 
     Parameters
     ----------
@@ -213,26 +155,33 @@ class NexusWriter(CollectThenCompute):
         # Log the version of the package
         logger.info(f"bluesy_nexus_writer: version: {__version__}")
 
-    def descriptor(self, doc: EventDescriptor):
-        """Handle descriptor documents for streams relevant to NeXus.
+        self._run_data: RunData | None = None
 
-        Only descriptors from the "primary" or "baseline" streams are
-        collected. Other streams are ignored for NeXus file generation.
+    def __call__(self, name: str, document: Document):
+        """Extract the nexus and detector information throughtout the run
+        and then produce a file on run_stop.
         """
-        if doc["name"] in ("primary", "baseline"):  # type: ignore
-            super().descriptor(doc)
+        if name == "start":
+            self.run_start(document)  # type: ignore
+            return
+        if self._run_data is None:
+            logger.warning(f"Received {name} without a run start...")
+            return
 
-    def event(self, doc: Event) -> Event:  # type: ignore
-        """Handle event documents belonging to accepted descriptors.
+        if name == "descriptor":
+            self._run_data.extract_descriptor(document)  # type: ignore
+        elif name == "event":
+            self._run_data.extract_event(document)  # type: ignore
+        elif name == "event_page":
+            self._run_data.extract_event_page(documents)  # type: ignore
+        elif name == "stop":
+            self.run_stop(document)  # type: ignore
 
-        Events are processed only if their descriptor UID matches one of
-        the stored descriptors handled by `descriptor()`.
-        """
-        if doc["descriptor"] in (d["uid"] for d in self._descriptors):
-            super().event(doc)
-        return doc
+    def run_start(self, document: RunStart):
+        """Create a parser for capturing run information."""
+        self._run_data = RunData(document)
 
-    def compute(self) -> None:
+    def run_stop(self, document: RunStop):
         """
         Triggers the process of generating the NeXus file by calling
         `generate_nexus_file()`.
@@ -240,38 +189,12 @@ class NexusWriter(CollectThenCompute):
         This method acts as a simple entry point for processing the
         metadata and writing the NeXus file.
         """
-        if self._start_doc is None or self._stop_doc is None:
+        if self._run_data is None:
             return
+        self._run_data.run_stop = document  # type: ignore
 
-        path = _create_nx_file_path(self.nx_file_root_dir_path, self._start_doc)
-        writer = NexusFileWriter(path)
-        writer.create_file(
-            {
-                "start": copy.deepcopy(self._start_doc),
-                "stop": copy.deepcopy(self._stop_doc),
-            }
+        path = _create_nx_file_path(
+            self.nx_file_root_dir_path, self._run_data.run_start
         )
-
-        _descriptor_uid_to_parsed_device = {}
-        for descriptor in self._descriptors:
-            parsed_devices = [
-                ParsedDevice(object_key)
-                for object_key in descriptor.get("object_keys", {})
-            ]
-            for device in parsed_devices:
-                device.descriptor(descriptor)
-            _descriptor_uid_to_parsed_device[descriptor["uid"]] = parsed_devices
-
-        for event in self._events:
-            parsed_devices = _descriptor_uid_to_parsed_device[event["descriptor"]]
-            for device in parsed_devices:
-                device.event(event)
-
-        # TODO: event pages
-
-        for descriptor in self._descriptors:
-            writer.write_stream(
-                descriptor["name"], _descriptor_uid_to_parsed_device[descriptor["uid"]]
-            )
-
-        self.reset()  # Clears the cached documents
+        writer = NexusFileWriter(path)
+        writer.create_file(self._run_data)

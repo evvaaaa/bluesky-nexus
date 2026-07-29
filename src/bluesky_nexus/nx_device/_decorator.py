@@ -5,10 +5,10 @@ from pathlib import Path
 from typing import Callable, Mapping, TypeVar
 
 import yaml
-from bluesky_nexus.schema import NxBase
 from bluesky.protocols import HasHints
 
-# from .model_schema.nx_models import validate_schema
+from bluesky_nexus.schema import NxBase
+from bluesky_nexus.schema.hint_structure import PerObjectHintWithSchemaField
 
 T = TypeVar("T", bound=type)
 
@@ -27,7 +27,7 @@ def _add_nx_schema_to_hints(device_cls: type[HasHints], schema: dict) -> None:
     original = device_cls.hints  # type: ignore
 
     @property
-    def new_hints(self):
+    def new_hints(self) -> PerObjectHintWithSchemaField:
         hints = original.__get__(self).copy()
         hints["NX_class"] = schema.get("nx_class", hints.get("nx_class", "NX_object"))
         if "NX_schema" in hints:

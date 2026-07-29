@@ -1,6 +1,8 @@
-from ._base_schema import NxBase, add_as_instrument_class
-from pydantic import Field
 from typing import Literal
+
+from pydantic import Field
+
+from ._base_schema import NxBase, add_as_instrument_class
 
 
 @add_as_instrument_class
