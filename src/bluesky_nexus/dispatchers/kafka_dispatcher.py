@@ -24,7 +24,6 @@ Optional Configuration
 | CLI Argument     | Environment Variable          | Description                      |
 |------------------|-------------------------------|----------------------------------|
 | --kafka-group    | _KAFKA_GROUP                  | Kafka consumer group ID          |
-| --cpt-delimiter  | _OPHYD_CPT_NAME_DELIMITER     | Custom ophyd component delimiter |
 
 ---------------------------------------------------------------------------
 Runtime Behaviour
@@ -83,7 +82,6 @@ def run_kafka_dispatcher(args) -> None:
     nx_file_root_dir_path = args.nx_file_root_dir_path or os.environ.get(
         "_NX_FILE_ROOT_DIR_PATH"
     )
-    cpt_delimiter = args.cpt_delimiter or os.environ.get("_OPHYD_CPT_NAME_DELIMITER")
 
     # ---------------------------------------------------------------------------
     # Validation of required inputs
@@ -113,13 +111,7 @@ def run_kafka_dispatcher(args) -> None:
     # ---------------------------------------------------------------------------
     # Initialize NexusWriter callback
     # ---------------------------------------------------------------------------
-    if cpt_delimiter:
-        logger.info("Using ophyd component delimiter: %s", cpt_delimiter)
-        writer = NexusWriter(
-            nx_file_root_dir_path=nx_dir, cpt_name_delimiter=cpt_delimiter
-        )
-    else:
-        writer = NexusWriter(nx_file_root_dir_path=nx_dir)
+    writer = NexusWriter(root_output_directory=nx_dir)
 
     # ---------------------------------------------------------------------------
     # Create and start the Kafka dispatcher

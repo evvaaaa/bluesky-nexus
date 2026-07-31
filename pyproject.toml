@@ -15,7 +15,7 @@ requires-python = ">=3.10"
 dependencies = [
   "bluesky",
   "bluesky-kafka",
-  "h5py",
+  "nexusformat",
   "event-model",
   "numpy",
   "pydantic",
@@ -57,3 +57,7 @@ ignore = ["D205"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "pep257"
+
+[[tool.mypy.overrides]]
+module = ["nexusformat.*", "bluesky_kafka.*"]
+ignore_missing_imports = true

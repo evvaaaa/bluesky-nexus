@@ -66,11 +66,7 @@ import time
 from enum import Enum
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
-from typing import Optional, Union
-
-DEFAULT_NX_LOG_FORMAT: str = (
-    "%(asctime)s - %(name)s - %(levelname)s - %(module)s - %(funcName)s  %(message)s"
-)
+from typing import Callable
 
 
 class LogLevel(Enum):
@@ -106,11 +102,11 @@ logger.addHandler(logging.NullHandler())
 
 # pylint: disable=too-many-arguments,too-many-positional-arguments
 def setup_nx_logger(
-    console_level: Union[int, LogLevel] = LogLevel.ERROR,
-    file_level: Union[int, LogLevel] = LogLevel.DEBUG,
-    log_file_dir_path: Optional[Path] = None,
+    console_level: LogLevel = LogLevel.ERROR,
+    file_level: LogLevel = LogLevel.DEBUG,
+    log_file_dir_path: Path | None = None,
     log_file_name: str = "nx_log.log",
-    log_format: Optional[str] = None,
+    log_format: str | None = None,
     log_file_max_size: int = 10 * 1024 * 1024,
     backup_count: int = 5,
     enable_console: bool = True,
@@ -139,15 +135,16 @@ def setup_nx_logger(
             after rotation. Defaults to 5.
         enable_console (bool, optional): Enable console logging. Defaults to True.
     """
-    # Convert LogLevel enums to their int values since setLevel()
-    # expects an int, not an enum.
-    console_level = _get_level_value(console_level)
-    file_level = _get_level_value(file_level)
-
     if log_format is None:
-        log_format = DEFAULT_NX_LOG_FORMAT or (
-            "%(asctime)s - %(name)s - %(levelname)s - %(module)s - "
-            "%(funcName)s  %(message)s"
+        function_name_included = (
+            " %(funcName)s - %(module)s -"
+            if console_level.value <= LogLevel.DEBUG.value
+            else ""
+        )
+
+        log_format = (
+            "%(asctime)s - %(name)s - %(levelname)s -"
+            f"{function_name_included} %(message)s"
         )
 
     formatter = logging.Formatter(log_format)
@@ -196,14 +193,14 @@ def setup_nx_logger(
                 f"Failed to create/open log file '{log_file_path}': {e}"
             ) from e
 
-        file_handler.setLevel(file_level)
+        file_handler.setLevel(file_level.value)
         file_handler.setFormatter(formatter)
         logger.addHandler(file_handler)
 
     if enable_console:
         # Configure console logging
         console_handler = logging.StreamHandler()
-        console_handler.setLevel(console_level)
+        console_handler.setLevel(console_level.value)
         console_handler.setFormatter(formatter)
         logger.addHandler(console_handler)
 
@@ -211,9 +208,9 @@ def setup_nx_logger(
         "Logging setup complete. Console logging: %s (level: %s), "
         "File logging: %s (level: %s)",
         "enabled" if enable_console else "disabled",
-        logging.getLevelName(console_level),
+        logging.getLevelName(console_level.value),
         "enabled" if log_file_dir_path is not None else "disabled",
-        logging.getLevelName(file_level),
+        logging.getLevelName(file_level.value),
     )
 
 
@@ -237,58 +234,23 @@ def _remove_all_handlers(log: logging.Logger) -> None:
         handler.close()
 
 
-def _get_level_value(level: Union[int, Enum]) -> int:
-    """Get level value as integer.
-
-    This helper function ensures compatibility with the logging
-    module's `setLevel()` method, which expects an integer level.
-    Convert a LogLevel enum member to its integer value or return the
-    integer level as-is.
-
-    Parameters:
-        level (int or LogLevel): The logging level, either as an int or LogLevel enum.
-
-    Returns:
-        int: The integer logging level suitable for logger configuration.
-    """
-    if isinstance(level, Enum) and level.__class__.__name__ == "LogLevel":
-        return level.value
-
-    assert not isinstance(level, Enum), "level should not be Enum here"
-    return level
-
-
-def log_time_taken(func):
+def log_time_taken(function: Callable):
     """Measure time.
 
     A decorator that measures the execution time of the decorated
     function.
 
     This decorator uses time.perf_counter() to calculate the time elapsed
-    during the execution of the function and logs the result in seconds
-    with six decimal places of precision.
-
-    Args:
-        func (callable): The function whose execution time is to be measured.
-
-    Returns:
-        callable: A wrapper function that measures execution time and calls
-                  the original function.
-
-    Example:
-        >>> @log_time_taken
-        >>> def example_function():
-        >>>     time.sleep(1)
-        >>> example_function()
-        example_function executed in 1.000123 seconds
+    during the execution of the function and logs the result in seconds.
     """
+    function_name = function.__name__
 
     def measure_time_wrapper(*args, **kwargs):
         start_time = time.perf_counter()
-        result = func(*args, **kwargs)
+        result = function(*args, **kwargs)
         end_time = time.perf_counter()
         elapsed_time = end_time - start_time
-        logger.debug("%s executed in %.6f seconds", func.__name__, elapsed_time)
+        logger.info("%s executed in %.6f seconds", function_name, elapsed_time)
         return result
 
     return measure_time_wrapper

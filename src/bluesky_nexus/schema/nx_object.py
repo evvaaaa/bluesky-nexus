@@ -1,12 +1,14 @@
+"""Contains the definition for `NXObject`."""
+
 from typing import Literal
 
 from pydantic import Field
 
-from ._base_schema import NxBase, add_as_instrument_class
+from .nx_group import NxGroup, add_nx_class_basemodel
 
 
-@add_as_instrument_class
-class NxObject(NxBase):
+@add_nx_class_basemodel
+class NxObject(NxGroup):
     """Represents a NeXus group node."""
 
-    nx_class: Literal["nx_object"] = Field("nx_object")
+    nx_class: Literal["NXobject"] = Field("NXobject")

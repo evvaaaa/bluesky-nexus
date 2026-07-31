@@ -10,11 +10,10 @@ defines metadata through the `MetadataMonoWithGratingCpt` class and a subcompone
 
 from dataclasses import dataclass, field
 
+from bluesky_nexus.common.decorator_utils import NxSchemaLoader
 from ophyd import Component as Cpt
 from ophyd import Device, Signal
 from ophyd.sim import SynAxis
-
-from bluesky_nexus.common.decorator_utils import NxSchemaLoader
 
 from .nx_schema.mono_with_grating_cpt import MonoWithGratingCpt_nxschema
 

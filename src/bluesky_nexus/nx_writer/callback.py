@@ -1,21 +1,6 @@
-"""NeXus Writer Module for Bluesky Runs.
+"""NeXus Writer callback for bluesky plans."""
 
-This module provides the core functionality to create NeXus files in HDF5
-format based on Bluesky run documents (start, event, descriptor, stop).
-It implements the logic used by the `NexusWriter` callback, including:
-
-    • extracting run information
-    • processing NeXus metadata templates (nexus_md)
-    • resolving $post-run placeholders using descriptors and events
-    • filtering out unused devices based on descriptors
-    • constructing standardized NeXus file paths and filenames
-    • writing the NeXus hierarchy (NXentry, NXinstrument, NXcollection)
-    • automatic directory creation for project_name/sub_project_name
-
-The module follows the NeXus standard and produces files suitable for
-data archival and beamline data workflows.
-"""
-
+from datetime import datetime
 from pathlib import Path
 
 from event_model import RunStop, documents
@@ -23,53 +8,30 @@ from event_model.documents import Document, RunStart
 
 from bluesky_nexus import __version__
 from bluesky_nexus.common.logging_utils import logger
+from bluesky_nexus.constants import (
+    DEFAULT_PLAN_NAME,
+    NX_FILE_EXTENSION,
+)
 from bluesky_nexus.nx_writer._file_writer import NexusFileWriter
 
 from ._data_extractor import RunData
-from .constants import (
-    NX_FILE_EXTENSION,
-)
 
 
 def _create_nx_file_path(root_directory: Path, start: RunStart) -> Path:
     """Construct the full NeXus file path.
 
-    This method builds the hierarchical directory structure and the final
-    NeXus filename using metadata from the start document. It ensures that all
-    directories exist and that the filename adheres to the naming scheme used
-    by the NexusWriter.
+     This method builds the hierarchical directory structure and the final
+     NeXus filename using metadata from the start document. It ensures that all
+     directories exist and that the filename adheres to the naming scheme used
+     by the NexusWriter.
 
-    Directory layout:
-        {self.nx_file_root_dir_path}/{project_name}/{sub_project_name}/
-        {self.nx_file_root_dir_path}/{project_name}/
-        {self.nx_file_root_dir_path}/
+     Directory layout:
+         {self.nx_file_root_dir_path}/{project_name}/{sub_project_name}/
+         {self.nx_file_root_dir_path}/{project_name}/
+         {self.nx_file_root_dir_path}/
 
-    Filename format:
-        {scan_id:04d}_{plan_name}_{uid8}.nx
-
-        - scan_id is zero-padded to 4 digits (e.g., 15 → "0015")
-        - uid8 is the first 8 characters of the UID with all dashes removed
-        - plan_name is taken from the start document
-        - If `nx_file_name` is provided in the metadata, it overrides the
-        auto-generated name (extension is appended if missing)
-
-    Returns
-    -------
-    Path
-        Full path to the NeXus file, guaranteed to be located inside the
-        auto-created directory tree.
-
-    Raises
-    ------
-    ValueError
-        If the root directory path does not exist.
-
-    Notes
-    -----
-    - When present and valid directories `{project_name}` and `{sub_project_name}`
-        are created automatically.
-    - The `.nx` extension is appended if missing.
-    - This function does not open or write the file; it only returns a valid path.
+    The file name is generated automatically from the run start plan name and
+    plan start time.
     """
     # Extract 'project_name' and 'sub_project_name' from metadata passed to the run
     project_name = start.get("project_name")
@@ -108,23 +70,11 @@ def _create_nx_file_path(root_directory: Path, start: RunStart) -> Path:
     # Create the directories if they do not exist
     dir_path.mkdir(parents=True, exist_ok=True)
 
-    nx_file_name: str = start.get("nx_file_name", None)
-
-    if nx_file_name and nx_file_name.strip():
-        file_name = nx_file_name.strip()
-    else:  # Auto-generate filename
-        scan_id: int = start["scan_id"]  # type: ignore
-        plan_name: str = start["plan_name"]  # type: ignore
-        uid: str = start["uid"]
-
-        scan_id_str = f"{scan_id:04d}"
-
-        # Take only the first 8 characters of the UID (remove "-")
-        uid_short = uid.replace("-", "")[:8]
-        file_name = f"{scan_id_str}_{plan_name}_{uid_short}"
-
-    if not file_name.endswith(NX_FILE_EXTENSION):
-        file_name += NX_FILE_EXTENSION
+    file_name = (
+        f"{datetime.fromtimestamp(start['time']).strftime('%Y-%m-%d-%H-%M-%S')}-"
+        f"{start.get('plan_name', DEFAULT_PLAN_NAME)}"
+    )
+    file_name = f"{file_name.lstrip(NX_FILE_EXTENSION)}{NX_FILE_EXTENSION}"
 
     return dir_path / file_name
 
@@ -135,26 +85,23 @@ class NexusWriter:
     Parameters
     ----------
     nx_file_root_dir_path : Path
-        Root directory where NeXus files are stored in a structured way
+        Root directory where NeXus files are stored. Files will subs
     """
 
-    def __init__(self, nx_file_root_dir_path: Path) -> None:
+    def __init__(self, root_output_directory: Path) -> None:
         """Init.
 
         Initialize with NeXus file path and component name delimiter.
         """
-        super().__init__()  # Initialize the parent class
-        self.nx_file_root_dir_path = nx_file_root_dir_path
-
-        # Check if 'nx_file_root_dir_path' is pointing to existing directory
-        if not nx_file_root_dir_path.is_dir():
+        if not root_output_directory.is_dir():
             raise ValueError(
-                f"Nexus root dir path: {nx_file_root_dir_path} is not a directory."
+                f"Selected output path {root_output_directory} is not a directory."
             )
 
-        # Log the version of the package
-        logger.info(f"bluesy_nexus_writer: version: {__version__}")
+        self._root_output_directory = root_output_directory
 
+        # Log the version of the package
+        logger.info(f"NexusWriter Initialized: version - {__version__}")
         self._run_data: RunData | None = None
 
     def __call__(self, name: str, document: Document):
@@ -179,7 +126,7 @@ class NexusWriter:
 
     def run_start(self, document: RunStart):
         """Create a parser for capturing run information."""
-        self._run_data = RunData(document)
+        self._run_data = RunData(document, document["time"])
 
     def run_stop(self, document: RunStop):
         """
@@ -194,7 +141,7 @@ class NexusWriter:
         self._run_data.run_stop = document  # type: ignore
 
         path = _create_nx_file_path(
-            self.nx_file_root_dir_path, self._run_data.run_start
+            self._root_output_directory, self._run_data.run_start
         )
         writer = NexusFileWriter(path)
         writer.create_file(self._run_data)

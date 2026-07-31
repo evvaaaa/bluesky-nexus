@@ -15,13 +15,16 @@ from event_model import (
     RunStart,
     RunStop,
 )
+from event_model.documents.event_descriptor import Dtype, DtypeNumpy, DtypeNumpyItem
 
+from bluesky_nexus import schema
 from bluesky_nexus.common.logging_utils import logger
-from bluesky_nexus.schema import NxBase, NxObject
-from bluesky_nexus.schema._base_schema import DISALLOWED_ALIASES_AND_OBJECT_NAMES
 from bluesky_nexus.schema.hint_structure import (
-    NxField,
+    NxFieldInHints,
     PerObjectHintWithSchemaField,
+)
+from bluesky_nexus.schema.nx_group import (
+    DISALLOWED_ALIASES_AND_OBJECT_NAMES,
 )
 
 
@@ -31,27 +34,34 @@ def _add_lists_mutably(list1: list, list2: list) -> None:
 
 @dataclass
 class DataKeyData:
-    data: list[Any] = field(default_factory=list)
+    dtype: Dtype
+    """The datakey dtype."""
+
+    dtype_numpy: DtypeNumpy | list[DtypeNumpyItem] | None
+
+    data: list[Any]
     """Data measured for this datakey."""
 
-    timestamps: list[float] = field(default_factory=list)
+    timestamps: list[float]
     """Timestamps measured for this datakey"""
 
-    units: str | None = None
+    units: str | None
     """The units for this datakey received through the descriptor."""
 
 
 def _new_schema_with_missing_fields(
-    object_name: str, data_key_data: dict[str, DataKeyData], schema: NxBase
-) -> NxBase:
+    object_name: str, data_key_data: dict[str, DataKeyData], nx_schema: schema.NxGroup
+) -> schema.NxGroup:
     # Add units specified in the schema if not provided through the descriptor.
-    fields_specified_in_schema = schema.all_nx_fields()
+    fields_specified_in_schema = nx_schema.all_nx_fields()
 
-    raw_schema = schema.model_dump()
-    for nx_field in fields_specified_in_schema:
+    raw_schema = nx_schema.model_dump()
+    for nx_field in fields_specified_in_schema.values():
         if (
-            data_key := data_key_data.get(nx_field.datakey, None)
-        ) and data_key.units is None:
+            (data_key := data_key_data.get(nx_field.datakey, None))
+            and nx_field.nx_units is None
+            and data_key.units is not None
+        ):  # Add the units
             data_key.units = nx_field.nx_units
 
     for data_key_name, data_key_datum in data_key_data.items():
@@ -66,17 +76,18 @@ def _new_schema_with_missing_fields(
                     f"the alias {prospective_alias} because it is disallowed. "
                     "It will be skipped..."
                 )
+                continue
 
-            raw_schema[data_key_name] = NxField(
+            raw_schema[data_key_name] = NxFieldInHints(
                 nx_alias=prospective_alias, nx_units=data_key_datum.units
             )
 
-    return NxBase.from_dict(raw_schema)
+    return schema.NxGroup.from_dict(raw_schema)
 
 
 @dataclass
 class ObjectData:
-    nx_schema: NxBase
+    nx_schema: schema.NxGroup
     """The nexus schema for this object."""
     data_key_data: dict[str, DataKeyData] = field(default_factory=dict)
     """A dictionary of datakey name to data key/configuration key information."""
@@ -94,25 +105,24 @@ class ObjectData:
 
         # Parse datakeys + data from configuration.
         for data_key_name, data_key_value in configuration.get("data_keys", {}).items():
-            new_configuration_data_key_data = DataKeyData()
-            new_configuration_data_key_data.units = data_key_value.get("units")
-            # Will always be a singleton list so that we can reuse all the
-            # event datakey code in the writer.
             if "data" in configuration:
-                new_configuration_data_key_data.data = [
-                    configuration["data"][data_key_name]
-                ]  # type: ignore
-                new_configuration_data_key_data.timestamps = [
+                units = data_key_value.get("units")
+                dtype = configuration["data_keys"][data_key_name]["dtype"]  # type: ignore
+                dtype_numpy = configuration["data_keys"][data_key_name]["dtype_numpy"]  # type: ignore
+                # Will always be a singleton list so that we can reuse all the
+                # event datakey code in the writer.
+                data = [configuration["data"][data_key_name]]  # type: ignore
+                timestamps = [
                     configuration["timestamps"][data_key_name]  # type: ignore
                 ]
-            else:
-                # Pretty sure this can never happen... but if we don't receive
-                # data in the descriptor (what the document model suggests, then
-                # just skip it but keep an empty list.)
-                new_configuration_data_key_data.data = []
-                new_configuration_data_key_data.timestamps = []
 
-            data_key_data[data_key_name] = new_configuration_data_key_data
+                data_key_data[data_key_name] = DataKeyData(
+                    units=units,
+                    dtype=dtype,
+                    dtype_numpy=dtype_numpy,
+                    data=data,
+                    timestamps=timestamps,
+                )
 
         # Parse datakeys which will be read in the stream through events.
         for data_key_name, data_key_value in data_keys.items():
@@ -129,19 +139,28 @@ class ObjectData:
                     "name in the writer. it will be skipped."
                 )
                 continue
-            new_data_key_data = DataKeyData()
-            new_data_key_data.units = data_key_value.get("units")
-            data_key_data[data_key_name] = new_data_key_data
+            units = data_key_value.get("units")
+            dtype = data_key_value["dtype"]
+            dtype_numpy = data_key_value.get("dtype_numpy")  # type: ignore
+            data_key_data[data_key_name] = DataKeyData(
+                units=units,
+                dtype=dtype,
+                dtype_numpy=dtype_numpy,
+                data=[],
+                timestamps=[],
+            )
 
         # Parse the nexus schema or make a new NXobject, add the missing keys
         # (if possible)
         if "NX_schema" in hint:
-            # Only validate with NxBase to ensure maximum campatibility with packages
+            # Only validate with NxGroup to ensure maximum campatibility with packages
             # adding their own schema in the device layer.
-            # If a device passes validation on `NxBase` it can be added
+            # If a device passes validation on `NxGroup` it can be added
             try:
                 raw_schema = hint["NX_schema"]
-                validated_user_defined = NxBase.from_dict(cast(dict, raw_schema))
+                validated_user_defined = schema.NxGroup.from_dict(
+                    cast(dict, raw_schema)
+                )
                 validated_after_exchanges = validated_user_defined.patch_object_keys(
                     object_name
                 )
@@ -158,9 +177,9 @@ class ObjectData:
                 )
         # Used in the case of an exception above, or if the device doesn't
         # come with a schema.
-        raw_schema = NxObject()  # type: ignore
+        nx_schema = schema.NxObject()  # type: ignore
         nx_schema = _new_schema_with_missing_fields(
-            object_name, data_key_data, raw_schema
+            object_name, data_key_data, nx_schema
         )
         logger.debug(f"Creating new NxObject schema for device {object_name}.")
         return ObjectData(nx_schema=nx_schema, data_key_data=data_key_data)
@@ -174,7 +193,7 @@ class StreamData:
     sequence_numbers: list[int] = field(default_factory=list)
     read_times: list[float] = field(default_factory=list)
 
-    DISALLOWED_OBJECT_NAMES = frozenset(["sequence_numbers", "read_times"])
+    DISALLOWED_OBJECT_NAMES = frozenset(["read_times"])
     """Keys which can't be selected because they're used to store information
     about the stream."""
 
@@ -182,6 +201,10 @@ class StreamData:
     def from_descriptor(cls, descriptor: EventDescriptor) -> "StreamData":
         """Parse descriptor into individual object data."""
         object_data = {}
+        # Sort so that longer datakeys are first.
+        # When we pull data out of events all the datakeys will be flat.
+        # We'll parse e.g "some-device" first (earlier in this list) before we parse
+        # e.g "some-dev".
         for object_name, data_key_names in descriptor.get("object_keys", {}).items():
             if object_name in cls.DISALLOWED_OBJECT_NAMES:
                 logger.warning(
@@ -201,10 +224,6 @@ class StreamData:
                 configuration,
             )
 
-        # Sort so that longer datakeys are first.
-        # When we pull data out of events all the datakeys will be flat.
-        # We'll parse e.g "some-device" first (earlier in this list) before we parse
-        # e.g "some-dev".
         return StreamData(object_data=dict(sorted(object_data.items(), reverse=True)))
 
     def _extract_event_or_event_page(
@@ -257,6 +276,7 @@ class StreamData:
 @dataclass
 class RunData:
     run_start: RunStart
+    start_time: float
     stream_name_to_stream_data: dict[str, StreamData] = field(default_factory=dict)
     descriptor_uid_to_stream_name: dict[str, str] = field(default_factory=dict)
 

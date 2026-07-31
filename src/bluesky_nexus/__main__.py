@@ -191,13 +191,6 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     zmq_parser.add_argument(
-        "--cpt-delimiter",
-        required=False,
-        help="Delimiter for ophyd component names "
-        "(env: ``_OPHYD_CPT_NAME_DELIMITER``).",
-    )
-
-    zmq_parser.add_argument(
         "--zmq-health-host",
         type=str,
         default=None,
@@ -260,12 +253,6 @@ def build_parser() -> argparse.ArgumentParser:
         help="Root directory for NeXus files (env: ``_NX_FILE_ROOT_DIR_PATH``).",
     )
 
-    kafka_parser.add_argument(
-        "--cpt-delimiter",
-        required=False,
-        help="Delimiter for ophyd component names "
-        "(env: ``_OPHYD_CPT_NAME_DELIMITER``).",
-    )
     return parser
 
 

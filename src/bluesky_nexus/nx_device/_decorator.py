@@ -7,8 +7,8 @@ from typing import Callable, Mapping, TypeVar
 import yaml
 from bluesky.protocols import HasHints
 
-from bluesky_nexus.schema import NxBase
 from bluesky_nexus.schema.hint_structure import PerObjectHintWithSchemaField
+from bluesky_nexus.schema.nx_group import NxGroup
 
 T = TypeVar("T", bound=type)
 
@@ -26,7 +26,7 @@ def deep_update(dest: dict, src: Mapping) -> dict:
 def _add_nx_schema_to_hints(device_cls: type[HasHints], schema: dict) -> None:
     original = device_cls.hints  # type: ignore
 
-    @property
+    @property  # type: ignore
     def new_hints(self) -> PerObjectHintWithSchemaField:
         hints = original.__get__(self).copy()
         hints["NX_class"] = schema.get("nx_class", hints.get("nx_class", "NX_object"))
@@ -49,10 +49,10 @@ class NexusDevice:
 
     @classmethod
     def from_dictionary(cls, nx_schema: dict) -> Callable[[T], T]:
-        NxBase.from_dict(nx_schema)  # Validates
+        validated_and_substituted = NxGroup.from_dict(nx_schema).model_dump()
 
         def decorator(device_cls: T) -> T:
-            _add_nx_schema_to_hints(device_cls, nx_schema)
+            _add_nx_schema_to_hints(device_cls, validated_and_substituted)
             return device_cls
 
         return decorator

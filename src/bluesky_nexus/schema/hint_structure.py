@@ -5,18 +5,18 @@ from typing import NotRequired, TypedDict
 from event_model import PerObjectHint
 
 
-class NxField(TypedDict, total=True):
+class NxFieldInHints(TypedDict, total=True):
     """Typeddict for an NxField.
 
     Stored in an `NxGroup` (below) with the datakey name as
     the key.
     """
 
-    nx_alias: str | None
+    nx_alias: str
     nx_units: str | None
 
 
-class NxGroup(TypedDict, total=False):
+class NxGroupInHints(TypedDict, total=False):
     """TypedDict for a nexus group. Other fields are either
     specifying `NXfield` or sub `NxGroup`.
     """
@@ -27,4 +27,4 @@ class NxGroup(TypedDict, total=False):
 class PerObjectHintWithSchemaField(PerObjectHint):
     """Hints with a nexus group."""
 
-    NX_schema: NotRequired[NxGroup]
+    NX_schema: NotRequired[NxGroupInHints]
