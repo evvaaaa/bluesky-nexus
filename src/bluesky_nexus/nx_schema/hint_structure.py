@@ -1,6 +1,6 @@
 """The typed dict for the per object hint we expect."""
 
-from typing import NotRequired, TypedDict
+from typing import Literal, NotRequired, TypedDict
 
 from event_model import PerObjectHint
 
@@ -12,8 +12,10 @@ class NxFieldInHints(TypedDict, total=True):
     the key.
     """
 
+    datakey: str
     nx_alias: str
     nx_units: str | None
+    nx_class: Literal["NXfield"]
 
 
 class NxGroupInHints(TypedDict, total=False):

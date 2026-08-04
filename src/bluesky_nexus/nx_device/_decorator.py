@@ -7,8 +7,8 @@ from typing import Callable, Mapping, TypeVar
 import yaml
 from bluesky.protocols import HasHints
 
-from bluesky_nexus.schema.hint_structure import PerObjectHintWithSchemaField
-from bluesky_nexus.schema.nx_group import NxGroup
+from bluesky_nexus.nx_schema.hint_structure import PerObjectHintWithSchemaField
+from bluesky_nexus.nx_schema.nx_base import NxGroup
 
 T = TypeVar("T", bound=type)
 

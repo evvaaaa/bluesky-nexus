@@ -1,10 +1,7 @@
-import time
-from pathlib import Path, PurePath
-from pprint import pformat
+from pathlib import Path
 
 from bluesky import RunEngine
 from bluesky import plans as bp
-from nexusformat import nexus
 from ophyd_async.sim import SimPointDetector
 
 from bluesky_nexus import NexusDevice
@@ -16,6 +13,8 @@ def test_example_schema_and_manual_schema_with_equivalence(
     RE_directly_subscribed: RunEngine,
     tmpdir: Path,
 ):
+    """Checks that the autofilled schema is equivalent to what we're expecting."""
+
     @NexusDevice.from_dictionary(
         {
             "nx_class": "NXobject",
@@ -35,8 +34,6 @@ def test_example_schema_and_manual_schema_with_equivalence(
             num=3,
         )
     )  # type: ignore
-
-    time.sleep(0.1)
 
     loaded = load_only_generated_nexus_file(tmpdir)
     sim_point_detector_with_some_schema = loaded["entry"]["primary"][
@@ -66,43 +63,30 @@ def test_simple_nx_detector(
 ):
     @NexusDevice.from_dictionary(
         {
-            "nx_class": "NXobject",
-            "<name>-channel-1-value": None,
-            "<name>-channel-2-value": None,
+            "nx_class": "NXdetector",
+            "data": {"nx_class": "NXfield", "datakey": "<name>-channel-1-value"},
         }
     )
-    class SimPointDetectorWithSchema(SimPointDetector):
+    class NxSimPointDetector(SimPointDetector):
         pass
 
+    detector = NxSimPointDetector(None, name="detector")
     RE_directly_subscribed(
         bp.count(
-            [
-                SimPointDetectorWithSchema(None, name="sim_point_detector_with_schema"),
-                SimPointDetector(None, name="sim_point_detector_without_schema"),
-            ],
+            [detector],
             num=3,
         )
     )  # type: ignore
 
-    time.sleep(0.1)
-
     loaded = load_only_generated_nexus_file(tmpdir)
-    sim_point_detector_with_some_schema = loaded["entry"]["primary"][
-        "sim_point_detector_with_schema"
-    ]
-    sim_point_detector_with_without_schema = loaded["entry"]["primary"][
-        "sim_point_detector_with_schema"
-    ]
+    detector = loaded["entry"]["primary"]["detector"]
 
-    assert (
-        list(sim_point_detector_with_some_schema)
-        == list(sim_point_detector_with_without_schema)
-        == [
-            "channel-1-mode",
-            "channel-1-value",
-            "channel-2-mode",
-            "channel-2-value",
-            "channel-3-mode",
-            "channel-3-value",
-        ]
-    )
+    assert list(detector) == [
+        "channel-1-mode",
+        "channel-2-mode",
+        "channel-2-value",
+        "channel-3-mode",
+        "channel-3-value",
+        "data",
+    ]
+    assert list(detector["data"]) == [290, 290, 290]

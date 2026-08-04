@@ -17,15 +17,13 @@ from event_model import (
 )
 from event_model.documents.event_descriptor import Dtype, DtypeNumpy, DtypeNumpyItem
 
-from bluesky_nexus import schema
 from bluesky_nexus.common.logging_utils import logger
-from bluesky_nexus.schema.hint_structure import (
+from bluesky_nexus.nx_schema import NxGroup, NxObject
+from bluesky_nexus.nx_schema.hint_structure import (
     NxFieldInHints,
     PerObjectHintWithSchemaField,
 )
-from bluesky_nexus.schema.nx_group import (
-    DISALLOWED_ALIASES_AND_OBJECT_NAMES,
-)
+from bluesky_nexus.nx_schema.nx_base import DISALLOWED_ALIASES_AND_OBJECT_NAMES
 
 
 def _add_lists_mutably(list1: list, list2: list) -> None:
@@ -50,15 +48,19 @@ class DataKeyData:
 
 
 def _new_schema_with_missing_fields(
-    object_name: str, data_key_data: dict[str, DataKeyData], nx_schema: schema.NxGroup
-) -> schema.NxGroup:
+    object_name: str,
+    data_key_data: dict[str, DataKeyData],
+    nx_schema: NxGroup,
+) -> NxGroup:
     # Add units specified in the schema if not provided through the descriptor.
-    fields_specified_in_schema = nx_schema.all_nx_fields()
+    fields_specified_in_schema = {
+        nx_field.datakey: nx_field for nx_field in nx_schema.all_nx_fields().values()
+    }
 
     raw_schema = nx_schema.model_dump()
     for nx_field in fields_specified_in_schema.values():
         if (
-            (data_key := data_key_data.get(nx_field.datakey, None))
+            (data_key := data_key_data.get(nx_field.datakey))
             and nx_field.nx_units is None
             and data_key.units is not None
         ):  # Add the units
@@ -67,7 +69,9 @@ def _new_schema_with_missing_fields(
     for data_key_name, data_key_datum in data_key_data.items():
         if data_key_name not in fields_specified_in_schema:
             prospective_alias = (
-                data_key_name.lstrip(object_name).lstrip("-").lstrip("_")
+                (data_key_name.lstrip(object_name).lstrip("-").lstrip("_"))
+                if data_key_name != object_name
+                else object_name
             )
             if prospective_alias in DISALLOWED_ALIASES_AND_OBJECT_NAMES:
                 # The datakey with the object name stripped is not valid.
@@ -78,16 +82,18 @@ def _new_schema_with_missing_fields(
                 )
                 continue
 
-            raw_schema[data_key_name] = NxFieldInHints(
-                nx_alias=prospective_alias, nx_units=data_key_datum.units
+            raw_schema[prospective_alias] = NxFieldInHints(
+                nx_class="NXfield",
+                datakey=data_key_name,
+                nx_alias=prospective_alias,
+                nx_units=data_key_datum.units,
             )
-
-    return schema.NxGroup.from_dict(raw_schema)
+    return NxGroup.from_dict(raw_schema)
 
 
 @dataclass
 class ObjectData:
-    nx_schema: schema.NxGroup
+    nx_schema: NxGroup
     """The nexus schema for this object."""
     data_key_data: dict[str, DataKeyData] = field(default_factory=dict)
     """A dictionary of datakey name to data key/configuration key information."""
@@ -158,9 +164,7 @@ class ObjectData:
             # If a device passes validation on `NxGroup` it can be added
             try:
                 raw_schema = hint["NX_schema"]
-                validated_user_defined = schema.NxGroup.from_dict(
-                    cast(dict, raw_schema)
-                )
+                validated_user_defined = NxGroup.from_dict(cast(dict, raw_schema))
                 validated_after_exchanges = validated_user_defined.patch_object_keys(
                     object_name
                 )
@@ -176,8 +180,8 @@ class ObjectData:
                     exc_info=True,
                 )
         # Used in the case of an exception above, or if the device doesn't
-        # come with a schema.
-        nx_schema = schema.NxObject()  # type: ignore
+        # come with a nx_schema.
+        nx_schema = NxObject()  # type: ignore
         nx_schema = _new_schema_with_missing_fields(
             object_name, data_key_data, nx_schema
         )

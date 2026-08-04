@@ -6,10 +6,9 @@ from typing import Any, Iterable, TypeAlias, Union, cast
 import numpy as np
 from nexusformat import nexus
 
-from bluesky_nexus import __version__, schema
+from bluesky_nexus import __version__, nx_schema
 from bluesky_nexus.common.logging_utils import log_time_taken, logger
 from bluesky_nexus.nx_writer._data_extractor import DataKeyData, ObjectData, StreamData
-from bluesky_nexus.schema.nx_group import NxGroup
 
 from ._data_extractor import RunData
 
@@ -18,7 +17,7 @@ JsonSerializableScalar: TypeAlias = str | int | str | bool | float | None
 JsonSerializableList: TypeAlias = list[
     Union[JsonSerializableScalar, "JsonSerializableList"]
 ]
-JsonSerializableTuple: TypeAlias = list[
+JsonSerializableTuple: TypeAlias = tuple[
     Union[JsonSerializableScalar, "JsonSerializableTuple"]
 ]
 JsonSerializableDict: TypeAlias = dict[
@@ -74,7 +73,7 @@ def dump_json_serializable_dict_to_nx_group(
 
 
 def _new_nx_field(
-    nx_field_schema: schema.NxField, data_key_data: DataKeyData
+    nx_field_schema: nx_schema.NxField, data_key_data: DataKeyData
 ) -> nexus.NXfield:
     new_field = nexus.NXfield(value=data_key_data.data)
     if nx_field_schema.nx_units:
@@ -83,11 +82,18 @@ def _new_nx_field(
 
 
 def _write_nx_object(
-    group: nexus.NXgroup, object_data: ObjectData, group_schema: NxGroup
+    group: nexus.NXgroup, object_data: ObjectData, group_schema: nx_schema.NxGroup
 ) -> None:
     """Write the object into a nexus group."""
     group.attrs["nxclass"] = group_schema.nx_class
+
     for nx_field_schema in group_schema.nx_fields().values():
+        if nx_field_schema.datakey not in object_data.data_key_data:
+            logger.warning(
+                f"Datakey `{nx_field_schema.datakey}` in schema not accounted"
+                "for in an event stream captured... Skipping it."
+            )
+            continue
         data_key_data = object_data.data_key_data[nx_field_schema.datakey]
         group[nx_field_schema.nx_alias] = _new_nx_field(nx_field_schema, data_key_data)
 
