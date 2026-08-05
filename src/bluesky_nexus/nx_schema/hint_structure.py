@@ -1,4 +1,7 @@
-"""The typed dict for the per object hint we expect."""
+"""The typed dict for the per object hint we expect.
+
+This is purely for slightly nicer typing.
+"""
 
 from typing import Literal, NotRequired, TypedDict
 

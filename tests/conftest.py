@@ -10,6 +10,7 @@ from bluesky import RunEngine
 from bluesky.callbacks.zmq import Proxy, Publisher
 
 from bluesky_nexus import NexusWriter
+from bluesky_nexus.common.logging_utils import setup_nx_logger
 from bluesky_nexus.dispatchers import run_zmq_dispatcher
 
 
@@ -17,6 +18,12 @@ from bluesky_nexus.dispatchers import run_zmq_dispatcher
 def tmpdir(tmpdir: PurePath):
     """Quick patch to get the full Path object from the PurePath."""
     return Path(tmpdir)
+
+
+@pytest.fixture(scope="session", autouse=True)
+def logs_on_during_tests():
+    """Set up default logging across all tests."""
+    setup_nx_logger()
 
 
 @pytest.fixture()

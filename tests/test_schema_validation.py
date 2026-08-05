@@ -1,4 +1,4 @@
-"""Tests schema validation on the device layer."""
+"""Tests schema validation on the device layer, without a writer."""
 
 import pytest
 from ophyd import Component as Cpt

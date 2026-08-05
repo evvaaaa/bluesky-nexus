@@ -254,7 +254,3 @@ def log_time_taken(function: Callable):
         return result
 
     return measure_time_wrapper
-
-
-# Setup console logger with default INFO level
-setup_nx_logger()
