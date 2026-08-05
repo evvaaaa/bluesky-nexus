@@ -1,3 +1,5 @@
+"""Tests schema validation on the device layer."""
+
 import pytest
 from ophyd.sim import SynAxis
 from ophyd_async.sim import SimPointDetector

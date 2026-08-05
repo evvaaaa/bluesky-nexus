@@ -1,10 +1,10 @@
 """
-This module contains the NxGroup class, which has the most basic validation on the
-structure all device schema must correspond to of the schema.
+This module contains the base for all bluesky nexus pydantic schemas, `NxBase`. As well as
+their subclasses `NxGroup` and `NxField`.
 
 
-When nx_class is specified in the schema, the correct nexus class is automatically
-selected and initialized by `NxGroup.from_dictionary`.
+When `nx_class` is specified in the schema, the correct nexus class is automatically
+selected and initialized by `NxBase.from_dictionary`.
 This module contains a decorator for appending different instrument schema basemodels to
 a global dictionary.
 """
@@ -14,7 +14,7 @@ from __future__ import annotations
 from abc import ABC
 from functools import cached_property
 from pprint import pformat
-from typing import Any, TypeVar, cast, Any
+from typing import Any, TypeVar, cast
 
 from pydantic import BaseModel, ConfigDict, computed_field, model_validator
 
@@ -135,7 +135,6 @@ class NxBase(BaseModel, ABC):
         if document_cls is None:
             raise TypeError("No `nx_class` specified in a parsed dictionary.")
 
-        print(document_cls, kwargs)
         return cast(T, document_cls(**kwargs))
 
     def patch_object_keys(self: T, patched_name: str) -> T:
@@ -219,7 +218,11 @@ def datakey_to_default_alias(datakey: str) -> str:
     Give the default nx_alias (name of the field in the nexus file
     for a given datakey.
     """
-    return datakey.lstrip(DEVICE_SCHEMA_NAME_KEY).lstrip("_").lstrip("-")
+    return (
+        datakey.lstrip(DEVICE_SCHEMA_NAME_KEY).lstrip("_").lstrip("-")
+        if datakey != DEVICE_SCHEMA_NAME_KEY
+        else DEVICE_SCHEMA_NAME_KEY
+    )
 
 
 @add_nx_class_basemodel

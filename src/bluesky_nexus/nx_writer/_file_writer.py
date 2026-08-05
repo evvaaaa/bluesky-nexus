@@ -8,6 +8,7 @@ from nexusformat import nexus
 
 from bluesky_nexus import __version__, nx_schema
 from bluesky_nexus.common.logging_utils import log_time_taken, logger
+from bluesky_nexus.nx_schema.nx_base import NxField, NxGroup
 from bluesky_nexus.nx_writer._data_extractor import DataKeyData, ObjectData, StreamData
 
 from ._data_extractor import RunData
@@ -73,15 +74,21 @@ def dump_json_serializable_dict_to_nx_group(
 
 
 def _new_nx_field(
-    nx_field_schema: nx_schema.NxField, data_key_data: DataKeyData
+    nx_field_schema: nx_schema.NxField,
+    data_key_data: DataKeyData,
+    name: str = "unknown",
 ) -> nexus.NXfield:
-    new_field = nexus.NXfield(value=data_key_data.data)
+    """Util method for adding new nx field. name is not required
+    if the field is directly added to a parent,
+    e.g group["field_name"] =...
+    """
+    attrs = {}
     if nx_field_schema.nx_units:
-        new_field["units"] = nexus.NXfield(value=nx_field_schema.nx_units)
-    return new_field
+        attrs["units"] = nexus.NXfield(value=nx_field_schema.nx_units)
+    return nexus.NXfield(value=data_key_data.data, name=name, attrs=attrs)
 
 
-def _write_nx_object(
+def _write_nx_group(
     group: nexus.NXgroup, object_data: ObjectData, group_schema: nx_schema.NxGroup
 ) -> None:
     """Write the object into a nexus group."""
@@ -102,7 +109,7 @@ def _write_nx_object(
         sub_group_schema,
     ) in group_schema.sub_nx_groups().items():
         sub_group = nexus.NXgroup()
-        _write_nx_object(sub_group, object_data, group_schema=sub_group_schema)
+        _write_nx_group(sub_group, object_data, group_schema=sub_group_schema)
         group[sub_group_name] = sub_group
 
 
@@ -132,9 +139,22 @@ def write_stream(
         ),
     )
     for object_name, object_data in stream_data.object_data.items():
-        object_group = nexus.NXgroup()
-        _write_nx_object(object_group, object_data, object_data.nx_schema)
-        stream_group[object_name] = object_group
+        if isinstance(object_data.nx_schema, NxGroup):
+            object_group = nexus.NXgroup()
+            _write_nx_group(object_group, object_data, object_data.nx_schema)
+            stream_group[object_name] = object_group
+        elif isinstance(object_data.nx_schema, NxField):
+            # It has a single nx_field, no group...
+            if object_data.nx_schema.datakey not in object_data.data_key_data:
+                logger.warning(
+                    f"Datakey `{object_data.nx_schema.datakey}` in schema not accounted"
+                    "for in an event stream captured... Skipping it."
+                )
+                continue
+            stream_group[object_name] = _new_nx_field(
+                object_data.nx_schema,
+                object_data.data_key_data[object_data.nx_schema.datakey],
+            )
 
 
 class NexusFileWriter:

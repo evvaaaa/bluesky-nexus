@@ -18,7 +18,7 @@ from event_model import (
 from event_model.documents.event_descriptor import Dtype, DtypeNumpy, DtypeNumpyItem
 
 from bluesky_nexus.common.logging_utils import logger
-from bluesky_nexus.nx_schema import NxGroup, NxObject
+from bluesky_nexus.nx_schema import NxBase, NxField, NxGroup, NxObject
 from bluesky_nexus.nx_schema.hint_structure import (
     NxFieldInHints,
     PerObjectHintWithSchemaField,
@@ -93,7 +93,7 @@ def _new_schema_with_missing_fields(
 
 @dataclass
 class ObjectData:
-    nx_schema: NxGroup
+    nx_schema: NxBase
     """The nexus schema for this object."""
     data_key_data: dict[str, DataKeyData] = field(default_factory=dict)
     """A dictionary of datakey name to data key/configuration key information."""
@@ -164,12 +164,17 @@ class ObjectData:
             # If a device passes validation on `NxGroup` it can be added
             try:
                 raw_schema = hint["NX_schema"]
-                validated_user_defined = NxGroup.from_dict(cast(dict, raw_schema))
+                validated_user_defined = NxBase.from_dict(cast(dict, raw_schema))
                 validated_after_exchanges = validated_user_defined.patch_object_keys(
                     object_name
                 )
-                nx_schema = _new_schema_with_missing_fields(
-                    object_name, data_key_data, validated_after_exchanges
+                nx_schema = (
+                    _new_schema_with_missing_fields(
+                        object_name, data_key_data, validated_after_exchanges
+                    )
+                    if isinstance(validated_after_exchanges, NxGroup)
+                    else validated_after_exchanges
+                    # If the object is an `nx_class` NXfield in the yaml directly.
                 )
                 return ObjectData(nx_schema=nx_schema, data_key_data=data_key_data)
 
@@ -179,13 +184,21 @@ class ObjectData:
                     "A default schema will be used instead.",
                     exc_info=True,
                 )
-        # Used in the case of an exception above, or if the device doesn't
-        # come with a nx_schema.
-        nx_schema = NxObject()  # type: ignore
-        nx_schema = _new_schema_with_missing_fields(
-            object_name, data_key_data, nx_schema
-        )
-        logger.debug(f"Creating new NxObject schema for device {object_name}.")
+
+        if len(data_key_data) == 1:
+            # The device has a single field. Don't make it an `NXobject`.
+            # This is very likely if the plan throws in one signal from a device.
+            only_key = list(data_key_data)[0]
+            logger.debug(f"Creating new NxField schema for device {object_name}.")
+            return ObjectData(
+                nx_schema=NxField(datakey=only_key), data_key_data=data_key_data
+            )
+        else:
+            nx_schema = NxObject()
+            nx_schema = _new_schema_with_missing_fields(
+                object_name, data_key_data, nx_schema
+            )
+            logger.debug(f"Creating new NxObject schema for device {object_name}.")
         return ObjectData(nx_schema=nx_schema, data_key_data=data_key_data)
 
 
