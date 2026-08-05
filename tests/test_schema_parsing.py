@@ -1,15 +1,17 @@
+import re
 from pathlib import Path
 
 import pytest
 from bluesky import RunEngine
-from bluesky import plan_stubs as bps
 from bluesky import plans as bp
+from nexusformat import nexus
 from ophyd_async.core import StandardReadable, StandardReadableFormat, soft_signal_rw
 from ophyd_async.sim import SimMotor, SimPointDetector
 
 from bluesky_nexus import NexusDevice
+from bluesky_nexus.nx_schema import NxField, NxGroup, add_nx_class_basemodel
 
-from . import load_only_generated_nexus_file
+from . import get_logs, load_only_generated_nexus_file, wait_for_nexus_file
 
 
 def test_example_schema_and_manual_schema_with_equivalence(
@@ -156,3 +158,53 @@ def test_nexus_writer_on_signals(
     assert loaded["another_signal"].attrs == {}
     assert list(loaded["motor"]) == ["acceleration_time", "motor", "velocity"]
     assert loaded["motor"].attrs == {"nxclass": "NXobject"}
+
+
+def test_schema_client_server_differing_schema(
+    RE_subscribed_over_zmq: RunEngine, tmpdir: Path
+):
+    new_motor_schema = {"nx_class": "NXnew", "some_data": "<name>-foo"}
+
+    with pytest.raises(
+        TypeError,
+        match=(
+            "Requested `nx_class: NXnew` but this isn't defined with pydantic schemas:"
+        ),
+    ):
+
+        @NexusDevice.from_dictionary(new_motor_schema)
+        class NewMotorWhichWillFail(SimMotor): ...
+
+    @add_nx_class_basemodel
+    class NxNew(NxGroup):
+        some_data: NxField
+
+    # Passes because the nexus group was added in this process.
+    @NexusDevice.from_dictionary(new_motor_schema)
+    class NewMotor(SimMotor): ...
+
+    motor = NewMotor(name="motor")
+    RE_subscribed_over_zmq(bp.count([motor], num=3))
+    loaded = wait_for_nexus_file(tmpdir)
+    logs = get_logs(tmpdir).read_text()
+    pattern = re.compile(
+        (
+            r".*?Received a malformed schema in motor\. The error was:\n\s+Requested "
+            r"`nx_class: NXnew` but this isn't defined with pydantic schemas: "
+            r"\{[^}]*\}\nA default schema will be used instead\."
+        ),
+        re.DOTALL,
+    )
+
+    # The subprocess didn't have the schema we made in this process, so it wrote a new
+    # NXobject for the device after raising the error.
+    assert pattern.search(logs)
+    assert str(loaded["entry"]["primary"]["motor"].attrs["nxclass"]) == nexus.NXattr(
+        "NXobject"
+    )
+    assert list(loaded["entry"]["primary"]["motor"]) == [
+        "acceleration_time",
+        "motor",
+        "velocity",
+    ]
+    assert list(loaded["entry"]["primary"]["motor"]["motor"]) == [0, 0, 0]

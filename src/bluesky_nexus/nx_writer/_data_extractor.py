@@ -18,12 +18,12 @@ from event_model import (
 from event_model.documents.event_descriptor import Dtype, DtypeNumpy, DtypeNumpyItem
 
 from bluesky_nexus.common.logging_utils import logger
-from bluesky_nexus.nx_schema import NxBase, NxField, NxGroup, NxObject
+from bluesky_nexus.nx_schema import NxField, NxGroup, NxObject
 from bluesky_nexus.nx_schema.hint_structure import (
     NxFieldInHints,
     PerObjectHintWithSchemaField,
 )
-from bluesky_nexus.nx_schema.nx_base import DISALLOWED_ALIASES_AND_OBJECT_NAMES
+from bluesky_nexus.nx_schema.nx_base import DISALLOWED_ALIASES_AND_OBJECT_NAMES, NxBase
 
 
 def _add_lists_mutably(list1: list, list2: list) -> None:
@@ -178,11 +178,11 @@ class ObjectData:
                 )
                 return ObjectData(nx_schema=nx_schema, data_key_data=data_key_data)
 
-            except Exception as _:
+            except Exception as exception:
                 logger.warning(
-                    f"Received a malformed schema in {object_name}."
+                    f"Received a malformed schema in {object_name}. "
+                    f"The error was:\n    {str(exception)}\n"
                     "A default schema will be used instead.",
-                    exc_info=True,
                 )
 
         if len(data_key_data) == 1:

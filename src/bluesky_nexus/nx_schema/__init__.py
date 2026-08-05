@@ -2,6 +2,13 @@
 
 from ._nx_classes.nx_detector import NxDetector
 from ._nx_classes.nx_object import NxObject
-from .nx_base import NX_CLASS_TO_BASEMODEL, NxBase, NxField, NxGroup
+from .nx_base import NX_CLASS_TO_BASEMODEL, NxField, NxGroup, add_nx_class_basemodel
 
-__all__ = ["NxGroup", "NxField", "NxObject", "NxDetector", "NX_CLASS_TO_BASEMODEL"]
+__all__ = [
+    "add_nx_class_basemodel",
+    "NxGroup",
+    "NxField",
+    "NxObject",
+    "NxDetector",
+    "NX_CLASS_TO_BASEMODEL",
+]

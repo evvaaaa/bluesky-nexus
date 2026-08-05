@@ -102,7 +102,7 @@ logger.addHandler(logging.NullHandler())
 
 # pylint: disable=too-many-arguments,too-many-positional-arguments
 def setup_nx_logger(
-    console_level: LogLevel = LogLevel.ERROR,
+    console_level: LogLevel = LogLevel.INFO,
     file_level: LogLevel = LogLevel.DEBUG,
     log_file_dir_path: Path | None = None,
     log_file_name: str = "nx_log.log",
@@ -254,3 +254,7 @@ def log_time_taken(function: Callable):
         return result
 
     return measure_time_wrapper
+
+
+# Setup console logger with default INFO level
+setup_nx_logger()

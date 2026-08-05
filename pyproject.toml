@@ -34,9 +34,23 @@ dev = [
   "mypy",
   "types-PyYAML",
   "ophyd",
+  "ophyd-async",
   "pytest",
   "pre-commit",
   "pytest-html",
+  "pyepics" # For ophyd device definitions.
+]
+
+[tool.pytest.ini_options]
+# Show everything in pytest
+addopts = """
+    --tb=native -vv --strict-markers
+"""
+
+# Warning in use of fork process instead of spawn in `zmq_proxy_subprocess`...
+# This isn't really a problem and spawn can't pickle objects for some reason.
+filterwarnings = [
+  "ignore:.*use of fork.*:DeprecationWarning:multiprocessing\\.popen_fork",
 ]
 
 [tool.ruff]

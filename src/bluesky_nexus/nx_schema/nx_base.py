@@ -26,7 +26,7 @@ to the type of nexus basemodel used to validate them."""
 
 
 def _nexus_class_name_from_python_class(cls: type[NxBase]) -> str:
-    python_name = cls.__qualname__
+    python_name = cls.__name__
 
     if not python_name.startswith("Nx"):
         raise ValueError(
@@ -34,7 +34,7 @@ def _nexus_class_name_from_python_class(cls: type[NxBase]) -> str:
             f"'{python_name}'."
         )
 
-    return f"NX{python_name.lstrip('Nx').lower()}"
+    return f"NX{python_name.removeprefix('Nx').lower()}"
 
 
 T = TypeVar("T", bound="NxBase")
@@ -114,7 +114,7 @@ class NxBase(BaseModel, ABC):
                 # The bluesky datakey with no alias or units:
                 # e.g {nx_class: NXobject, <name>-some_data: None}
                 case (key, None) if key not in NxField.model_fields:
-                    kwargs[key] = NxField(datakey=key)
+                    kwargs[datakey_to_default_alias(key)] = NxField(datakey=key)
 
                 # This is one of the other keys in the `NxField`
                 case (key, value) if key in NxField.model_fields:
@@ -123,7 +123,7 @@ class NxBase(BaseModel, ABC):
                 # A mapping of alias to datakey:
                 # e.g {some_alias: <name>-some_datakey}
                 case (key, value) if isinstance(key, str) and isinstance(value, str):
-                    kwargs[key] = NxField(datakey=value)
+                    kwargs[key] = NxField(datakey=value, nx_alias=key)
 
                 case (key, value) if key not in NxField.model_fields:
                     pretty_key_value = pformat({key: value})

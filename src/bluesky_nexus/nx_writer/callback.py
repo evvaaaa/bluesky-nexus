@@ -8,6 +8,7 @@ from event_model.documents import Document, RunStart
 
 from bluesky_nexus import __version__
 from bluesky_nexus.common.logging_utils import logger
+from bluesky_nexus.common.validation_utils import validate_directory
 from bluesky_nexus.constants import (
     DEFAULT_PLAN_NAME,
     NX_FILE_EXTENSION,
@@ -93,10 +94,7 @@ class NexusWriter:
 
         Initialize with NeXus file path and component name delimiter.
         """
-        if not root_output_directory.is_dir():
-            raise ValueError(
-                f"Selected output path {root_output_directory} is not a directory."
-            )
+        validate_directory(root_output_directory, "Supplied root path")
 
         self._root_output_directory = root_output_directory
 

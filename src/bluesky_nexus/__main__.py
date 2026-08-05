@@ -10,42 +10,8 @@ as fallbacks for most options. If no log directory is provided (and no
 ``_NX_LOG_FILE_DIR_PATH`` environment variable is set), file logging is
 disabled and only console logging is used (if enabled).
 
-===============================================================================
-Quick Start
-===============================================================================
-
-Run the ZMQ backend:
-
-python -m bluesky_nexus \
-    --log-dir /home/user/nexus_logs \
-    zmq \
-        --zmq-ip localhost \
-        --zmq-port 5578 \
-        --nx-file-root-dir-path /home/user/nexus_output
-
-
-Run the Kafka backend:
-
-python -m bluesky_nexus \
-    --log-dir /home/user/nexus_logs \
-    kafka \
-        --kafka-brokers localhost:9092 \
-        --kafka-topic bluesky.documents \
-        --nx-file-root-dir-path /home/user/nexus_output
-
-===============================================================================
-Backend-Specific Required Arguments
-===============================================================================
-
-ZMQ backend requires:
-    --zmq-ip and --zmq-port
-    or environment variables:
-    _ZMQ_IP and _ZMQ_PORT
-
-Kafka backend requires:
-    --kafka-brokers and --kafka-topic
-    or environment variables:
-    _KAFKA_BROKERS and _KAFKA_TOPIC
+See "bluesky_nexus --help", "bluesky_nexus kafka --help, and "bluesky_nexus zmq --help"
+for more information on the arguments in specific modes..
 
 ===============================================================================
 What this script does
@@ -54,12 +20,13 @@ What this script does
 1. Parses global logging arguments.
 2. Parses a backend selection: ``zmq`` or ``kafka``.
 3. Sets up logging exactly once.
-4. Starts the appropriate dispatcher and passes documents to the writer.
+4. Starts the appropriate dispatcher and with the arguments.
 """
 
 import argparse
 import os
 import threading
+from pathlib import Path
 
 import uvicorn
 
@@ -153,6 +120,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="Enable console logging (env: _NX_ENABLE_CONSOLE_LOG). Default: True",
     )
 
+    parser.add_argument(
+        "--root-output-directory",
+        required=False,
+        help="Root directory for NeXus files (env: ``_NX_FILE_ROOT_DIR_PATH``).",
+    )
+
     # -----------------------------------------------------------------------
     # SUBPARSERS: zmq and kafka
     # -----------------------------------------------------------------------
@@ -175,6 +148,7 @@ def build_parser() -> argparse.ArgumentParser:
     zmq_parser.add_argument(
         "--zmq-ip",
         required=False,
+        type=str,
         help="ZeroMQ publisher IP (env: ``_ZMQ_IP``).",
     )
 
@@ -182,12 +156,6 @@ def build_parser() -> argparse.ArgumentParser:
         "--zmq-port",
         required=False,
         help="ZeroMQ publisher port (env: ``_ZMQ_PORT``).",
-    )
-
-    zmq_parser.add_argument(
-        "--nx-file-root-dir-path",
-        required=False,
-        help="Root directory for NeXus files (env: ``_NX_FILE_ROOT_DIR_PATH``).",
     )
 
     zmq_parser.add_argument(
@@ -247,12 +215,6 @@ def build_parser() -> argparse.ArgumentParser:
         help="Kafka topic to subscribe to (e.g. bluesky.documents)",
     )
 
-    kafka_parser.add_argument(
-        "--nx-file-root-dir-path",
-        required=False,
-        help="Root directory for NeXus files (env: ``_NX_FILE_ROOT_DIR_PATH``).",
-    )
-
     return parser
 
 
@@ -306,7 +268,9 @@ def main():
     # -------------------------------------------------------
     # Validate log directory
     # -------------------------------------------------------
-    log_path = validate_directory(log_dir, "Log directory") if log_dir else None
+    log_path = (
+        validate_directory(log_dir, "Supplied log directory") if log_dir else None
+    )
 
     # -------------------------------------------------------
     # Configure logging
@@ -327,12 +291,25 @@ def main():
 
     logger.info("Starting dispatcher: '%s'", args.source)
 
+    #  -------------------------------------------------------
+    #  Get root directory
+    #  -------------------------------------------------------
+    root_output_directory = args.root_output_directory or os.environ.get(
+        "_NX_FILE_ROOT_DIR_PATH"
+    )
+    if not root_output_directory:
+        raise ValueError("Did not supply a --root-output-directory")
+    root_output_directory = validate_directory(
+        str(root_output_directory),
+        "Supplied root path",
+    )
+
     # -------------------------------------------------------
     # Dispatch to backend
     # -------------------------------------------------------
     if args.source == "zmq":
-        zmq_ip = args.zmq_ip or os.environ.get("_ZMQ_IP")
-        zmq_port = validate_port(args.zmq_port or os.environ.get("_ZMQ_PORT"))
+        zmq_ip: str = str(args.zmq_ip or os.environ.get("_ZMQ_IP"))
+        zmq_port = validate_port(str(args.zmq_port or os.environ.get("_ZMQ_PORT")))
 
         zmq_health_host = (
             args.zmq_health_host
@@ -373,9 +350,15 @@ def main():
             zmq_health_port,
         )
 
-        run_zmq_dispatcher(args)
+        run_zmq_dispatcher(root_output_directory, zmq_ip, zmq_port)
     elif args.source == "kafka":
-        run_kafka_dispatcher(args)
+        kafka_brokers = str(args.kafka_brokers or os.environ.get("_KAFKA_BROKERS"))
+        # Kafka consumer groups usually have a default, often "default" or "group1".
+        kafka_group = args.kafka_group or os.environ.get("_KAFKA_GROUP", "default")
+        kafka_topic = str(args.kafka_topic or os.environ.get("_KAFKA_TOPIC"))
+        run_kafka_dispatcher(
+            root_output_directory, kafka_brokers, kafka_group, kafka_topic
+        )
     else:
         raise ValueError(f"Unknown dispatcher source: {args.source!r}")
 

@@ -11,8 +11,6 @@ def validate_directory(path: str | Path, name: str) -> Path:
     ----------
     path : str or pathlib.Path
         Path to validate.
-    name : str
-        Human-readable name of the directory (e.g. "NeXus output directory").
 
     Returns
     -------
@@ -28,7 +26,7 @@ def validate_directory(path: str | Path, name: str) -> Path:
     p = Path(path)
 
     if not p.exists():
-        raise ValueError(f"{name} does not exist: {p}")
+        raise ValueError(f"{name} does not exist: {path}.")
 
     if not p.is_dir():
         raise ValueError(f"{name} exists but is not a directory: {p}")
