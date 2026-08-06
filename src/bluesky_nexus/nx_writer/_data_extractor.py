@@ -6,12 +6,14 @@ RunData to write to disk.
 from dataclasses import dataclass, field
 from typing import Any, Callable, cast
 
+from bluesky.protocols import Descriptor
 from event_model import (
     Configuration,
     DataKey,
     Event,
     EventDescriptor,
     EventPage,
+    PerObjectHint,
     RunStart,
     RunStop,
 )
@@ -114,7 +116,9 @@ class ObjectData:
             if "data" in configuration:
                 units = data_key_value.get("units")
                 dtype = configuration["data_keys"][data_key_name]["dtype"]  # type: ignore
-                dtype_numpy = configuration["data_keys"][data_key_name]["dtype_numpy"]  # type: ignore
+                dtype_numpy = configuration["data_keys"][data_key_name].get(
+                    "dtype_numpy"
+                )  # type: ignore
                 # Will always be a singleton list so that we can reuse all the
                 # event datakey code in the writer.
                 data = [configuration["data"][data_key_name]]  # type: ignore
@@ -243,6 +247,36 @@ class StreamData:
 
         return StreamData(object_data=dict(sorted(object_data.items(), reverse=True)))
 
+    def reconfigure(self, descriptor: Descriptor):
+        """
+        Append data from a second descriptor of a stream into existing
+        configuration.
+        """
+        for object_name in cast(dict, descriptor.get("object_keys", {})):
+            if object_name in self.DISALLOWED_OBJECT_NAMES:
+                logger.warning(
+                    f"Received an object called {object_name}. "
+                    "This is disallowed in the nexus writer. "
+                    "The device will be skipped..."
+                )
+
+            configuration = cast(
+                PerObjectHint,
+                descriptor.get("configuration", {}).get(object_name, {}),  # type: ignore
+            )
+            if object_name in self.object_data:
+                object_datum = self.object_data[object_name]
+                for data_key_name, data_key_data in object_datum.data_key_data.items():
+                    configuration_data = cast(dict, configuration.get("data", {}))
+                    configuration_timestamps = cast(
+                        dict, configuration.get("timestamps", {})
+                    )
+                    if data_key_name in configuration_data:
+                        data_key_data.data.append(configuration_data[data_key_name])
+                        data_key_data.timestamps.append(
+                            configuration_timestamps[data_key_name]
+                        )
+
     def _extract_event_or_event_page(
         self, document: Event | EventPage, operation: Callable[[list, Any], None]
     ) -> None:
@@ -312,8 +346,19 @@ class RunData:
             )
 
         self.descriptor_uid_to_stream_name[descriptor["uid"]] = descriptor["name"]  # type: ignore
-        new_stream_data_extractor = StreamData.from_descriptor(descriptor)
-        self.stream_name_to_stream_data[descriptor["name"]] = new_stream_data_extractor  # type: ignore
+        if (
+            descriptor["name"] in self.stream_name_to_stream_data  # type: ignore
+            and descriptor["run_start"] == self.run_start["uid"]
+        ):  # type: ignore
+            # There was a redeclare on the stream. Add to the existing configuration.
+            self.stream_name_to_stream_data[descriptor["name"]].reconfigure(descriptor)  # type: ignore
+
+        else:
+            # Make a new stream.
+            new_stream_data_extractor = StreamData.from_descriptor(descriptor)
+            self.stream_name_to_stream_data[descriptor["name"]] = (  # type:ignore
+                new_stream_data_extractor
+            )
 
     def extract_event(self, event: Event) -> None:
         stream_name = self.descriptor_uid_to_stream_name.get(event["descriptor"])
