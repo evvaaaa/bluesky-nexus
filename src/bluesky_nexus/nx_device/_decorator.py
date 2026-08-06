@@ -52,7 +52,7 @@ def _parse_parents_schema(instance: HasHints, cls: type[HasHints], sofar: dict):
             _deep_update(sofar, _schema_added[direct_parent])
 
 
-def _add_nx_schema_to_hints(
+def _add_nx_schema_and_device_metadata_to_hints(
     device_cls: type[HasHints], schema: dict, inherit: bool
 ) -> None:
     original = device_cls.hints  # type: ignore
@@ -74,6 +74,9 @@ def _add_nx_schema_to_hints(
         hints = copy.deepcopy(original.__get__(self))
         hints["NX_schema"] = nx_schema
         hints["NX_class"] = nx_schema["nx_class"]
+
+        if hasattr(self, "md"):
+            hints["metadata"] = self.md  # type: ignore
 
         return hints
 
@@ -102,7 +105,7 @@ class NexusDevice:
                     f"Cannot apply nexus schema to {device_cls} as it "
                     "is not `HasHints`."
                 )
-            _add_nx_schema_to_hints(
+            _add_nx_schema_and_device_metadata_to_hints(
                 cast(type[HasHints], device_cls), validated_and_substituted, inherit
             )
             return device_cls

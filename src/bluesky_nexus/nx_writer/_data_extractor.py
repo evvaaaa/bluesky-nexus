@@ -116,9 +116,9 @@ class ObjectData:
             if "data" in configuration:
                 units = data_key_value.get("units")
                 dtype = configuration["data_keys"][data_key_name]["dtype"]  # type: ignore
-                dtype_numpy = configuration["data_keys"][data_key_name].get(
+                dtype_numpy = configuration["data_keys"][data_key_name].get(  # type: ignore
                     "dtype_numpy"
-                )  # type: ignore
+                )
                 # Will always be a singleton list so that we can reuse all the
                 # event datakey code in the writer.
                 data = [configuration["data"][data_key_name]]  # type: ignore
