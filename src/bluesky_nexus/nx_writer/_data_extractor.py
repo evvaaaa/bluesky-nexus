@@ -208,13 +208,14 @@ class ObjectData:
 
 @dataclass
 class StreamData:
+    descriptor: EventDescriptor
     object_data: dict[str, ObjectData] = field(default_factory=dict)
     """A dictionary of object_key to data stored throughout the experiment."""
 
     sequence_numbers: list[int] = field(default_factory=list)
-    read_times: list[float] = field(default_factory=list)
+    times: list[float] = field(default_factory=list)
 
-    DISALLOWED_OBJECT_NAMES = frozenset(["read_times"])
+    DISALLOWED_OBJECT_NAMES = frozenset(["time"])
     """Keys which can't be selected because they're used to store information
     about the stream."""
 
@@ -245,7 +246,9 @@ class StreamData:
                 configuration,
             )
 
-        return StreamData(object_data=dict(sorted(object_data.items(), reverse=True)))
+        return StreamData(
+            descriptor, object_data=dict(sorted(object_data.items(), reverse=True))
+        )
 
     def reconfigure(self, descriptor: Descriptor):
         """
@@ -285,7 +288,7 @@ class StreamData:
 
         operation(self.sequence_numbers, document["seq_num"])
 
-        operation(self.read_times, document["time"])
+        operation(self.times, document["time"])
 
         # Intensionally not deep copied to keep mutable reference#
         event_data = document["data"].copy()

@@ -53,14 +53,14 @@ def _is_homogeneous_iterable_or_scalar(obj: Any) -> bool:
     return _nested_shape(obj) is not None
 
 
-def dump_json_serializable_dict_to_nx_group(
+def add_json_serializable_dict_to_nx_group(
     group: nexus.NXgroup, dictionary: JsonSerializableDict
 ) -> None:
     """Take a json deserialized dictionary and produces a nexus group for it."""
     for key, value in dictionary.items():
         if isinstance(value, dict):
-            sub_group = nexus.NXgroup(name=key, nxclass="NXcollection")
-            dump_json_serializable_dict_to_nx_group(sub_group, value)
+            sub_group = nexus.NXgroup(nxclass="NXcollection")
+            add_json_serializable_dict_to_nx_group(sub_group, value)
             group[key] = sub_group
         elif isinstance(value, str) or not _is_homogeneous_iterable_or_scalar(value):
             # String values have to be converted to numpy arrays of string.
@@ -68,9 +68,9 @@ def dump_json_serializable_dict_to_nx_group(
             # Numpy can't handle non homogenous shapes for arrays,
             # which means nexus can't either. If we come accross one then we just
             # convert to string.
-            group[key] = nexus.NXfield(value=str(value), name=key)
+            group[key] = nexus.NXfield(value=str(value))
         else:
-            group[key] = nexus.NXfield(value=value, name=key)
+            group[key] = nexus.NXfield(value=value)
 
 
 def _new_nx_field(
@@ -88,7 +88,7 @@ def _new_nx_field(
     return nexus.NXfield(value=data_key_data.data, name=name, attrs=attrs)
 
 
-def _write_nx_group(
+def _add_nx_object_data_to_group(
     group: nexus.NXgroup, object_data: ObjectData, group_schema: nx_schema.NxGroup
 ) -> None:
     """Write the object into a nexus group."""
@@ -109,21 +109,43 @@ def _write_nx_group(
         sub_group_schema,
     ) in group_schema.sub_nx_groups().items():
         sub_group = nexus.NXgroup()
-        _write_nx_group(sub_group, object_data, group_schema=sub_group_schema)
+        _add_nx_object_data_to_group(
+            sub_group, object_data, group_schema=sub_group_schema
+        )
         group[sub_group_name] = sub_group
 
 
-def write_stream(
+def add_stream_data_to_group(
     run_start_time: float, stream_group: nexus.NXgroup, stream_data: StreamData
 ) -> None:
     """Take a given stream's parsed `StreamData` and write it to the nexus group."""
-    dump_json_serializable_dict_to_nx_group(
-        stream_group, {"description": "A collection of devices all read together."}
-    )
+    stream_group.attrs["description"] = " A group of devices all read together."
 
-    stream_group["read_times"] = nexus.NXdata(
+    # Add stream info, e.g descriptor.
+    stream_info_group = nexus.NXgroup(nxclass="NXcollection")
+    stream_group["stream_info"] = stream_info_group
+    descriptor_group = nexus.NXgroup(nxclass="NXcollection")
+    stream_info_group["descriptor"] = descriptor_group
+    add_json_serializable_dict_to_nx_group(
+        descriptor_group, cast(JsonSerializableDict, stream_data.descriptor)
+    )
+    # Add timestamps to stream info
+    timestamps_group = nexus.NXgroup(nxclass="NXsubentry")
+    stream_info_group["timestamps"] = timestamps_group
+    timestamps_group.attrs["description"] = (
+        "The timestamps of the reads of each individual read on the device signal, "
+        "instead of the read of the stream through bluesky."
+    )
+    for object_data in stream_data.object_data.values():
+        for data_key, data_key_data in object_data.data_key_data.items():
+            timestamps_group[data_key] = nexus.NXfield(value=data_key_data.timestamps)
+
+    # Add devices
+    devices_group = nexus.NXgroup(nxclass="NXinstrument")
+    stream_group["devices"] = devices_group
+    devices_group["time"] = nexus.NXdata(
         signal=nexus.NXfield(
-            value=np.array(stream_data.read_times) - run_start_time,
+            value=np.array(stream_data.times) - run_start_time,
             name="time",
             attrs={"units": nexus.NXfield(value="S")},
         ),
@@ -132,17 +154,19 @@ def write_stream(
                 value=stream_data.sequence_numbers,
                 name="sequence_number",
                 dtype=np.int64,
-                attrs={"units": nexus.NXfield(value="seq num")},
                 # Units purposefully ommited. There isn't really a nice way to quickly
                 # summarize this.
             ),
         ),
     )
+
     for object_name, object_data in stream_data.object_data.items():
         if isinstance(object_data.nx_schema, NxGroup):
-            object_group = nexus.NXgroup()
-            _write_nx_group(object_group, object_data, object_data.nx_schema)
-            stream_group[object_name] = object_group
+            device_group = nexus.NXgroup()
+            _add_nx_object_data_to_group(
+                device_group, object_data, object_data.nx_schema
+            )
+            devices_group[object_name] = device_group
         elif isinstance(object_data.nx_schema, NxField):
             # It has a single nx_field, no group...
             if object_data.nx_schema.datakey not in object_data.data_key_data:
@@ -151,7 +175,7 @@ def write_stream(
                     "for in an event stream captured... Skipping it."
                 )
                 continue
-            stream_group[object_name] = _new_nx_field(
+            devices_group[object_name] = _new_nx_field(
                 object_data.nx_schema,
                 object_data.data_key_data[object_data.nx_schema.datakey],
             )
@@ -165,12 +189,12 @@ class NexusFileWriter:
     def create_file(self, run_data: RunData):
         root = nexus.NXroot()
         entry = nexus.NXentry()
-        dump_json_serializable_dict_to_nx_group(
+        add_json_serializable_dict_to_nx_group(
             entry,
             {
                 "Application name": "bluesky_nexus",
                 "Application version": __version__,
-                "Content": "'NXinstrument' group and 'NXcollection' group",
+                "Content": "A bluesky run's documents parsed to nexus.",
             },
         )
 
@@ -179,22 +203,24 @@ class NexusFileWriter:
         # Add the run start and run stop.
         run_info = nexus.NXgroup(name="run_info", nxclass="NXcollection")
         run_start_group = nexus.NXgroup(name="run_start", nxclass="NXcollection")
-        dump_json_serializable_dict_to_nx_group(
+        add_json_serializable_dict_to_nx_group(
             run_start_group, cast(JsonSerializableDict, run_data.run_start)
         )
         run_info["run_start"] = run_start_group
         run_stop_group = nexus.NXgroup(name="run_stop", nxclass="NXcollection")
-        dump_json_serializable_dict_to_nx_group(
+        add_json_serializable_dict_to_nx_group(
             run_stop_group, cast(JsonSerializableDict, run_data.run_stop)
         )
         run_info["run_stop"] = run_stop_group
         entry["run_info"] = run_info
 
+        # Add each stream.
         for stream_name, stream_data in run_data.stream_name_to_stream_data.items():
-            # Add each stream
             try:
-                new_stream_group = nexus.NXgroup(name=stream_name)
-                write_stream(run_data.start_time, new_stream_group, stream_data)
+                new_stream_group = nexus.NXgroup(nxclass="NXsubentry")
+                add_stream_data_to_group(
+                    run_data.start_time, new_stream_group, stream_data
+                )
             except Exception as _:
                 logger.warning(
                     f"Failed to write stream {stream_name}, "

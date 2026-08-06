@@ -6,16 +6,73 @@ from pathlib import Path
 import pytest
 from bluesky import RunEngine
 from bluesky import plans as bp
+from bluesky.preprocessors import baseline_wrapper
 from nexusformat import nexus
 from ophyd import Component as Cpt
 from ophyd import Device, EpicsSignal
+from ophyd.sim import SynAxis
 from ophyd_async.core import StandardReadable, StandardReadableFormat, soft_signal_rw
 from ophyd_async.sim import SimMotor, SimPointDetector
 
-from bluesky_nexus import NexusDevice
+from bluesky_nexus import NexusDevice, __version__
 from bluesky_nexus.nx_schema import NxField, NxGroup, add_nx_class_basemodel
 
 from . import get_logs, load_only_generated_nexus_file, wait_for_nexus_file
+
+
+def test_structure(RE_directly_subscribed: RunEngine, tmpdir: Path):
+    some_primary_pv_positioner = SynAxis(name="some_primary_pv_positioner")
+    some_baseline_pv_positioner = SynAxis(name="some_baseline_pv_positioner")
+
+    RE_directly_subscribed(
+        baseline_wrapper(
+            bp.count([some_primary_pv_positioner]),  # type: ignore
+            [some_baseline_pv_positioner],
+        )
+    )
+
+    loaded = load_only_generated_nexus_file(tmpdir)
+    assert list(loaded) == ["entry"]
+    entry = loaded["entry"]
+    assert entry.nxclass == "NXentry"
+    assert list(entry) == [
+        "Application name",
+        "Application version",
+        "Content",
+        "baseline",
+        "primary",
+        "run_info",
+    ]
+    assert entry["Application name"] == "bluesky_nexus"
+    assert entry["Application version"] == __version__
+    assert entry["Content"] == "A bluesky run's documents parsed to nexus."
+
+    run_info = entry["run_info"]
+    assert run_info.nxclass == "NXcollection"
+    assert list(run_info) == ["run_start", "run_stop"]
+
+    for stream_name in ("primary", "baseline"):
+        stream = entry[stream_name]
+        assert stream.nxclass == "NXsubentry"
+        assert list(stream) == ["devices", "stream_info"]
+
+        devices = stream["devices"]
+        assert devices.nxclass == "NXinstrument"
+        assert list(devices) == [f"some_{stream_name}_pv_positioner", "time"]
+        assert devices[f"some_{stream_name}_pv_positioner"].nxclass == "NXgroup"
+        assert devices["time"].nxclass == "NXdata"
+
+        stream_info = stream["stream_info"]
+        assert stream_info.nxclass == "NXcollection"
+        assert list(stream_info) == ["descriptor", "timestamps"]
+        assert stream_info["descriptor"].nxclass == "NXcollection"
+        assert stream_info["timestamps"].nxclass == "NXsubentry"
+        assert list(stream_info["timestamps"]) == [
+            f"some_{stream_name}_pv_positioner",
+            f"some_{stream_name}_pv_positioner_acceleration",
+            f"some_{stream_name}_pv_positioner_setpoint",
+            f"some_{stream_name}_pv_positioner_velocity",
+        ]
 
 
 def test_example_schema_and_manual_schema_with_equivalence(
@@ -44,13 +101,9 @@ def test_example_schema_and_manual_schema_with_equivalence(
         )
     )
 
-    loaded = load_only_generated_nexus_file(tmpdir)
-    sim_point_detector_with_some_schema = loaded["entry"]["primary"][
-        "sim_point_detector_with_schema"
-    ]
-    sim_point_detector_with_without_schema = loaded["entry"]["primary"][
-        "sim_point_detector_with_schema"
-    ]
+    loaded = load_only_generated_nexus_file(tmpdir)["entry"]["primary"]["devices"]
+    sim_point_detector_with_some_schema = loaded["sim_point_detector_with_schema"]
+    sim_point_detector_with_without_schema = loaded["sim_point_detector_with_schema"]
 
     assert (
         list(sim_point_detector_with_some_schema)
@@ -87,7 +140,9 @@ def test_simple_nx_detector(
         )
     )
 
-    loaded = load_only_generated_nexus_file(tmpdir)["entry"]["primary"]["detector"]
+    loaded = load_only_generated_nexus_file(tmpdir)["entry"]["primary"]["devices"][
+        "detector"
+    ]
 
     assert list(loaded) == [
         "channel-1-mode",
@@ -135,8 +190,8 @@ def test_device_with_only_one_field_schema(
         "fields": ["my_positioner"],
     }
     RE_directly_subscribed(bp.count([device], num=3))
-    loaded = load_only_generated_nexus_file(tmpdir)["entry"]["primary"]
-    assert list(loaded) == ["description", "my_positioner", "read_times"]
+    loaded = load_only_generated_nexus_file(tmpdir)["entry"]["primary"]["devices"]
+    assert list(loaded) == ["my_positioner", "time"]
     assert list(loaded["my_positioner"]) == [0, 0, 0]
 
 
@@ -150,13 +205,12 @@ def test_nexus_writer_on_signals(
 
     RE_directly_subscribed(bp.count([some_signal, another_signal, motor], num=3))
 
-    loaded = load_only_generated_nexus_file(tmpdir)["entry"]["primary"]
+    loaded = load_only_generated_nexus_file(tmpdir)["entry"]["primary"]["devices"]
     assert list(loaded) == [
         "another_signal",
-        "description",
         "motor",
-        "read_times",
         "some_signal",
+        "time",
     ]
     assert list(loaded["another_signal"]) == [0, 0, 0]
     assert loaded["another_signal"].attrs == {}
@@ -189,7 +243,7 @@ def test_schema_client_server_differing_schema(
 
     motor = NewMotor(name="motor")
     RE_subscribed_over_zmq(bp.count([motor], num=3))
-    loaded = wait_for_nexus_file(tmpdir)
+    loaded = wait_for_nexus_file(tmpdir)["entry"]["primary"]["devices"]
     logs = get_logs(tmpdir).read_text()
     pattern = re.compile(
         (
@@ -203,15 +257,13 @@ def test_schema_client_server_differing_schema(
     # The subprocess didn't have the schema we made in this process, so it wrote a new
     # NXobject for the device after raising the error.
     assert pattern.search(logs)
-    assert str(loaded["entry"]["primary"]["motor"].attrs["nxclass"]) == nexus.NXattr(
-        "NXobject"
-    )
-    assert list(loaded["entry"]["primary"]["motor"]) == [
+    assert str(loaded["motor"].attrs["nxclass"]) == nexus.NXattr("NXobject")
+    assert list(loaded["motor"]) == [
         "acceleration_time",
         "motor",
         "velocity",
     ]
-    assert list(loaded["entry"]["primary"]["motor"]["motor"]) == [0, 0, 0]
+    assert list(loaded["motor"]["motor"]) == [0, 0, 0]
 
 
 def test_schema_single_inheritance():
@@ -356,7 +408,7 @@ def test_schema_multi_inheritance():
         },
     )
     class GrandmaOnDadsSide(Device):
-        grandparent_signal = 0
+        grandparent_int = 0
 
     @NexusDevice.from_dictionary(
         {
@@ -369,7 +421,7 @@ def test_schema_multi_inheritance():
         }
     )
     class GranddadOnDadsSide(Device):
-        grandparent_signal = 1
+        grandparent_int = 1
 
     @NexusDevice.from_dictionary(
         {
@@ -392,7 +444,7 @@ def test_schema_multi_inheritance():
         }
     )
     class GrandmaOnMumsSide(Device):
-        grandparent_signal = 2
+        grandparent_int = 2
 
     @NexusDevice.from_dictionary(
         {
@@ -405,7 +457,7 @@ def test_schema_multi_inheritance():
         }
     )
     class GranddadOnMumsSide(Device):
-        grandparent_signal = 3
+        grandparent_int = 3
 
     @NexusDevice.from_dictionary(
         {"nx_class": "NXgroup", "<name>-mum_signal": None}, inherit=False
@@ -417,9 +469,9 @@ def test_schema_multi_inheritance():
 
     me = Me("ME", name="me")
 
-    assert me.grandparent_signal == 0
+    assert me.grandparent_int == 0
 
-    # Inheritence treads left as more important
+    # Inheritence treats left as more important in the mro.
     # so do we.
     assert me.direct_parent_int == 0
 

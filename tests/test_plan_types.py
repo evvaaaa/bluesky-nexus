@@ -28,7 +28,9 @@ def test_descriptor_reconfiguration(RE_directly_subscribed: RunEngine, tmpdir: P
         yield from bps.close_run()
 
     RE_directly_subscribed(plan())
-    loaded = load_only_generated_nexus_file(tmpdir)["entry"]["primary"]["motor"]
+    loaded = load_only_generated_nexus_file(tmpdir)["entry"]["primary"]["devices"][
+        "motor"
+    ]
     assert list(loaded) == [
         "acceleration",
         "motor",
