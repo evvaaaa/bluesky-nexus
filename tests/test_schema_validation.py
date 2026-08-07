@@ -15,13 +15,13 @@ from bluesky_nexus import NexusDevice
     (
         # Full schema definition.
         (
-            {"some_alias": {"nx_class": "NXfield", "datakey": "<name>-signal"}},
+            {"some_alias": {"nx_class": "NXfield", "datakey": "signal"}},
             "some_alias",
         ),
         # Just the datakey.
-        ({"<name>-signal": None}, "signal"),
+        ({"signal": None}, "signal"),
         # Just the alias.
-        ({"some_alias": "<name>-signal"}, "some_alias"),
+        ({"some_alias": "signal"}, "some_alias"),
     ),
 )
 def test_methods_of_declaring_datakeys(datakey_subset: dict, expected_alias: str):
@@ -36,7 +36,7 @@ def test_methods_of_declaring_datakeys(datakey_subset: dict, expected_alias: str
         "NX_class": "NXobject",
         "NX_schema": {
             expected_alias: {
-                "datakey": "<name>-signal",
+                "datakey": "signal",
                 "nx_alias": expected_alias,
                 "nx_units": None,
                 "nx_class": "NXfield",
@@ -60,7 +60,7 @@ def test_writer_behaviour_with_failing_schema_specified_in_yaml():
                     "nx_class": "NXobject",
                     "second_data_level_that_shouldnt_exist": {
                         "nx_class": "NXfield",
-                        "datakey": "<name>-channel-1-mode",
+                        "datakey": "channel-1-mode",
                     },
                 },
             }
@@ -78,8 +78,6 @@ def test_attempt_with_unknown_schema_from_client():
         ),
     ):
 
-        @NexusDevice.from_dictionary(
-            {"nx_class": "NXbanana", "length": "<name>-length"}
-        )
+        @NexusDevice.from_dictionary({"nx_class": "NXbanana", "length": "length"})
         class BananaMotor(SynAxis):
             pass

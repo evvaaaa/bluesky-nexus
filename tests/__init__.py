@@ -6,7 +6,9 @@ from pathlib import Path
 from nexusformat import nexus
 
 
-def load_only_generated_nexus_file(directory: Path) -> nexus.NXgroup:
+def load_only_generated_nexus_file(
+    directory: Path,
+) -> nexus.NXgroup:
     """Load the nexus file into a nexusformat.nexus.NXroot."""
     files_in_directory = [p for p in Path(directory).iterdir() if p.suffix == ".nxs"]
     assert len(files_in_directory) == 1

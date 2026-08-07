@@ -89,20 +89,27 @@ def _new_nx_field(
 
 
 def _add_nx_object_data_to_group(
-    group: nexus.NXgroup, object_data: ObjectData, group_schema: nx_schema.NxGroup
+    object_name: str,
+    group: nexus.NXgroup,
+    object_data: ObjectData,
+    group_schema: nx_schema.NxGroup,
 ) -> None:
     """Write the object into a nexus group."""
     group.attrs["nxclass"] = group_schema.nx_class
 
     for nx_field_schema in group_schema.nx_fields().values():
-        if nx_field_schema.datakey not in object_data.data_key_data:
+        if nx_field_schema.datakey not in object_data.formatted_data_key_name_to_data:
             logger.warning(
                 f"Datakey `{nx_field_schema.datakey}` in schema not accounted"
                 "for in an event stream captured... Skipping it."
             )
             continue
-        data_key_data = object_data.data_key_data[nx_field_schema.datakey]
-        group[nx_field_schema.nx_alias] = _new_nx_field(nx_field_schema, data_key_data)
+        data_key_data = object_data.formatted_data_key_name_to_data[
+            nx_field_schema.datakey
+        ]
+        group[nx_field_schema.nx_alias or object_name] = _new_nx_field(
+            nx_field_schema, data_key_data
+        )
 
     for (
         sub_group_name,
@@ -110,7 +117,7 @@ def _add_nx_object_data_to_group(
     ) in group_schema.sub_nx_groups().items():
         sub_group = nexus.NXgroup()
         _add_nx_object_data_to_group(
-            sub_group, object_data, group_schema=sub_group_schema
+            object_name, sub_group, object_data, group_schema=sub_group_schema
         )
         group[sub_group_name] = sub_group
 
@@ -129,7 +136,7 @@ def add_stream_data_to_group(
     add_json_serializable_dict_to_nx_group(
         descriptor_group, cast(JsonSerializableDict, stream_data.descriptor)
     )
-    # Add timestamps to stream info
+    # Add new timestamps group
     timestamps_group = nexus.NXgroup(nxclass="NXsubentry")
     stream_info_group["timestamps"] = timestamps_group
     timestamps_group.attrs["description"] = (
@@ -137,7 +144,10 @@ def add_stream_data_to_group(
         "instead of the read of the stream through bluesky."
     )
     for object_data in stream_data.object_data.values():
-        for data_key, data_key_data in object_data.data_key_data.items():
+        for (
+            data_key,
+            data_key_data,
+        ) in object_data.data_key_name_to_data.items():
             timestamps_group[data_key] = nexus.NXfield(value=data_key_data.timestamps)
 
     # Add devices
@@ -164,12 +174,15 @@ def add_stream_data_to_group(
         if isinstance(object_data.nx_schema, NxGroup):
             device_group = nexus.NXgroup()
             _add_nx_object_data_to_group(
-                device_group, object_data, object_data.nx_schema
+                object_name, device_group, object_data, object_data.nx_schema
             )
             devices_group[object_name] = device_group
         elif isinstance(object_data.nx_schema, NxField):
             # It has a single nx_field, no group...
-            if object_data.nx_schema.datakey not in object_data.data_key_data:
+            if (
+                object_data.nx_schema.datakey
+                not in object_data.formatted_data_key_name_to_data
+            ):
                 logger.warning(
                     f"Datakey `{object_data.nx_schema.datakey}` in schema not accounted"
                     "for in an event stream captured... Skipping it."
@@ -177,7 +190,10 @@ def add_stream_data_to_group(
                 continue
             devices_group[object_name] = _new_nx_field(
                 object_data.nx_schema,
-                object_data.data_key_data[object_data.nx_schema.datakey],
+                object_data.formatted_data_key_name_to_data[
+                    object_data.nx_schema.datakey
+                ],
+                object_name,
             )
 
 
