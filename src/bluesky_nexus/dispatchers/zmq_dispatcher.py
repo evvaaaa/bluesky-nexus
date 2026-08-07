@@ -7,8 +7,8 @@ It consumes Bluesky documents from a ZeroMQ publisher and forwards them to
 
 from pathlib import Path
 
+from bluesky_nexus import NexusCallback, NexusHdfWriter
 from bluesky_nexus.common.logging_utils import logger
-from bluesky_nexus.nx_writer import NexusWriter
 
 
 def run_zmq_dispatcher(root_output_directory: Path, zmq_ip: str, zmq_port: int) -> None:
@@ -34,7 +34,7 @@ def run_zmq_dispatcher(root_output_directory: Path, zmq_ip: str, zmq_port: int) 
             "Did you install `bluesky-nexus-callback[zmq]`?"
         ) from exception
 
-    writer = NexusWriter(root_output_directory=root_output_directory)
+    writer = NexusCallback(NexusHdfWriter(root_output_directory))
 
     # ---------------------------------------------------------------------------
     # Create and start the RemoteDispatcher

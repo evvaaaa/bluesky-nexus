@@ -3,7 +3,6 @@ the nexus writer. This is collected throughout the run. The writer will then use
 RunData to write to disk.
 """
 
-import time
 from dataclasses import dataclass, field
 from typing import Any, Callable, Iterable, cast
 
@@ -18,7 +17,6 @@ from event_model import (
     RunStart,
     RunStop,
 )
-from event_model.documents import event
 from event_model.documents.event_descriptor import Dtype, DtypeNumpy, DtypeNumpyItem
 
 from bluesky_nexus.common.logging_utils import logger

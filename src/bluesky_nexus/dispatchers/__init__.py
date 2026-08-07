@@ -1,3 +1,5 @@
+"""Contains dispatchers for running the callback with a given writer."""
+
 from .kafka_dispatcher import run_kafka_dispatcher
 from .zmq_dispatcher import run_zmq_dispatcher
 

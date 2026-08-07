@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Any, Iterable, TypeAlias, Union, cast
 
 import numpy as np
@@ -9,9 +8,13 @@ from nexusformat import nexus
 from bluesky_nexus import __version__, nx_schema
 from bluesky_nexus.common.logging_utils import log_time_taken, logger
 from bluesky_nexus.nx_schema.nx_base import NxField, NxGroup
-from bluesky_nexus.nx_writer._data_extractor import DataKeyData, ObjectData, StreamData
 
-from ._data_extractor import RunData
+from ._data_extractor import (
+    DataKeyData,
+    ObjectData,
+    RunData,
+    StreamData,
+)
 
 JsonSerializableScalar: TypeAlias = str | int | str | bool | float | None
 # typing.Union required for future recursive references... annoooooying
@@ -197,58 +200,46 @@ def add_stream_data_to_group(
             )
 
 
-class NexusFileWriter:
-    def __init__(self, path: Path):
-        self._path = path
+@log_time_taken
+def create_nexus_structure(run_data: RunData) -> nexus.NXroot:
+    root = nexus.NXroot()
+    entry = nexus.NXentry()
+    add_json_serializable_dict_to_nx_group(
+        entry,
+        {
+            "Application name": "bluesky_nexus",
+            "Application version": __version__,
+            "Content": "A bluesky run's documents parsed to nexus.",
+        },
+    )
 
-    @log_time_taken
-    def create_file(self, run_data: RunData):
-        root = nexus.NXroot()
-        entry = nexus.NXentry()
-        add_json_serializable_dict_to_nx_group(
-            entry,
-            {
-                "Application name": "bluesky_nexus",
-                "Application version": __version__,
-                "Content": "A bluesky run's documents parsed to nexus.",
-            },
-        )
+    root["entry"] = entry
 
-        root["entry"] = entry
+    # Add the run start and run stop.
+    run_info = nexus.NXgroup(name="run_info", nxclass="NXcollection")
+    run_start_group = nexus.NXgroup(name="run_start", nxclass="NXcollection")
+    add_json_serializable_dict_to_nx_group(
+        run_start_group, cast(JsonSerializableDict, run_data.run_start)
+    )
+    run_info["run_start"] = run_start_group
+    run_stop_group = nexus.NXgroup(name="run_stop", nxclass="NXcollection")
+    add_json_serializable_dict_to_nx_group(
+        run_stop_group, cast(JsonSerializableDict, run_data.run_stop)
+    )
+    run_info["run_stop"] = run_stop_group
+    entry["run_info"] = run_info
 
-        # Add the run start and run stop.
-        run_info = nexus.NXgroup(name="run_info", nxclass="NXcollection")
-        run_start_group = nexus.NXgroup(name="run_start", nxclass="NXcollection")
-        add_json_serializable_dict_to_nx_group(
-            run_start_group, cast(JsonSerializableDict, run_data.run_start)
-        )
-        run_info["run_start"] = run_start_group
-        run_stop_group = nexus.NXgroup(name="run_stop", nxclass="NXcollection")
-        add_json_serializable_dict_to_nx_group(
-            run_stop_group, cast(JsonSerializableDict, run_data.run_stop)
-        )
-        run_info["run_stop"] = run_stop_group
-        entry["run_info"] = run_info
-
-        # Add each stream.
-        for stream_name, stream_data in run_data.stream_name_to_stream_data.items():
-            try:
-                new_stream_group = nexus.NXgroup(nxclass="NXsubentry")
-                add_stream_data_to_group(
-                    run_data.start_time, new_stream_group, stream_data
-                )
-            except Exception as _:
-                logger.warning(
-                    f"Failed to write stream {stream_name}, "
-                    "will try with the others...",
-                    exc_info=True,
-                )
-            else:
-                entry[stream_name] = new_stream_group
-
+    # Add each stream.
+    for stream_name, stream_data in run_data.stream_name_to_stream_data.items():
         try:
-            root.save(self._path, mode="w")
+            new_stream_group = nexus.NXgroup(nxclass="NXsubentry")
+            add_stream_data_to_group(run_data.start_time, new_stream_group, stream_data)
         except Exception as _:
-            logger.warning(f"Failed to write file {self._path}...", exc_info=True)
+            logger.warning(
+                f"Failed to write stream {stream_name}, will try with the others...",
+                exc_info=True,
+            )
         else:
-            logger.info("NeXus file '%s' created successfully.", self._path)
+            entry[stream_name] = new_stream_group
+
+    return root

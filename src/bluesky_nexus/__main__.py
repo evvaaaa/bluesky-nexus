@@ -26,7 +26,6 @@ What this script does
 import argparse
 import os
 import threading
-from pathlib import Path
 
 import uvicorn
 
@@ -35,7 +34,7 @@ from bluesky_nexus.common.validation_utils import validate_directory
 from bluesky_nexus.dispatchers.kafka_dispatcher import run_kafka_dispatcher
 from bluesky_nexus.dispatchers.zmq_dispatcher import run_zmq_dispatcher
 
-from ._health import HealthManager
+from .dispatchers.health import HealthManager
 
 DEFAULT_HEALTH_HOST = "127.0.0.1"
 DEFAULT_HEALTH_PORT = 8080

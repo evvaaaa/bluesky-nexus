@@ -9,7 +9,7 @@ import zmq
 from bluesky import RunEngine
 from bluesky.callbacks.zmq import Proxy, Publisher
 
-from bluesky_nexus import NexusWriter
+from bluesky_nexus import NexusCallback, NexusHdfWriter
 from bluesky_nexus.common.logging_utils import setup_nx_logger
 from bluesky_nexus.dispatchers import run_zmq_dispatcher
 
@@ -29,7 +29,7 @@ def logs_on_during_tests():
 @pytest.fixture()
 def RE_directly_subscribed(tmpdir: Path):
     RE = RunEngine()
-    RE.subscribe(NexusWriter(tmpdir))
+    RE.subscribe(NexusCallback(NexusHdfWriter(tmpdir)))
     return RE
 
 

@@ -1,0 +1,61 @@
+"""NeXus Writer callback for bluesky plans."""
+
+from typing import Any, Callable
+
+from event_model import RunStop, documents
+from event_model.documents import Document, RunStart
+from nexusformat import nexus
+
+from bluesky_nexus import __version__
+from bluesky_nexus.common.logging_utils import logger
+
+from ._data_extractor import RunData
+from ._nexus_structure import create_nexus_structure
+
+
+class NexusCallback:
+    """Callback that builds a new NeXus NXroot per plan and passes it to consumers."""
+
+    def __init__(self, *consumers: Callable[[nexus.NXroot], Any]) -> None:
+        """Init.
+
+        Initialize the NeXus callback and save consumers.
+        """
+        # Log the version of the package
+        logger.info(f"NexusCallback Initialized: version - {__version__}")
+        self._run_data: RunData | None = None
+        self._consumers = consumers
+
+    def __call__(self, name: str, document: Document) -> None:
+        """Extract the nexus and detector information throughtout the run
+        and then produce a file on run_stop.
+        """
+        if name == "start":
+            self.run_start(document)  # type: ignore
+            return
+        if self._run_data is None:
+            logger.warning(f"Received {name} without a run start...")
+            return
+
+        if name == "descriptor":
+            self._run_data.extract_descriptor(document)  # type: ignore
+        elif name == "event":
+            self._run_data.extract_event(document)  # type: ignore
+        elif name == "event_page":
+            self._run_data.extract_event_page(documents)  # type: ignore
+        elif name == "stop":
+            self.run_stop(document)  # type: ignore
+
+    def run_start(self, document: RunStart) -> None:
+        """Create a parser for capturing run information."""
+        self._run_data = RunData(document, document["time"])
+
+    def run_stop(self, document: RunStop) -> None:
+        """Create and return the nexus structure for the plan."""
+        if self._run_data is None:
+            return None
+        self._run_data.run_stop = document  # type: ignore
+
+        nexus_structure = create_nexus_structure(self._run_data)
+        for consumer in self._consumers:
+            consumer(nexus_structure)

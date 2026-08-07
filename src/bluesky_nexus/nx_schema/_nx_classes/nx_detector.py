@@ -5,7 +5,7 @@ from ..nx_base import NxField, NxGroup, add_nx_class_basemodel
 
 @add_nx_class_basemodel
 class NxDetector(NxGroup):
-    """Represents a NeXus detector."""
+    """Represents a NeXus NXdetector."""
 
     data: NxField
     # TODO: Add the others
