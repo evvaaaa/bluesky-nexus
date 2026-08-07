@@ -9,6 +9,21 @@ resolution-markers = [
 ]
 
 [[package]]
+name = "aioca"
+version = "2.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "epicscorelibs" },
+    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.11.*'" },
+    { name = "numpy", version = "2.5.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/56/fc/0d09d80af3bb7bedd474313daea7541914b157ae17f3bcebd10ac148432f/aioca-2.1.tar.gz", hash = "sha256:094b815fa26c0fec705ecaf9c1814883b3cf3b5ea973baeb669959661391b5bc", size = 233509, upload-time = "2026-05-06T16:28:57.802Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/51/89/da0f32b679b8769dd472eb2927308d328bf75c296629fd9f95135afacd0a/aioca-2.1-py3-none-any.whl", hash = "sha256:df0f062b81a4846d3e5705f0bfaf7bee9f876009302cf3b06ada93d6f5153b6f", size = 26480, upload-time = "2026-05-06T16:28:56.622Z" },
+]
+
+[[package]]
 name = "annotated-doc"
 version = "0.0.5"
 source = { registry = "https://pypi.org/simple" }
@@ -151,8 +166,8 @@ dependencies = [
 dev = [
     { name = "mypy" },
     { name = "ophyd" },
-    { name = "ophyd-async", version = "0.12.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
-    { name = "ophyd-async", version = "0.21.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "ophyd-async", version = "0.12.3", source = { registry = "https://pypi.org/simple" }, extra = ["ca", "sim"], marker = "python_full_version < '3.11'" },
+    { name = "ophyd-async", version = "0.21.1", source = { registry = "https://pypi.org/simple" }, extra = ["ca", "sim"], marker = "python_full_version >= '3.11'" },
     { name = "pre-commit" },
     { name = "pyepics" },
     { name = "pytest" },
@@ -171,7 +186,7 @@ requires-dist = [
     { name = "nexusformat" },
     { name = "numpy" },
     { name = "ophyd", marker = "extra == 'dev'" },
-    { name = "ophyd-async", marker = "extra == 'dev'" },
+    { name = "ophyd-async", extras = ["ca", "sim"], marker = "extra == 'dev'" },
     { name = "pre-commit", marker = "extra == 'dev'" },
     { name = "pydantic" },
     { name = "pyepics", marker = "extra == 'dev'" },
@@ -421,6 +436,38 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/8c/8b/57666417c0f90f08bcafa776861060426765fdb422eb10212086fb811d26/dnspython-2.8.0.tar.gz", hash = "sha256:181d3c6996452cb1189c4046c61599b84a5a86e099562ffde77d26984ff26d0f", size = 368251, upload-time = "2025-09-07T18:58:00.022Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/ba/5a/18ad964b0086c6e62e2e7500f7edc89e3faa45033c71c1893d34eed2b2de/dnspython-2.8.0-py3-none-any.whl", hash = "sha256:01d9bbc4a2d76bf0db7c1f729812ded6d912bd318d3b1cf81d30c0f845dbf3af", size = 331094, upload-time = "2025-09-07T18:57:58.071Z" },
+]
+
+[[package]]
+name = "epicscorelibs"
+version = "7.0.10.99.0.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.11.*'" },
+    { name = "numpy", version = "2.5.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+    { name = "setuptools" },
+    { name = "setuptools-dso" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/52/8e/3ab7107913f567947eb9c4ff1c948823b0e7069361358a7567e136e527d3/epicscorelibs-7.0.10.99.0.1.tar.gz", hash = "sha256:e8c8d9730faef7df55f4d329c359a0e4c044f03a524dd2e4587e90132873edfd", size = 1669710, upload-time = "2026-02-11T01:39:48.704Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/90/24/e1a9f8fbc247b7c0c97b0300d758cb7b004be0e438a0042fe651dfbe6ea8/epicscorelibs-7.0.10.99.0.1-cp310-cp310-macosx_11_0_universal2.whl", hash = "sha256:4ca3a5f49a31f6e8c1ef8eab0b9d762827a8cced0de9159cb7e1c14730c0322b", size = 7636904, upload-time = "2026-02-11T01:39:15.314Z" },
+    { url = "https://files.pythonhosted.org/packages/d9/7d/25b314d759fde1b901c0cd13c3069aa6b1031339d8497873b12fbaac4dee/epicscorelibs-7.0.10.99.0.1-cp310-cp310-manylinux2014_x86_64.whl", hash = "sha256:5e3188984ac4765713bedc52e8d47121bc8dfc7d49ed54598d0849c58c70622c", size = 5421606, upload-time = "2026-02-11T01:39:18.245Z" },
+    { url = "https://files.pythonhosted.org/packages/cd/9f/41ed73a20316ec1b0c62aeb400ea58022a67c8bd5027a051591b3c8d5305/epicscorelibs-7.0.10.99.0.1-cp310-cp310-win_amd64.whl", hash = "sha256:fa86a42508d13d38785a28ed4b24496a09aa529df7cd148308eb6bfe0b0089c4", size = 2533318, upload-time = "2026-02-11T01:39:19.507Z" },
+    { url = "https://files.pythonhosted.org/packages/14/9b/69a26ca4c0f6afda101f790339f3c05deef379f3ee3c12bb7be730542b05/epicscorelibs-7.0.10.99.0.1-cp311-cp311-macosx_11_0_universal2.whl", hash = "sha256:98be3cea1239bc3076cc8e86759b4fa00903123e42c96664215af1063d177f55", size = 7636846, upload-time = "2026-02-11T01:39:20.647Z" },
+    { url = "https://files.pythonhosted.org/packages/12/29/ce9c8e81a6b9be7722ac00cb592ce6b652405eecb178bf410810732957ec/epicscorelibs-7.0.10.99.0.1-cp311-cp311-manylinux2014_x86_64.whl", hash = "sha256:91f112790a31c296bdb2c0f9b661e993c3ded9df9f4731a92887c5abfbaf568a", size = 5421614, upload-time = "2026-02-11T01:39:22.053Z" },
+    { url = "https://files.pythonhosted.org/packages/46/b5/dd2b4277ad1eaf49593e1fda042446423326075e991047f50269541585bc/epicscorelibs-7.0.10.99.0.1-cp311-cp311-win_amd64.whl", hash = "sha256:9ca9784fd25d362d9248174c55df3f3cd902b7f51fb8cd165b4f1748c713293e", size = 2533399, upload-time = "2026-02-11T01:39:23.25Z" },
+    { url = "https://files.pythonhosted.org/packages/10/fc/27b418beb7e7598783fe9a9eea830144b9e1a130c338d7da3ecd354447ad/epicscorelibs-7.0.10.99.0.1-cp312-cp312-macosx_11_0_universal2.whl", hash = "sha256:cbc6457df698f916bec7bd9eb242b280e3e6e4a6a2379da86974a571566d618e", size = 7636199, upload-time = "2026-02-11T01:39:24.923Z" },
+    { url = "https://files.pythonhosted.org/packages/4f/7b/55f41ec7746713db21aff5e794fc98b5a2e4c40fc72d69f6a1cdb04df360/epicscorelibs-7.0.10.99.0.1-cp312-cp312-manylinux2014_x86_64.whl", hash = "sha256:b7b9cb9dc1b533f6bb569dffe246256ba4d553a5843ddf494645c9b33a38ba2a", size = 5423739, upload-time = "2026-02-11T01:39:27.582Z" },
+    { url = "https://files.pythonhosted.org/packages/09/28/fe6e34a35bb1f9c1873e56e7561cfb2646a47299e7fce5f757d70fafd2cc/epicscorelibs-7.0.10.99.0.1-cp312-cp312-win_amd64.whl", hash = "sha256:28cc23c97c9ddbe7be67c036b37ecf945923351dec5894c5894afb7883ac099f", size = 2533296, upload-time = "2026-02-11T01:39:28.795Z" },
+    { url = "https://files.pythonhosted.org/packages/f6/0f/0643fffd4852c4af6d40415c0689e45947a5fc51e6093a15543ca375ae43/epicscorelibs-7.0.10.99.0.1-cp313-cp313-macosx_11_0_universal2.whl", hash = "sha256:fa350350587b87080a8200554fae2fdbffe92fa0c9fb9e9d68c7d69577070ce8", size = 7636035, upload-time = "2026-02-11T01:39:30.03Z" },
+    { url = "https://files.pythonhosted.org/packages/7c/aa/3b0faa7eea6a2957af7ee116f08b5edd99eff7e7461e22ac613b0a8d38ea/epicscorelibs-7.0.10.99.0.1-cp313-cp313-manylinux2014_x86_64.whl", hash = "sha256:8ac0a67067d06c42d4ac83b685f8020d4e993858bc4e36d58631983b1117aa39", size = 5423737, upload-time = "2026-02-11T01:39:31.355Z" },
+    { url = "https://files.pythonhosted.org/packages/45/a0/10099c41bdae2312b45816802a496bd1dee301e6f00108eec29dd498f6c9/epicscorelibs-7.0.10.99.0.1-cp313-cp313-win_amd64.whl", hash = "sha256:5d22a8fbb26414e613fba77a9422a289fc30b05b32548c79644ef39d04f76743", size = 2533281, upload-time = "2026-02-11T01:39:32.507Z" },
+    { url = "https://files.pythonhosted.org/packages/f8/01/2182e903255db558c77b2a455de5381235259cf03737ea99b089adf4d905/epicscorelibs-7.0.10.99.0.1-cp313-cp313t-manylinux2014_x86_64.whl", hash = "sha256:4b2f8228844f73b06412075e50c6787e5d19af6d3ed230c7804b3765f1aa7274", size = 5423756, upload-time = "2026-02-11T01:39:35.109Z" },
+    { url = "https://files.pythonhosted.org/packages/9a/94/245e2f0c3155b00a49a9376bcedb9d4b72cc9c36de5d73b4b55d0b69b293/epicscorelibs-7.0.10.99.0.1-cp314-cp314-macosx_11_0_universal2.whl", hash = "sha256:8d747ad55055a5031630063f24695223f9d983f3389fd0a2133640c6f6f92043", size = 7636529, upload-time = "2026-02-11T01:39:36.388Z" },
+    { url = "https://files.pythonhosted.org/packages/55/57/42c5bb50507c528d9af10879067920d27c5a6b33fbef16c2e1b55de77ccc/epicscorelibs-7.0.10.99.0.1-cp314-cp314-manylinux_2_28_x86_64.whl", hash = "sha256:7de58f4e8a7dd8edf7b808ffc99391e95ca3516c4f2780258c31f4f844d63239", size = 5358518, upload-time = "2026-02-11T01:39:37.699Z" },
+    { url = "https://files.pythonhosted.org/packages/13/83/ba7b1534760786b45bdbe590bf9b972ba594582c80ca4ac473371321a6c4/epicscorelibs-7.0.10.99.0.1-cp314-cp314-win_amd64.whl", hash = "sha256:5e2f294e60a0b3a50af5c26cda8c62b1ba926742f3a7d562e9ae65432dd16c18", size = 2587325, upload-time = "2026-02-11T01:39:39.181Z" },
+    { url = "https://files.pythonhosted.org/packages/e6/94/5c7b17b3ff1962f9fe04b07d45008bccb3a6236887bb426babaa5690d372/epicscorelibs-7.0.10.99.0.1-cp314-cp314t-manylinux_2_28_x86_64.whl", hash = "sha256:045751cdbb9bda21e830bd92753c259d10c8582c2e2bbd3dfa768158a57f541b", size = 5358535, upload-time = "2026-02-11T01:39:40.386Z" },
 ]
 
 [[package]]
@@ -1361,6 +1408,14 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/c8/cb/75a17d45ae070fa4af0b6bf79fb820b9d9137bf09f485a6728f71e4a062e/ophyd_async-0.12.3-py3-none-any.whl", hash = "sha256:3d0e98f9ab0169776dad24c072ef19ece6d53faa2933e55d3c139c525761b802", size = 180818, upload-time = "2025-07-31T14:03:45.61Z" },
 ]
 
+[package.optional-dependencies]
+ca = [
+    { name = "aioca" },
+]
+sim = [
+    { name = "h5py" },
+]
+
 [[package]]
 name = "ophyd-async"
 version = "0.21.1"
@@ -1386,6 +1441,14 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/b6/f0/91b6071faf34e87769e2522ddfabdd9fd592cd8fd12cabf4926408cab70b/ophyd_async-0.21.1.tar.gz", hash = "sha256:d0f2b9c72a444797484071b5f61b7ab0ae307d0779ca750daf2237c6ba5965ea", size = 668752, upload-time = "2026-08-04T08:53:00.232Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/0e/fd/aad3337b0d14352589af31719112d25f0f27958547c81ed0dc01301a1b3a/ophyd_async-0.21.1-py3-none-any.whl", hash = "sha256:a94ad8d02a3b03d9cb023d1e988dfc2dbb1ea9a22d6cbea25bbcd9575a8fe1ee", size = 258851, upload-time = "2026-08-04T08:52:58.863Z" },
+]
+
+[package.optional-dependencies]
+ca = [
+    { name = "aioca" },
+]
+sim = [
+    { name = "h5py" },
 ]
 
 [[package]]
@@ -2519,6 +2582,27 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/72/d1/d3159231aec234a59dd7d601e9dd9fe96f3afff15efd33c1070019b26132/semver-3.0.4.tar.gz", hash = "sha256:afc7d8c584a5ed0a11033af086e8af226a9c0b206f313e0301f8dd7b6b589602", size = 269730, upload-time = "2025-01-24T13:19:27.617Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/a6/24/4d91e05817e92e3a61c8a21e08fd0f390f5301f1c448b137c57c4bc6e543/semver-3.0.4-py3-none-any.whl", hash = "sha256:9c824d87ba7f7ab4a1890799cec8596f15c1241cb473404ea1cb0c55e4b04746", size = 17912, upload-time = "2025-01-24T13:19:24.949Z" },
+]
+
+[[package]]
+name = "setuptools"
+version = "84.0.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/6d/44/f5da03a8ef95d369145c5bb53050e7877c9f3d312e128605fd9504829143/setuptools-84.0.0.tar.gz", hash = "sha256:f4695c21257f0d9b537ec2692c941d02ee143b7cc1276941349a546573b2ef73", size = 1168449, upload-time = "2026-08-08T18:27:58.365Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/95/9c/c510029fc6ef33a6275cd2c5d3cecd6613dfd6aa401d57c54f1c18852ccf/setuptools-84.0.0-py3-none-any.whl", hash = "sha256:51a52592b3b99e102b609654876bd65f19f999935166d1352678931132b0c670", size = 818216, upload-time = "2026-08-08T18:27:56.719Z" },
+]
+
+[[package]]
+name = "setuptools-dso"
+version = "2.12.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "setuptools" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/f0/eb/cd5d9e2894606d62e08edcfb52dcf20ff66c697ec36c47d44c397feeab01/setuptools_dso-2.12.3.tar.gz", hash = "sha256:9effb7bc38f87ff9aed33cc69e860320804ca6c69af8896dbba10996a49b5d7e", size = 21510, upload-time = "2026-02-11T01:16:01.139Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/51/6b/3feec8016ab2263946c4480510d2d1a7924a5400c455974a7a0344bb4304/setuptools_dso-2.12.3-py2.py3-none-any.whl", hash = "sha256:5040be8628bd6cb82653391cf59f22126b261941cdbc9c36becca87e09c011c3", size = 23950, upload-time = "2026-02-11T01:16:00.295Z" },
 ]
 
 [[package]]

@@ -1,4 +1,4 @@
-"""Callbacks which do things with the base `NexusCallback`"""
+"""Callbacks which do things with the base `NexusCallback`."""
 
 from .nx_hdf_writer import NexusHdfWriter
 

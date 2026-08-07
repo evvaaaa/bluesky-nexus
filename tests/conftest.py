@@ -1,8 +1,8 @@
 import time
+from collections.abc import Iterator
 from multiprocessing import Process, Queue
 from multiprocessing.queues import Queue as MultiprocessingQueue
 from pathlib import Path, PurePath
-from typing import Iterator
 
 import pytest
 import zmq
@@ -12,6 +12,8 @@ from bluesky.callbacks.zmq import Proxy, Publisher
 from bluesky_nexus import NexusCallback, NexusHdfWriter
 from bluesky_nexus.common.logging_utils import setup_nx_logger
 from bluesky_nexus.dispatchers import run_zmq_dispatcher
+from bluesky_nexus.nx_device._decorator import _inheritance_structure, _schema_added
+from bluesky_nexus.nx_schema import NX_CLASS_TO_BASEMODEL
 
 
 @pytest.fixture()
@@ -24,6 +26,25 @@ def tmpdir(tmpdir: PurePath):
 def logs_on_during_tests():
     """Set up default logging across all tests."""
     setup_nx_logger()
+
+
+@pytest.fixture(scope="function", autouse=True)
+def ensure_fresh_mutable_global_caches(monkeypatch):
+    """It's important that any tests adding basemodels, or adding schema to
+    classes don't modify the environment.
+    """
+    monkeypatch.setattr(
+        "bluesky_nexus.nx_device._decorator._schema_added",
+        _schema_added.copy(),
+    )
+    monkeypatch.setattr(
+        "bluesky_nexus.nx_device._decorator._inheritance_structure",
+        _inheritance_structure.copy(),
+    )
+    monkeypatch.setattr(
+        "bluesky_nexus.nx_schema.nx_base.NX_CLASS_TO_BASEMODEL",
+        NX_CLASS_TO_BASEMODEL.copy(),
+    )
 
 
 @pytest.fixture()

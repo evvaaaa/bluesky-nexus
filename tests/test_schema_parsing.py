@@ -17,7 +17,6 @@ from bluesky_nexus.nx_schema import (
     NxField,
     NxGroup,
     add_nx_class_basemodel,
-    NX_CLASS_TO_BASEMODEL,
 )
 
 from . import get_logs, load_only_generated_nexus_file, wait_for_nexus_file
@@ -222,7 +221,7 @@ def test_nexus_writer_on_signals(
 
 
 def test_schema_client_server_differing_schema(
-    RE_subscribed_over_zmq: RunEngine, tmpdir: Path, monkeypatch
+    RE_subscribed_over_zmq: RunEngine, tmpdir: Path
 ):
     new_motor_schema = {"nx_class": "NXnew", "some_data": "foo"}
 
@@ -235,11 +234,6 @@ def test_schema_client_server_differing_schema(
 
         @NexusDevice.from_dictionary(new_motor_schema)
         class NewMotorWhichWillFail(SimMotor): ...
-
-    monkeypatch.setattr(
-        "bluesky_nexus.nx_schema.nx_base.NX_CLASS_TO_BASEMODEL",
-        NX_CLASS_TO_BASEMODEL.copy(),
-    )
 
     @add_nx_class_basemodel
     class NxNew(NxGroup):

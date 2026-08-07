@@ -5,4 +5,4 @@ from .nx_callback import NexusCallback
 from .nx_consumers import NexusHdfWriter
 from .nx_device import NexusDevice
 
-__all__ = ["NexusDevice", "NexusCallback", "NexusHdfWriter"]
+__all__ = ["NexusCallback", "NexusDevice", "NexusHdfWriter"]

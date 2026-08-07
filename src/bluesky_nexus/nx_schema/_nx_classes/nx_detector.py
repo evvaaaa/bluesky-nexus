@@ -1,4 +1,4 @@
-"""Contains the definition for `NXdetector`."""
+"""Contains the definition for NXdetector."""
 
 from ..nx_base import NxField, NxGroup, add_nx_class_basemodel
 

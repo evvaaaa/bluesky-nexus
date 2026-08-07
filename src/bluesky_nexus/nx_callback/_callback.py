@@ -1,6 +1,7 @@
 """NeXus Writer callback for bluesky plans."""
 
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from event_model import RunStop, documents
 from event_model.documents import Document, RunStart
@@ -53,7 +54,7 @@ class NexusCallback:
     def run_stop(self, document: RunStop) -> None:
         """Create and return the nexus structure for the plan."""
         if self._run_data is None:
-            return None
+            return
         self._run_data.run_stop = document  # type: ignore
 
         nexus_structure = create_nexus_structure(self._run_data)

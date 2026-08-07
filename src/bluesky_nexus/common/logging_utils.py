@@ -63,10 +63,10 @@ Public API
 
 import logging
 import time
+from collections.abc import Callable
 from enum import Enum
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
-from typing import Callable
 
 
 class LogLevel(Enum):
@@ -87,9 +87,9 @@ class LogLevel(Enum):
 # Public API of this module: logging setup function, logger instance, and LogLevel
 # constants
 __all__ = [
-    "setup_nx_logger",
-    "logger",
     "LogLevel",
+    "logger",
+    "setup_nx_logger",
 ]
 
 # Create a custom logger for the package

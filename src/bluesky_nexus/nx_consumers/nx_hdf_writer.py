@@ -1,10 +1,9 @@
 from datetime import datetime
 from pathlib import Path
 
-from event_model import RunStart, RunStop
+from event_model import RunStart
 from nexusformat import nexus
 
-from bluesky_nexus import NexusCallback
 from bluesky_nexus.common.logging_utils import log_time_taken, logger
 from bluesky_nexus.common.validation_utils import validate_directory
 

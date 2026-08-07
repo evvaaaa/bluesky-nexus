@@ -236,10 +236,10 @@ def main():
     )
 
     log_file_max_size = args.file_max_size or int(
-        os.environ.get("_NX_LOG_FILE_MAX_SIZE", 10 * 1024 * 1024)
+        os.environ.get("_NX_LOG_FILE_MAX_SIZE", str(10 * 1024 * 1024))
     )
 
-    backup_count = args.backup_count or int(os.environ.get("_NX_BACKUP_COUNT", 5))
+    backup_count = args.backup_count or int(os.environ.get("_NX_BACKUP_COUNT", "5"))
 
     console_level_str = (
         args.console_level or os.environ.get("_NX_CONSOLE_LOG_LEVEL", "ERROR")

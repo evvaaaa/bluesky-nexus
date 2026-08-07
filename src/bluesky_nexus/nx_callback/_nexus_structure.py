@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Any, Iterable, TypeAlias, Union, cast
+from collections.abc import Iterable
+from typing import Any, TypeAlias, Union, cast
 
 import numpy as np
 from nexusformat import nexus
@@ -16,7 +17,7 @@ from ._data_extractor import (
     StreamData,
 )
 
-JsonSerializableScalar: TypeAlias = str | int | str | bool | float | None
+JsonSerializableScalar: TypeAlias = str | int | bool | float | None
 # typing.Union required for future recursive references... annoooooying
 JsonSerializableList: TypeAlias = list[
     Union[JsonSerializableScalar, "JsonSerializableList"]
@@ -102,10 +103,6 @@ def _add_nx_object_data_to_group(
 
     for nx_field_schema in group_schema.nx_fields().values():
         if nx_field_schema.datakey not in object_data.formatted_data_key_name_to_data:
-            logger.warning(
-                f"Datakey `{nx_field_schema.datakey}` in schema not accounted"
-                "for in an event stream captured... Skipping it."
-            )
             continue
         data_key_data = object_data.formatted_data_key_name_to_data[
             nx_field_schema.datakey
@@ -188,7 +185,7 @@ def add_stream_data_to_group(
             ):
                 logger.warning(
                     f"Datakey `{object_data.nx_schema.datakey}` in schema not accounted"
-                    "for in an event stream captured... Skipping it."
+                    " for in an event stream captured... Skipping it."
                 )
                 continue
             devices_group[object_name] = _new_nx_field(

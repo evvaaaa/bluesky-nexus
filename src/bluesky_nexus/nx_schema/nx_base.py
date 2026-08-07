@@ -1,6 +1,6 @@
 """
-This module contains the base for all bluesky nexus pydantic schemas, `NxBase`. As well as
-their subclasses `NxGroup` and `NxField`.
+This module contains the base for all bluesky nexus pydantic schemas, `NxBase`.
+As well as their subclasses `NxGroup` and `NxField`.
 
 
 When `nx_class` is specified in the schema, the correct nexus class is automatically
@@ -17,6 +17,7 @@ from pprint import pformat
 from typing import Any, TypeVar, cast
 
 from pydantic import BaseModel, ConfigDict, computed_field, model_validator
+from typing_extensions import Self
 
 NX_CLASS_TO_BASEMODEL: dict[str, type[NxBase]] = {}
 """Stores all the allowable nexus_class names and maps them
@@ -55,7 +56,7 @@ class NxBase(BaseModel, ABC):
     model_config = ConfigDict(extra="allow")
 
     @classmethod
-    def from_dict(cls: type[T], dictionary: dict[str, Any]) -> T:
+    def from_dict(cls, dictionary: dict[str, Any]) -> Self:
         """Load a dictionary into a basemodel.
 
         If an nx_class is specified in the schema and there exists
@@ -66,8 +67,8 @@ class NxBase(BaseModel, ABC):
 
     @classmethod
     def _from_dict(
-        cls: type[T], dictionary: dict[str, Any], parent_key: str | None = None
-    ) -> T:
+        cls, dictionary: dict[str, Any], parent_key: str | None = None
+    ) -> Self:
         kwargs: dict[str, Any] = {}
         document_cls: type[NxBase] | None = None
 
@@ -136,7 +137,7 @@ class NxBase(BaseModel, ABC):
         if document_cls is None:
             raise TypeError("No `nx_class` specified in a parsed dictionary.")
 
-        return cast(T, document_cls(**kwargs))
+        return cast(Self, document_cls(**kwargs))
 
 
 def add_nx_class_basemodel(cls: type[T]) -> type[T]:

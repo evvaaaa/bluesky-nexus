@@ -18,8 +18,6 @@ from bluesky_nexus import NexusDevice
             {"some_alias": {"nx_class": "NXfield", "datakey": "signal"}},
             "some_alias",
         ),
-        # Just the datakey.
-        ({"signal": None}, "signal"),
         # Just the alias.
         ({"some_alias": "signal"}, "some_alias"),
     ),

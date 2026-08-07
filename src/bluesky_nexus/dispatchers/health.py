@@ -52,11 +52,13 @@ class HealthManager:
             return {"zmq": "unhealthy"}
 
     def start(self) -> None:
+        """Start the zmq health check service."""
         self._stop_event.clear()
         self._thread = threading.Thread(target=self._run, daemon=True)
         self._thread.start()
 
     def stop(self) -> None:
+        """Stop the zmq health check service."""
         self._stop_event.set()
         if self._thread:
             self._thread.join(timeout=2)
@@ -85,4 +87,5 @@ class HealthManager:
 
     @property
     def zmq_healthy(self) -> bool:
+        """Getter for healthy."""
         return self._healthy

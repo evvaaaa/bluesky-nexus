@@ -1,7 +1,17 @@
+from pathlib import Path
+
+from bluesky import RunEngine
+from bluesky import plans as bp
 from ophyd import Component as Cpt
 from ophyd import Device, EpicsSignal
+from ophyd_async.core import StandardReadableFormat as Fmt
+from ophyd_async.epics.core import epics_signal_r
+from ophyd_async.epics.motor import Motor
+from ophyd_async.plan_stubs import ensure_connected
 
 from bluesky_nexus import NexusDevice
+
+from . import load_only_generated_nexus_file
 
 
 def test_schema_single_inheritance():
@@ -141,7 +151,7 @@ def test_schema_multi_inheritance():
             "override_group_on_dads_side": {
                 "nx_class": "NXobject",
                 "signal_dad_grandma": None,
-                "nx_units": "from grandma",
+                "signal_from_grandma": None,
             },
         },
     )
@@ -210,9 +220,8 @@ def test_schema_multi_inheritance():
     assert me.grandparent_int == 0
 
     # Inheritence treats left as more important in the mro.
-    # so do we.
+    # So do we.
     assert me.direct_parent_int == 0
-
     assert me.hints["NX_schema"] == {
         "dad_signal": {
             "datakey": "dad_signal",
@@ -241,12 +250,95 @@ def test_schema_multi_inheritance():
         "nx_class": "NXobject",
         "override_group_on_dads_side": {
             "nx_class": "NXobject",
-            "nx_units": "from grandma",
+            "signal_dad_granddad": {
+                "datakey": "signal_dad_granddad",
+                "nx_alias": "signal_dad_granddad",
+                "nx_class": "NXfield",
+                "nx_units": None,
+            },
             "signal_dad_grandma": {
                 "datakey": "signal_dad_grandma",
                 "nx_alias": "signal_dad_grandma",
                 "nx_class": "NXfield",
                 "nx_units": None,
             },
+            "signal_from_grandma": {
+                "datakey": "signal_from_grandma",
+                "nx_alias": "signal_from_grandma",
+                "nx_class": "NXfield",
+                "nx_units": None,
+            },
         },
     }
+
+
+def test_schema_single_inheritance_on_device(
+    RE_directly_subscribed: RunEngine, tmpdir: Path
+):
+    NexusDevice.from_dictionary(
+        {
+            "nx_class": "NXpositioner",
+            "value": "",
+            "target_value": "user_setpoint",
+            "tolerance": "encoder_resolution",
+            "soft_limit_min": "low_limit_travel",
+            "soft_limit_max": "high_limit_travel",
+            "velocity": "velocity",
+            "acceleration_time": "acceleration_time",
+        }
+    )(Motor)
+
+    class Shutter(Motor):
+        def __init__(self, prefix: str, name: str = ""):
+            super().__init__(prefix, name=name)
+            with self.add_children_as_readables(format=Fmt.CONFIG_SIGNAL):
+                self.open_value = epics_signal_r(float, f"{prefix}:OPEN_VAL")
+                self.close_value = epics_signal_r(float, f"{prefix}:CLOSE_VAL")
+
+    @NexusDevice.from_dictionary(
+        {
+            "SUB_GROUP": {"nx_class": "NXobject", "value_at_open": "open_value"},
+        }
+    )
+    class ShutterWithSomeDifferingNxSchema(Shutter): ...
+
+    shutter_with_some_differing_schema = ShutterWithSomeDifferingNxSchema(
+        "S1", name="shutter_differing"
+    )
+    shutter = Shutter("S2", name="shutter")
+    # assert shutter.hints == shutter_with_some_differing_schema.hints
+
+    RE_directly_subscribed(
+        ensure_connected(shutter_with_some_differing_schema, shutter, mock=True)
+    )
+    RE_directly_subscribed(
+        bp.count([shutter, shutter_with_some_differing_schema], num=3)
+    )  # type: ignore
+
+    loaded = load_only_generated_nexus_file(tmpdir)["entry"]["primary"]["devices"]
+    assert list(loaded) == ["shutter", "shutter_differing", "time"]
+    assert list(loaded["shutter"]) == [
+        "close_value",
+        "motor_egu",
+        "motor_resolution",
+        "offset",
+        "open_value",
+        "steps_per_revolution",
+        "tolerance",
+        "units_per_revolution",
+        "value",
+        "velocity",
+    ]
+    assert list(loaded["shutter_differing"]) == [
+        "SUB_GROUP",
+        "close_value",
+        "motor_egu",
+        "motor_resolution",
+        "offset",
+        "steps_per_revolution",
+        "tolerance",
+        "units_per_revolution",
+        "value",
+        "velocity",
+    ]
+    assert list(loaded["shutter_differing"]["SUB_GROUP"]) == ["value_at_open"]

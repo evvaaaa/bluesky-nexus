@@ -3,8 +3,9 @@ the nexus writer. This is collected throughout the run. The writer will then use
 RunData to write to disk.
 """
 
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
-from typing import Any, Callable, Iterable, cast
+from typing import Any, cast
 
 from bluesky.protocols import Descriptor
 from event_model import (
@@ -208,7 +209,7 @@ class ObjectData:
             except Exception as exception:
                 logger.warning(
                     f"Received a malformed schema in {object_name}. "
-                    f"The error was:\n    {str(exception)}\n"
+                    f"The error was:\n    {exception!s}\n"
                     "A default schema will be used instead.",
                 )
 
@@ -216,7 +217,7 @@ class ObjectData:
             # The device has a single key. Don't make it an `NXobject`.
             # This is very likely if the plan throws in signals of a device,
             # but not the device itself.
-            only_key = list(formatted_data_key_name_to_data)[0]
+            only_key = next(iter(formatted_data_key_name_to_data))
             logger.debug(f"Creating new NxField schema for device {object_name}.")
             return ObjectData(
                 nx_schema=NxField(datakey=only_key),
@@ -329,7 +330,7 @@ class StreamData:
         event_data = document["data"].copy()
         event_timestamps = document["timestamps"].copy()
 
-        for _, object_data in self.object_data.items():
+        for object_data in self.object_data.values():
             for (
                 data_key_name,
                 data_key_data,

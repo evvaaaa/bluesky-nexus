@@ -34,11 +34,11 @@ dev = [
   "mypy",
   "types-PyYAML",
   "ophyd",
-  "ophyd-async",
+  "ophyd-async[sim, ca]",
   "pytest",
   "pre-commit",
   "pytest-html",
-  "pyepics" # For ophyd device definitions.
+  "pyepics",              # For ophyd device definitions.
 ]
 
 [tool.pytest.ini_options]
@@ -67,7 +67,7 @@ extend-select = [
   "I", # isort
   "B", # flake8-bugbear
 ]
-ignore = ["D205", "D103", "D100", "D401"]
+ignore = ["D205", "D103", "D100", "D401", "BLE001", "DTZ006"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "pep257"
