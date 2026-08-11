@@ -8,10 +8,8 @@ from typing import TypeVar, cast
 
 import yaml
 from bluesky.protocols import HasHints
+from event_model import PerObjectHint
 
-from bluesky_nexus.nx_schema.hint_structure import (
-    PerObjectHintWithSchemaField,
-)
 from bluesky_nexus.nx_schema.nx_base import NxGroup
 
 T = TypeVar("T")
@@ -68,7 +66,7 @@ def _add_nx_schema_and_device_metadata_to_hints(
     original = device_cls.hints  # type: ignore
 
     @property  # type: ignore
-    def new_hints(self: HasHints) -> PerObjectHintWithSchemaField:
+    def new_hints(self: HasHints) -> PerObjectHint:
         hints = original.__get__(self).copy()
 
         if type(self) not in _schema_added:

@@ -22,10 +22,6 @@ from event_model.documents.event_descriptor import Dtype, DtypeNumpy, DtypeNumpy
 
 from bluesky_nexus.common.logging_utils import logger
 from bluesky_nexus.nx_schema import NxField, NxGroup, NxObject
-from bluesky_nexus.nx_schema.hint_structure import (
-    NxFieldInHints,
-    PerObjectHintWithSchemaField,
-)
 from bluesky_nexus.nx_schema.nx_base import DISALLOWED_ALIASES_AND_OBJECT_NAMES, NxBase
 
 
@@ -74,11 +70,11 @@ def _new_schema_with_missing_fields(
             )
             continue
 
-        raw_schema[data_key_name] = NxFieldInHints(
-            nx_class="NXfield",
-            datakey=data_key_name,
-            nx_alias=data_key_name or object_name,  # Special case if data key is ""
-        )
+        raw_schema[data_key_name] = {
+            "nx_class": "NXfield",
+            "datakey": data_key_name,
+            "nx_alias": data_key_name or object_name,  # Special case if data key is ""
+        }
 
     return NxGroup.from_dict(raw_schema)
 
@@ -125,7 +121,7 @@ class ObjectData:
     def from_descriptor_data(
         cls,
         object_name: str,
-        hint: PerObjectHintWithSchemaField,
+        hint: PerObjectHint,
         read_data_keys: dict[str, DataKey],
         configuration: Configuration,
     ) -> "ObjectData":
@@ -183,7 +179,7 @@ class ObjectData:
             # adding their own schema in the device layer.
             # If a device passes validation on `NxGroup` it can be added
             try:
-                raw_schema = hint["NX_schema"]
+                raw_schema = hint["NX_schema"]  # type: ignore
                 # Perform an initial validation on the provided schema.
                 nx_schema = NxBase.from_dict(cast(dict, raw_schema))
 
@@ -271,7 +267,7 @@ class StreamData:
             hint = descriptor.get("hints", {}).get(object_name, {})
             object_data[object_name] = ObjectData.from_descriptor_data(
                 object_name,
-                cast(PerObjectHintWithSchemaField, hint),
+                cast(PerObjectHint, hint),
                 data_keys,
                 configuration,
             )
