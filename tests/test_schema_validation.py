@@ -16,7 +16,7 @@ from bluesky_nexus.nx_schema.nx_base import NxBase
     (
         # Full schema definition.
         (
-            {"some_alias": {"nx_class": "NXfield", "data_key": "signal"}},
+            {"some_alias": {"@nxclass": "NXfield", "data_key": "signal"}},
             "some_alias",
         ),
         # Just the alias.
@@ -24,7 +24,7 @@ from bluesky_nexus.nx_schema.nx_base import NxBase
     ),
 )
 def test_methods_of_declaring_data_keys(data_key_subset: dict, expected_alias: str):
-    dictionary_schema = {"nx_class": "NXobject"}
+    dictionary_schema = {"@nxclass": "NXobject"}
     dictionary_schema.update(data_key_subset)
 
     @NexusDevice.from_dictionary(dictionary_schema)
@@ -37,9 +37,9 @@ def test_methods_of_declaring_data_keys(data_key_subset: dict, expected_alias: s
             expected_alias: {
                 "data_key": "signal",
                 "nx_alias": expected_alias,
-                "nx_class": "NXfield",
+                "@nxclass": "NXfield",
             },
-            "nx_class": "NXobject",
+            "@nxclass": "NXobject",
         },
         "fields": [],
     }
@@ -53,11 +53,11 @@ def test_writer_behaviour_with_failing_schema_specified_in_yaml():
 
         @NexusDevice.from_dictionary(
             {
-                "nx_class": "NXdetector",
+                "@nxclass": "NXdetector",
                 "data": {
-                    "nx_class": "NXobject",
+                    "@nxclass": "NXobject",
                     "second_data_level_that_shouldnt_exist": {
-                        "nx_class": "NXfield",
+                        "@nxclass": "NXfield",
                         "data_key": "channel-1-mode",
                     },
                 },
@@ -71,12 +71,12 @@ def test_attempt_with_unknown_schema_from_client():
     with pytest.raises(
         TypeError,
         match=(
-            "Requested `nx_class: NXbanana` but this isn't defined with pydantic "
+            "Requested `@nxclass: NXbanana` but this isn't defined with pydantic "
             "schemas:"
         ),
     ):
 
-        @NexusDevice.from_dictionary({"nx_class": "NXbanana", "length": "length"})
+        @NexusDevice.from_dictionary({"@nxclass": "NXbanana", "length": "length"})
         class BananaMotor(SynAxis):
             pass
 
@@ -84,18 +84,18 @@ def test_attempt_with_unknown_schema_from_client():
 def test_schema_addition():
     nx_group = NxBase.from_dict(
         {
-            "nx_class": "NXgroup",
+            "@nxclass": "NXgroup",
             "@nx_group_constant_attribute": {"constant": "nx_group_constant"},
             "SUB_GROUP": {
-                "nx_class": "NXgroup",
+                "@nxclass": "NXgroup",
                 "field1": {
-                    "nx_class": "NXfield",
+                    "@nxclass": "NXfield",
                     "data_key": "nx_group_data_key1",
                     "@attribute11": "nx_group_attribute11",
                 },
             },
             "field2": {
-                "nx_class": "NXfield",
+                "@nxclass": "NXfield",
                 "data_key": "nx_group_data_key2",
                 "@attribute21": "nx_group_attribute21",
                 "@attribute22": "nx_group_attribute22",
@@ -104,25 +104,25 @@ def test_schema_addition():
     )
     nx_object = NxBase.from_dict(
         {
-            "nx_class": "NXobject",
+            "@nxclass": "NXobject",
             "@nx_group_constant_attribute": {"hints_key": "nx_object_hints_key"},
             "@nx_object_constant_attribute": {"constant": "nx_object_constant"},
             "SUB_GROUP": {
-                "nx_class": "NXobject",
+                "@nxclass": "NXobject",
                 "field1": {
-                    "nx_class": "NXfield",
+                    "@nxclass": "NXfield",
                     "data_key": "nx_object_data_key1",
                     "@attribute11": "nx_object_attribute11",
                     "@attribute12": "nx_object_attribute12",
                 },
                 "field2": {
-                    "nx_class": "NXfield",
+                    "@nxclass": "NXfield",
                     "data_key": "nx_object_data_key3",
                     "@attribute31": "nx_object_attribute31",
                 },
             },
             "field2": {
-                "nx_class": "NXfield",
+                "@nxclass": "NXfield",
                 "data_key": "nx_object_data_key2",
                 "@attribute21": "nx_object_attribute21",
                 "@attribute22": "nx_object_attribute22",
@@ -159,7 +159,7 @@ def test_schema_addition():
                 },
                 "data_key": "nx_group_data_key1",
                 "nx_alias": "field1",
-                "nx_class": "NXfield",
+                "@nxclass": "NXfield",
             },
             "field2": {
                 "@attribute31": {
@@ -170,9 +170,9 @@ def test_schema_addition():
                 },
                 "data_key": "nx_object_data_key3",
                 "nx_alias": "field2",
-                "nx_class": "NXfield",
+                "@nxclass": "NXfield",
             },
-            "nx_class": "NXgroup",
+            "@nxclass": "NXgroup",
         },
         "field2": {
             "@attribute21": {
@@ -189,9 +189,9 @@ def test_schema_addition():
             },
             "data_key": "nx_group_data_key2",
             "nx_alias": "field2",
-            "nx_class": "NXfield",
+            "@nxclass": "NXfield",
         },
-        "nx_class": "NXgroup",
+        "@nxclass": "NXgroup",
     }
 
     assert (nx_object + nx_group).model_dump() == {
@@ -223,7 +223,7 @@ def test_schema_addition():
                 },
                 "data_key": "nx_object_data_key1",
                 "nx_alias": "field1",
-                "nx_class": "NXfield",
+                "@nxclass": "NXfield",
             },
             "field2": {
                 "@attribute31": {
@@ -234,9 +234,9 @@ def test_schema_addition():
                 },
                 "data_key": "nx_object_data_key3",
                 "nx_alias": "field2",
-                "nx_class": "NXfield",
+                "@nxclass": "NXfield",
             },
-            "nx_class": "NXobject",
+            "@nxclass": "NXobject",
         },
         "field2": {
             "@attribute21": {
@@ -253,7 +253,7 @@ def test_schema_addition():
             },
             "data_key": "nx_object_data_key2",
             "nx_alias": "field2",
-            "nx_class": "NXfield",
+            "@nxclass": "NXfield",
         },
-        "nx_class": "NXobject",
+        "@nxclass": "NXobject",
     }

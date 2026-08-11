@@ -93,7 +93,7 @@ def test_example_schema_and_manual_schema_with_equivalence(
 
     @NexusDevice.from_dictionary(
         {
-            "nx_class": "NXobject",
+            "@nxclass": "NXobject",
             "channel-1-value": "channel-1-value",
             "channel-2-value": "channel-2-value",
         }
@@ -135,8 +135,8 @@ def test_simple_nx_detector(
 ):
     @NexusDevice.from_dictionary(
         {
-            "nx_class": "NXdetector",
-            "data": {"nx_class": "NXfield", "data_key": "channel-1-value"},
+            "@nxclass": "NXdetector",
+            "data": {"@nxclass": "NXfield", "data_key": "channel-1-value"},
         }
     )
     class NxSimPointDetector(SimPointDetector):
@@ -177,7 +177,7 @@ def test_device_with_only_one_field_schema(
     """Demonstrates that the tree structure doesn't require a group."""
 
     @NexusDevice.from_dictionary(
-        {"nx_class": "NXfield", "data_key": "", "nx_alias": passed_alias}
+        {"@nxclass": "NXfield", "data_key": "", "nx_alias": passed_alias}
     )
     class MyPositioner(StandardReadable):
         def __init__(self, name: str):
@@ -194,7 +194,7 @@ def test_device_with_only_one_field_schema(
         "NX_schema": {
             "data_key": "",
             "nx_alias": expected_alias,
-            "nx_class": "NXfield",
+            "@nxclass": "NXfield",
         },
         "fields": ["my_positioner"],
     }
@@ -230,12 +230,12 @@ def test_nexus_writer_on_signals(
 def test_schema_client_server_differing_schema(
     RE_subscribed_over_zmq: RunEngine, tmpdir: Path
 ):
-    new_motor_schema = {"nx_class": "NXnew", "some_data": "foo"}
+    new_motor_schema = {"@nxclass": "NXnew", "some_data": "foo"}
 
     with pytest.raises(
         TypeError,
         match=(
-            "Requested `nx_class: NXnew` but this isn't defined with pydantic schemas:"
+            "Requested `@nxclass: NXnew` but this isn't defined with pydantic schemas:"
         ),
     ):
 
@@ -257,7 +257,7 @@ def test_schema_client_server_differing_schema(
     pattern = re.compile(
         (
             r".*?Received a malformed schema in motor\. The error was:\n\s+Requested "
-            r"`nx_class: NXnew` but this isn't defined with pydantic schemas: "
+            r"`@nxclass: NXnew` but this isn't defined with pydantic schemas: "
             r"\{[^}]*\}\nA default schema will be used instead\."
         ),
         re.DOTALL,
@@ -278,10 +278,10 @@ def test_schema_client_server_differing_schema(
 def test_constant_attributes(RE_directly_subscribed: RunEngine, tmpdir):
     @NexusDevice.from_dictionary(
         {
-            "nx_class": "NXobject",
+            "@nxclass": "NXobject",
             "@description": "Some constant description",
             "sim_motor_with_description": {
-                "nx_class": "NXfield",
+                "@nxclass": "NXfield",
                 "data_key": "",
                 "@units": "overriden",
                 "@long_name": "Long motor name",
@@ -346,7 +346,7 @@ def test_constant_attributes(RE_directly_subscribed: RunEngine, tmpdir):
 def test_attributes_from_hints(RE_directly_subscribed: RunEngine, tmpdir):
     @NexusDevice.from_dictionary(
         {
-            "nx_class": "NXobject",
+            "@nxclass": "NXobject",
             "@description": {"hints_key": ["md", "description"]},
         }
     )
@@ -375,9 +375,9 @@ def test_attributes_from_hints(RE_directly_subscribed: RunEngine, tmpdir):
 def test_attributes_from_data_keys(RE_directly_subscribed: RunEngine, tmpdir):
     @NexusDevice.from_dictionary(
         {
-            "nx_class": "NXobject",
+            "@nxclass": "NXobject",
             "readback": {
-                "nx_class": "NXfield",
+                "@nxclass": "NXfield",
                 "data_key": "readback",
                 "@units": {"data_key": "egu"},
             },

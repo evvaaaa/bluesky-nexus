@@ -3,7 +3,7 @@ This module contains the base for all bluesky nexus pydantic schemas, `NxBase`.
 As well as their subclasses `NxGroup` and `NxField`.
 
 
-When `nx_class` is specified in the schema, the correct nexus class is automatically
+When `@nxclass` is specified in the schema, the correct nexus class is automatically
 selected and initialized by `NxBase.from_dictionary`.
 This module contains a decorator for appending different instrument schema basemodels to
 a global dictionary.
@@ -44,22 +44,24 @@ class NxBase(BaseModel, ABC):
 
     @computed_field  # type: ignore
     @cached_property
-    def nx_class(self) -> str:
-        """The nexus baseclass of this group. Uses the python class name,
-        e.g NxSomeDevice -> NXsomedevice.
-
-        Having this as a cached property means that subclasses of `NXBase`
-        will implicitely have the correct `nx_class` name field.
+    def nxclass(self) -> str:
         """
-        return _nexus_class_name_from_python_class(type(self))
+        A computed proprty for getting the nexus base class name from
+        the python class name.
+        """
+        return _nexus_class_name_from_python_class(self.__class__)
 
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(
+        extra="allow",
+        alias_generator=lambda n: "@nxclass" if n == "nxclass" else n,
+        serialize_by_alias=True,
+    )
 
     @classmethod
     def from_dict(cls, dictionary: dict[str, Any]) -> Self:
         """Load a dictionary into a basemodel.
 
-        If an nx_class is specified in the schema and there exists
+        If an @nxclass is specified in the schema and there exists
         a basemodel in the python environment (added through `add_nx_class_basemodel`
         then it will be used.
         """
@@ -75,24 +77,25 @@ class NxBase(BaseModel, ABC):
         for key, value in dictionary.items():
             match (key, value):
                 # The class is specified. It is fetched from the environment for
-                # validation on instantiation:
-                case ("nx_class", value):
+                # validation on instantiation. This is the only attribute which
+                # has to be constant.
+                case ("@nxclass", value):
                     nx_class_name = value
                     maybe_document_cls = NX_CLASS_TO_BASEMODEL.get(nx_class_name)
                     if maybe_document_cls is None:
                         pretty_allowed_classes = pformat(set(NX_CLASS_TO_BASEMODEL))
                         raise TypeError(
-                            f"Requested `nx_class: {nx_class_name}` but this isn't "
+                            f"Requested `@nxclass: {nx_class_name}` but this isn't "
                             f"defined with pydantic schemas: {pretty_allowed_classes}"
                         )
                     # Add the parent key to the child:
-                    # e.g {"data": {nx_class: NXfield, ...}} ->
-                    # {"data": {}, {nx_class: NXfield, nx_alias: data, ...}}
+                    # e.g {"data": {@nxclass: NXfield, ...}} ->
+                    # {"data": {}, {@nxclass: NXfield, nx_alias: data, ...}}
                     if value == "NXfield" and not kwargs.get("nx_alias") and parent_key:
                         kwargs["nx_alias"] = parent_key
 
                     # Differing reference of parent to sub group/field
-                    # e.g {"data": {nx_class: NXfield, nx_alias: not_data}}
+                    # e.g {"data": {@nxclass: NXfield, nx_alias: not_data}}
                     if (
                         value == "NXfield"
                         and (nx_alias := kwargs.get("nx_alias"))
@@ -143,7 +146,7 @@ class NxBase(BaseModel, ABC):
                     #     )
 
                 # A subgroup/field is specified:
-                # e.g {nx_class: NXobject, SUB_GROUP: {nx_class: NXobject, ...}}
+                # e.g {@nxclass: NXobject, SUB_GROUP: {@nxclass: NXobject, ...}}
                 case (key, value) if isinstance(value, dict):  # A subgroup.
                     kwargs[key] = NxBase._from_dict(value, parent_key=key)  # type: ignore
 
@@ -169,7 +172,9 @@ class NxBase(BaseModel, ABC):
                     )
 
         if document_cls is None:
-            raise TypeError("No `nx_class` specified in a parsed dictionary.")
+            raise TypeError(
+                f"No `@nxclass` specified in a parsed dictionary {pformat(dictionary)}."
+            )
 
         return cast(Self, document_cls(**kwargs))
 
@@ -190,7 +195,6 @@ class NxBase(BaseModel, ABC):
 
             our_value = getattr(self, other_key, None)
 
-            print(other_key, other_value, our_value)
             # The key is entirely new.
             if our_value is None:
                 in_progress[other_key] = (
@@ -260,7 +264,7 @@ def add_nx_class_basemodel(cls: type[T]) -> type[T]:
     nx_class_name = _nexus_class_name_from_python_class(cls)
     if already_present := NX_CLASS_TO_BASEMODEL.get(nx_class_name):
         raise TypeError(
-            f"{cls.__module__}.{cls.__qualname__} cannot be added as an nx_class "
+            f"{cls.__module__}.{cls.__qualname__} cannot be added as an @nxclass "
             f"as it's already present as "
             f"{already_present.__module__}.{already_present.__qualname__}"
         )

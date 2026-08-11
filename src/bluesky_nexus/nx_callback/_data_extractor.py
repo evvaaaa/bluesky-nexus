@@ -71,7 +71,7 @@ def _new_schema_with_missing_fields(
             continue
 
         raw_schema[data_key_name] = {
-            "nx_class": "NXfield",
+            "@nxclass": "NXfield",
             "data_key": data_key_name,
             "nx_alias": data_key_name or object_name,  # Special case if data key is ""
         }
@@ -130,8 +130,8 @@ class ObjectData:
         # In practice the user won't do this, but it's allowed in event-model.
         if common := list(configuration_data_keys.keys() & read_data_keys.keys()):
             logger.warning(
-                f"Received data_keys {common} in both configuration and read data_keys. "
-                "The writer will use the read data key."
+                f"Received data_keys {common} in both configuration and "
+                "read data_keys. The writer will use the read data key."
             )
         all_data_keys = configuration_data_keys.copy()
         all_data_keys.update(read_data_keys)
@@ -184,7 +184,7 @@ class ObjectData:
                 nx_schema = NxBase.from_dict(cast(dict, raw_schema))
 
                 if isinstance(nx_schema, NxGroup):
-                    # If the object's `nx_class` is a subclass of `NxGroup`,
+                    # If the object's `@nxclass` is a subclass of `NxGroup`,
                     # instead of e.g an NxField directly, add this missing data_keys.
                     nx_schema = _new_schema_with_missing_fields(
                         object_name, formatted_data_key_name_to_data, nx_schema

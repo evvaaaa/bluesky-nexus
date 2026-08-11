@@ -126,7 +126,7 @@ def _add_nx_object_data_to_group(
     group_schema: nx_schema.NxGroup,
 ) -> None:
     """Write the object into a nexus group."""
-    group.attrs["nxclass"] = group_schema.nx_class
+    group.attrs["nxclass"] = group_schema.nxclass
 
     for nx_field_schema in group_schema.nx_fields().values():
         if nx_field_schema.data_key not in object_data.formatted_data_key_name_to_data:

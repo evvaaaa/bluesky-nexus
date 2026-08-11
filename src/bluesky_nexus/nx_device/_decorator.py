@@ -62,7 +62,7 @@ def _add_nx_schema_getter_and_device_metadata_to_hints(device_cls: type[T]) -> N
         raw_schema = _schema_added[type(self)].model_dump()
 
         hints["NX_schema"] = raw_schema
-        hints["NX_class"] = raw_schema["nx_class"]
+        hints["NX_class"] = raw_schema["@nxclass"]
 
         return hints
 
