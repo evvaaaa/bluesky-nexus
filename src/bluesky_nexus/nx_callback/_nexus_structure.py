@@ -88,10 +88,10 @@ def _dict_recursive_get(dictionary: dict, *keys: str) -> Any:
 def _attribute_value(attribute: NxAttribute, object_data: ObjectData):
     if attribute.hints_key and object_data.hint:
         return _dict_recursive_get(cast(dict, object_data.hint), *attribute.hints_key)
-    if attribute.datakey and (
-        datakey := object_data.formatted_data_key_name_to_data.get(attribute.datakey)
+    if attribute.data_key and (
+        data_key := object_data.formatted_data_key_name_to_data.get(attribute.data_key)
     ):
-        return datakey.data
+        return data_key.data
     return attribute.constant
 
 
@@ -129,10 +129,10 @@ def _add_nx_object_data_to_group(
     group.attrs["nxclass"] = group_schema.nx_class
 
     for nx_field_schema in group_schema.nx_fields().values():
-        if nx_field_schema.datakey not in object_data.formatted_data_key_name_to_data:
+        if nx_field_schema.data_key not in object_data.formatted_data_key_name_to_data:
             continue
         data_key_data = object_data.formatted_data_key_name_to_data[
-            nx_field_schema.datakey
+            nx_field_schema.data_key
         ]
         group[nx_field_schema.nx_alias or object_name] = _new_nx_field(
             nx_field_schema, data_key_data, object_data
@@ -215,18 +215,18 @@ def add_stream_data_to_group(
         elif isinstance(object_data.nx_schema, NxField):
             # It has a single nx_field, no group...
             if (
-                object_data.nx_schema.datakey
+                object_data.nx_schema.data_key
                 not in object_data.formatted_data_key_name_to_data
             ):
                 logger.warning(
-                    f"Datakey `{object_data.nx_schema.datakey}` in schema not accounted"
-                    " for in an event stream captured... Skipping it."
+                    f"Datakey `{object_data.nx_schema.data_key}` in schema not "
+                    "accounted for in an event stream captured... Skipping it."
                 )
                 continue
             devices_group[object_name] = _new_nx_field(
                 object_data.nx_schema,
                 object_data.formatted_data_key_name_to_data[
-                    object_data.nx_schema.datakey
+                    object_data.nx_schema.data_key
                 ],
                 object_data,
                 object_name,

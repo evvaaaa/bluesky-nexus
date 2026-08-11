@@ -156,10 +156,10 @@ class NxBase(BaseModel, ABC):
                 case (key, value) if key in NxField.model_fields:
                     kwargs[key] = value
 
-                # A mapping of alias to datakey:
-                # e.g {some_alias: some_datakey}
+                # A mapping of alias to data_key:
+                # e.g {some_alias: some_data_key}
                 case (key, value) if isinstance(key, str) and isinstance(value, str):
-                    kwargs[key] = NxField(datakey=value, nx_alias=key)
+                    kwargs[key] = NxField(data_key=value, nx_alias=key)
 
                 case (key, value) if key not in NxField.model_fields:
                     pretty_key_value = pformat({key: value})
@@ -215,30 +215,30 @@ class NxAttribute(BaseModel):
     An attribute can come from one of three sources.
     * A constant specified in the schema, e.g `constant: "eV"`.
     * A key of the hints of a device, e.g `hints_key: ["md", "description"].
-    * A bluesky datakey, e.g `"datakey: some_datakey_on_the_object"
+    * A bluesky data_key, e.g `"data_key: some_data_key_on_the_object"
 
     """
 
     name: str = Field(pattern=r"^@.+$")
-    datakey: str | None = None
+    data_key: str | None = None
     hints_key: list[str] | str | None = None
     constant: Any = None
 
     @model_validator(mode="before")
     def _check_one_of_the_methods_is_defined(cls, values):
-        """Ensure nx_alias defaults to datakey when not provided."""
-        datakey = values.get("datakey")
+        """Ensure nx_alias defaults to data_key when not provided."""
+        data_key = values.get("data_key")
         hints_key = values.get("hints_key")
 
         constant = values.get("constant")
         provided_count = len(
-            [v for v in (datakey, hints_key, constant) if v is not None]
+            [v for v in (data_key, hints_key, constant) if v is not None]
         )
         if provided_count != 1:
             pretty_key_value = pformat(
                 {
                     values.get("name"): {
-                        "datakey": datakey,
+                        "data_key": data_key,
                         "hints_key": hints_key,
                         "constant": constant,
                     }
@@ -290,25 +290,25 @@ class NxGroup(NxBase):
 
 @add_nx_class_basemodel
 class NxField(NxBase):
-    """Represents a datakey which corresponds to a nexus field type.
+    """Represents a data_key which corresponds to a nexus field type.
 
     If the "@units" NxAttribute is not provided then it will be added
     by the callback using the defintion found in bluesky (if provided).
     """
 
-    datakey: str
-    """The bluesky datakey. The '<name>' in this string will be swapped with the
+    data_key: str
+    """The bluesky data_key. The '<name>' in this string will be swapped with the
     object name."""
 
     nx_alias: str = ""
-    """The name which is used as the alias. Will default to datakey
+    """The name which is used as the alias. Will default to data_key
     with object name stripped if not provided."""
 
     @model_validator(mode="before")
     def _set_default_alias(cls, values):
-        """Ensure nx_alias defaults to datakey when not provided."""
+        """Ensure nx_alias defaults to data_key when not provided."""
         if isinstance(values, dict) and not values.get("nx_alias"):
-            values["nx_alias"] = values.get("datakey")
+            values["nx_alias"] = values.get("data_key")
         return values
 
 

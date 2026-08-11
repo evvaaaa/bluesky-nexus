@@ -32,18 +32,18 @@ def _add_lists_mutably(list1: list, list2: list) -> None:
 @dataclass
 class DataKeyData:
     dtype: Dtype
-    """The datakey dtype."""
+    """The data_key dtype."""
 
     dtype_numpy: DtypeNumpy | list[DtypeNumpyItem] | None
 
     data: list[Any]
-    """Data measured for this datakey."""
+    """Data measured for this data_key."""
 
     timestamps: list[float]
-    """Timestamps measured for this datakey"""
+    """Timestamps measured for this data_key"""
 
     units: str | None
-    """The units for this datakey received through the descriptor."""
+    """The units for this data_key received through the descriptor."""
 
 
 def _new_schema_with_missing_fields(
@@ -52,27 +52,27 @@ def _new_schema_with_missing_fields(
     nx_schema: NxGroup,
 ) -> NxGroup:
     nx_alias_to_nx_field = nx_schema.all_nx_fields()
-    schema_specified_datakeys = {
-        nx_field.datakey: nx_field for nx_field in nx_alias_to_nx_field.values()
+    schema_specified_data_keys = {
+        nx_field.data_key: nx_field for nx_field in nx_alias_to_nx_field.values()
     }
 
     raw_schema = nx_schema.model_dump()
 
     for data_key_name in data_key_data:
-        if schema_specified_datakeys.get(data_key_name):
+        if schema_specified_data_keys.get(data_key_name):
             continue  # Already added manually.
 
         if data_key_name in DISALLOWED_ALIASES_AND_OBJECT_NAMES:
-            # The datakey with the object name stripped is not valid.
+            # The data_key with the object name stripped is not valid.
             logger.warning(
-                f"Cannot automatically add datakey {data_key_name}"
+                f"Cannot automatically add data_key {data_key_name}"
                 f"because it has a is disallowed name. It will be skipped."
             )
             continue
 
         raw_schema[data_key_name] = {
             "nx_class": "NXfield",
-            "datakey": data_key_name,
+            "data_key": data_key_name,
             "nx_alias": data_key_name or object_name,  # Special case if data key is ""
         }
 
@@ -88,7 +88,7 @@ def _separator_from_data_keys(
     for data_key_name in data_key_names:
         stripped_of_object_name = data_key_name.removeprefix(object_name)
         if stripped_of_object_name == "":
-            # We've found a datakey equal to the object name,
+            # We've found a data_key equal to the object name,
             # like on a PV positioner.
             continue
         separator = stripped_of_object_name[0]
@@ -96,7 +96,7 @@ def _separator_from_data_keys(
     return separator
 
 
-def _datakey_to_nx_formatted_datakey(
+def _data_key_to_nx_formatted_data_key(
     data_key_name: str, object_name: str, separator: str | None
 ) -> str:
     if data_key_name == object_name:
@@ -130,7 +130,7 @@ class ObjectData:
         # In practice the user won't do this, but it's allowed in event-model.
         if common := list(configuration_data_keys.keys() & read_data_keys.keys()):
             logger.warning(
-                f"Received datakeys {common} in both configuration and read datakeys. "
+                f"Received data_keys {common} in both configuration and read data_keys. "
                 "The writer will use the read data key."
             )
         all_data_keys = configuration_data_keys.copy()
@@ -141,7 +141,7 @@ class ObjectData:
         data_key_name_to_data: dict[str, DataKeyData] = {}
         formatted_data_key_name_to_data: dict[str, DataKeyData] = {}
 
-        # Parse all the datakey data.
+        # Parse all the data_key data.
         for data_key_name, data_key_value in all_data_keys.items():
             units = data_key_value.get("units")
             dtype = data_key_value["dtype"]  # type: ignore
@@ -167,10 +167,10 @@ class ObjectData:
                 units=units,
             )
             data_key_name_to_data[data_key_name] = data_key_data
-            formatted_datakey_name = _datakey_to_nx_formatted_datakey(
+            formatted_data_key_name = _data_key_to_nx_formatted_data_key(
                 data_key_name, object_name, separator
             )
-            formatted_data_key_name_to_data[formatted_datakey_name] = data_key_data
+            formatted_data_key_name_to_data[formatted_data_key_name] = data_key_data
 
         # Parse the nexus schema or make a new NXobject, add the missing keys
         # (if possible).
@@ -185,7 +185,7 @@ class ObjectData:
 
                 if isinstance(nx_schema, NxGroup):
                     # If the object's `nx_class` is a subclass of `NxGroup`,
-                    # instead of e.g an NxField directly, add this missing datakeys.
+                    # instead of e.g an NxField directly, add this missing data_keys.
                     nx_schema = _new_schema_with_missing_fields(
                         object_name, formatted_data_key_name_to_data, nx_schema
                     )
@@ -211,7 +211,7 @@ class ObjectData:
             only_key = next(iter(formatted_data_key_name_to_data))
             logger.debug(f"Creating new NxField schema for device {object_name}.")
             return ObjectData(
-                nx_schema=NxField(datakey=only_key),
+                nx_schema=NxField(data_key=only_key),
                 data_key_name_to_data=data_key_name_to_data,
                 formatted_data_key_name_to_data=formatted_data_key_name_to_data,
                 separator=separator,
@@ -249,8 +249,8 @@ class StreamData:
     def from_descriptor(cls, descriptor: EventDescriptor) -> "StreamData":
         """Parse descriptor into individual object data."""
         object_data = {}
-        # Sort so that longer datakeys are first.
-        # When we pull data out of events all the datakeys will be flat.
+        # Sort so that longer data_keys are first.
+        # When we pull data out of events all the data_keys will be flat.
         # We'll parse e.g "some-device" first (earlier in this list) before we parse
         # e.g "some-dev".
         for object_name, data_key_names in descriptor.get("object_keys", {}).items():

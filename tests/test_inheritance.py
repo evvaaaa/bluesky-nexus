@@ -23,7 +23,7 @@ def test_schema_single_inheritance():
             "the_odysee": {
                 "nx_class": "NXfield",
                 "@units": "lyrics",
-                "datakey": "signal_made_of_bronze",
+                "data_key": "signal_made_of_bronze",
             },
         }
     )
@@ -32,7 +32,7 @@ def test_schema_single_inheritance():
 
     expected_grandma_schema = {
         "the_odysee": {
-            "datakey": "signal_made_of_bronze",
+            "data_key": "signal_made_of_bronze",
             "nx_alias": "the_odysee",
             "nx_class": "NXfield",
             "@units": "lyrics",
@@ -57,7 +57,7 @@ def test_schema_single_inheritance():
 
     expected_mama_schema = {
         "beowulf": {
-            "datakey": "signal_made_of_iron",
+            "data_key": "signal_made_of_iron",
             "nx_alias": "beowulf",
             "nx_class": "NXfield",
         },
@@ -89,7 +89,7 @@ def test_schema_single_inheritance():
 
     expected_me_schema = {
         "pride_and_prejudice": {
-            "datakey": "signal_made_of_steel",
+            "data_key": "signal_made_of_steel",
             "nx_alias": "pride_and_prejudice",
             "nx_class": "NXfield",
         },
@@ -99,7 +99,7 @@ def test_schema_single_inheritance():
         "nx_class": "NXobject",
         "new_movie": {  # We can override fields from the parent
             "nx_class": "NXfield",
-            "datakey": "signal_made_of_bronze",
+            "data_key": "signal_made_of_bronze",
             "nx_alias": "new_movie",
         },
     }
@@ -117,7 +117,7 @@ def test_schema_single_inheritance():
     expected_auntie_schema = {
         "nx_class": "NXobject",
         "beowulf": {
-            "datakey": "signal_made_of_iron",
+            "data_key": "signal_made_of_iron",
             "nx_alias": "beowulf",
             "nx_class": "NXfield",
         },
@@ -134,7 +134,7 @@ def test_schema_single_inheritance():
     expected_me_schema = {
         "nx_class": "NXobject",
         "pride_and_prejudice": {
-            "datakey": "signal_made_of_steel",
+            "data_key": "signal_made_of_steel",
             "nx_alias": "pride_and_prejudice",
             "nx_class": "NXfield",
         },
@@ -169,7 +169,7 @@ def test_schema_multi_inheritance():
                 "signaln1": "value11",
                 "signal": {
                     "nx_class": "NXfield",
-                    "datakey": "signal",
+                    "data_key": "signal",
                     "@attrnm": "value11",
                     "@attr1n": "value11",
                     "@attrn1": "value11",
@@ -195,7 +195,7 @@ def test_schema_multi_inheritance():
                 "signaln2": "value12",
                 "signal": {
                     "nx_class": "NXfield",
-                    "datakey": "signal",
+                    "data_key": "signal",
                     "@attrnm": "value12",
                     "@attr1n": "value12",
                     "@attrn2": "value12",
@@ -219,7 +219,7 @@ def test_schema_multi_inheritance():
                 "signal1": "value1",
                 "signal": {
                     "nx_class": "NXfield",
-                    "datakey": "signal",
+                    "data_key": "signal",
                     "@attrn": "value1",
                     "@attr1": "value1",
                 },
@@ -243,7 +243,7 @@ def test_schema_multi_inheritance():
                 "signaln1": "value21",
                 "signal": {
                     "nx_class": "NXfield",
-                    "datakey": "signal",
+                    "data_key": "signal",
                     "@attrnm": "value21",
                     "@attr2n": "value21",
                     "@attrn1": "value21",
@@ -269,7 +269,7 @@ def test_schema_multi_inheritance():
                 "signaln2": "value22",
                 "signal": {
                     "nx_class": "NXfield",
-                    "datakey": "signal",
+                    "data_key": "signal",
                     "@attrnm": "value22",
                     "@attr2n": "value22",
                     "@attrn2": "value22",
@@ -293,7 +293,7 @@ def test_schema_multi_inheritance():
                 "signal2": "value2",
                 "signal": {
                     "nx_class": "NXfield",
-                    "datakey": "signal",
+                    "data_key": "signal",
                     "@attrn": "value2",
                     "@attr2": "value2",
                 },
@@ -326,123 +326,123 @@ def test_schema_multi_inheritance():
             "signal": {
                 "@attr1": {
                     "constant": "value1",
-                    "datakey": None,
+                    "data_key": None,
                     "hints_key": None,
                     "name": "@attr1",
                 },
                 "@attr1n": {
                     "constant": "value11",
-                    "datakey": None,
+                    "data_key": None,
                     "hints_key": None,
                     "name": "@attr1n",
                 },
                 "@attr2": {
                     "constant": "value2",
-                    "datakey": None,
+                    "data_key": None,
                     "hints_key": None,
                     "name": "@attr2",
                 },
                 "@attr2n": {
                     "constant": "value21",
-                    "datakey": None,
+                    "data_key": None,
                     "hints_key": None,
                     "name": "@attr2n",
                 },
                 "@attrn": {
                     "constant": "value1",
-                    "datakey": None,
+                    "data_key": None,
                     "hints_key": None,
                     "name": "@attrn",
                 },
                 "@attrn1": {
                     "constant": "value11",
-                    "datakey": None,
+                    "data_key": None,
                     "hints_key": None,
                     "name": "@attrn1",
                 },
                 "@attrn2": {
                     "constant": "value12",
-                    "datakey": None,
+                    "data_key": None,
                     "hints_key": None,
                     "name": "@attrn2",
                 },
                 "@attrnm": {
                     "constant": "value11",
-                    "datakey": None,
+                    "data_key": None,
                     "hints_key": None,
                     "name": "@attrnm",
                 },
-                "datakey": "signal",
+                "data_key": "signal",
                 "nx_alias": "signal",
                 "nx_class": "NXfield",
             },
             "signal1": {
-                "datakey": "value1",
+                "data_key": "value1",
                 "nx_alias": "signal1",
                 "nx_class": "NXfield",
             },
             "signal1n": {
-                "datakey": "value11",
+                "data_key": "value11",
                 "nx_alias": "signal1n",
                 "nx_class": "NXfield",
             },
             "signal2": {
-                "datakey": "value2",
+                "data_key": "value2",
                 "nx_alias": "signal2",
                 "nx_class": "NXfield",
             },
             "signal2n": {
-                "datakey": "value21",
+                "data_key": "value21",
                 "nx_alias": "signal2n",
                 "nx_class": "NXfield",
             },
             "signaln": {
-                "datakey": "value1",
+                "data_key": "value1",
                 "nx_alias": "signaln",
                 "nx_class": "NXfield",
             },
             "signaln1": {
-                "datakey": "value11",
+                "data_key": "value11",
                 "nx_alias": "signaln1",
                 "nx_class": "NXfield",
             },
             "signaln2": {
-                "datakey": "value12",
+                "data_key": "value12",
                 "nx_alias": "signaln2",
                 "nx_class": "NXfield",
             },
             "signalnm": {
-                "datakey": "value11",
+                "data_key": "value11",
                 "nx_alias": "signalnm",
                 "nx_class": "NXfield",
             },
         },
         "nx_class": "NXobject",
-        "signal1": {"datakey": "value1", "nx_alias": "signal1", "nx_class": "NXfield"},
+        "signal1": {"data_key": "value1", "nx_alias": "signal1", "nx_class": "NXfield"},
         "signal1n": {
-            "datakey": "value11",
+            "data_key": "value11",
             "nx_alias": "signal1n",
             "nx_class": "NXfield",
         },
-        "signal2": {"datakey": "value2", "nx_alias": "signal2", "nx_class": "NXfield"},
+        "signal2": {"data_key": "value2", "nx_alias": "signal2", "nx_class": "NXfield"},
         "signal2n": {
-            "datakey": "value21",
+            "data_key": "value21",
             "nx_alias": "signal2n",
             "nx_class": "NXfield",
         },
-        "signaln": {"datakey": "value1", "nx_alias": "signaln", "nx_class": "NXfield"},
+        "signaln": {"data_key": "value1", "nx_alias": "signaln", "nx_class": "NXfield"},
         "signaln1": {
-            "datakey": "value11",
+            "data_key": "value11",
             "nx_alias": "signaln1",
             "nx_class": "NXfield",
         },
         "signaln2": {
-            "datakey": "value12",
+            "data_key": "value12",
             "nx_alias": "signaln2",
             "nx_class": "NXfield",
         },
         "signalnm": {
-            "datakey": "value11",
+            "data_key": "value11",
             "nx_alias": "signalnm",
             "nx_class": "NXfield",
         },

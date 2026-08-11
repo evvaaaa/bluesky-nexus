@@ -136,7 +136,7 @@ def test_simple_nx_detector(
     @NexusDevice.from_dictionary(
         {
             "nx_class": "NXdetector",
-            "data": {"nx_class": "NXfield", "datakey": "channel-1-value"},
+            "data": {"nx_class": "NXfield", "data_key": "channel-1-value"},
         }
     )
     class NxSimPointDetector(SimPointDetector):
@@ -177,7 +177,7 @@ def test_device_with_only_one_field_schema(
     """Demonstrates that the tree structure doesn't require a group."""
 
     @NexusDevice.from_dictionary(
-        {"nx_class": "NXfield", "datakey": "", "nx_alias": passed_alias}
+        {"nx_class": "NXfield", "data_key": "", "nx_alias": passed_alias}
     )
     class MyPositioner(StandardReadable):
         def __init__(self, name: str):
@@ -192,7 +192,7 @@ def test_device_with_only_one_field_schema(
     assert device.hints == {
         "NX_class": "NXfield",
         "NX_schema": {
-            "datakey": "",
+            "data_key": "",
             "nx_alias": expected_alias,
             "nx_class": "NXfield",
         },
@@ -282,7 +282,7 @@ def test_constant_attributes(RE_directly_subscribed: RunEngine, tmpdir):
             "@description": "Some constant description",
             "sim_motor_with_description": {
                 "nx_class": "NXfield",
-                "datakey": "",
+                "data_key": "",
                 "@units": "overriden",
                 "@long_name": "Long motor name",
                 "@non_standard_attr": 7,
@@ -372,14 +372,14 @@ def test_attributes_from_hints(RE_directly_subscribed: RunEngine, tmpdir):
     )
 
 
-def test_attributes_from_datakeys(RE_directly_subscribed: RunEngine, tmpdir):
+def test_attributes_from_data_keys(RE_directly_subscribed: RunEngine, tmpdir):
     @NexusDevice.from_dictionary(
         {
             "nx_class": "NXobject",
             "readback": {
                 "nx_class": "NXfield",
-                "datakey": "readback",
-                "@units": {"datakey": "egu"},
+                "data_key": "readback",
+                "@units": {"data_key": "egu"},
             },
         }
     )
