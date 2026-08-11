@@ -4,6 +4,7 @@ from bluesky import RunEngine
 from bluesky import plans as bp
 from ophyd import Component as Cpt
 from ophyd import Device, EpicsSignal
+from ophyd.sim import SynAxis
 from ophyd_async.core import StandardReadableFormat as Fmt
 from ophyd_async.epics.core import epics_signal_r
 from ophyd_async.epics.motor import Motor
@@ -94,7 +95,7 @@ def test_schema_single_inheritance():
         },
     }
     expected_me_schema.update(expected_mama_schema)
-    expected_me_schema["the_odysee"] = {
+    expected_me_schema["the_odysee"] = {  # type: ignore
         "nx_class": "NXobject",
         "new_movie": {  # We can override fields from the parent
             "nx_class": "NXfield",
@@ -158,120 +159,292 @@ def test_schema_multi_inheritance():
     @NexusDevice.from_dictionary(
         {
             "nx_class": "NXobject",
-            "grandma_on_dads_side_signal": None,
-            "override_group_on_dads_side": {
+            "signalnm": "value11",
+            "signal1n": "value11",
+            "signaln1": "value11",
+            "GROUP": {
                 "nx_class": "NXobject",
-                "signal_dad_grandma": None,
-                "signal_from_grandma": None,
+                "signalnm": "value11",
+                "signal1n": "value11",
+                "signaln1": "value11",
+                "signal": {
+                    "nx_class": "NXfield",
+                    "datakey": "signal",
+                    "@attrnm": "value11",
+                    "@attr1n": "value11",
+                    "@attrn1": "value11",
+                },
             },
         },
     )
-    class GrandmaOnDadsSide(Device):
-        grandparent_int = 0
+    class Device11(Device):
+        device_n_m_int = 11
+        device_1_n_int = 11
+        device_n_1_int = 11
 
     @NexusDevice.from_dictionary(
         {
             "nx_class": "NXobject",
-            "granddad_on_dads_side_signal": None,
-            "override_group_on_dads_side": {
+            "signalnm": "value12",
+            "signal1n": "value12",
+            "signaln2": "value12",
+            "GROUP": {
                 "nx_class": "NXobject",
-                "signal_dad_granddad": None,
+                "signalnm": "value12",
+                "signal1n": "value12",
+                "signaln2": "value12",
+                "signal": {
+                    "nx_class": "NXfield",
+                    "datakey": "signal",
+                    "@attrnm": "value12",
+                    "@attr1n": "value12",
+                    "@attrn2": "value12",
+                },
             },
-        }
+        },
     )
-    class GranddadOnDadsSide(Device):
-        grandparent_int = 1
+    class Device12(Device):
+        device_n_m_int = 12
+        device_1_n_int = 12
+        device_n_2_int = 12
 
     @NexusDevice.from_dictionary(
         {
             "nx_class": "NXobject",
-            "dad_signal": None,
-        }
+            "signaln": "value1",
+            "signal1": "value1",
+            "GROUP": {
+                "nx_class": "NXobject",
+                "signaln": "value1",
+                "signal1": "value1",
+                "signal": {
+                    "nx_class": "NXfield",
+                    "datakey": "signal",
+                    "@attrn": "value1",
+                    "@attr1": "value1",
+                },
+            },
+        },
     )
-    class Dad(GrandmaOnDadsSide, GranddadOnDadsSide):
-        direct_parent_int = 0
+    class Device1(Device11, Device12):
+        device_n_int = 1
+        device_1_int = 1
 
     @NexusDevice.from_dictionary(
         {
             "nx_class": "NXobject",
-            "grandma_on_mums_side_signal": None,
-            "override_group_on_mums_side": {
+            "signalnm": "value21",
+            "signal2n": "value21",
+            "signaln1": "value21",
+            "GROUP": {
                 "nx_class": "NXobject",
-                "signal_mum_grandma": None,
-                "@units": "from grandma",
+                "signalnm": "value21",
+                "signal2n": "value21",
+                "signaln1": "value21",
+                "signal": {
+                    "nx_class": "NXfield",
+                    "datakey": "signal",
+                    "@attrnm": "value21",
+                    "@attr2n": "value21",
+                    "@attrn1": "value21",
+                },
             },
-        }
+        },
     )
-    class GrandmaOnMumsSide(Device):
-        grandparent_int = 2
+    class Device21(Device):
+        device_n_m_int = 21
+        device_2_n_int = 21
+        device_n_1_int = 21
 
     @NexusDevice.from_dictionary(
         {
             "nx_class": "NXobject",
-            "granddad_on_mums_side_signal": None,
-            "override_group_on_mums_side": {
+            "signalnm": "value22",
+            "signal2n": "value22",
+            "signaln2": "value22",
+            "GROUP": {
                 "nx_class": "NXobject",
-                "signal_mum_grandad": None,
+                "signalnm": "value22",
+                "signal2n": "value22",
+                "signaln2": "value22",
+                "signal": {
+                    "nx_class": "NXfield",
+                    "datakey": "signal",
+                    "@attrnm": "value22",
+                    "@attr2n": "value22",
+                    "@attrn2": "value22",
+                },
             },
-        }
+        },
     )
-    class GranddadOnMumsSide(Device):
-        grandparent_int = 3
+    class Device22(Device):
+        device_n_m_int = 22
+        device_2_n_int = 22
+        device_n_2_int = 22
 
     @NexusDevice.from_dictionary(
-        {"nx_class": "NXgroup", "mum_signal": None}, inherit=False
+        {
+            "nx_class": "NXobject",
+            "signaln": "value2",
+            "signal2": "value2",
+            "GROUP": {
+                "nx_class": "NXobject",
+                "signaln": "value2",
+                "signal2": "value2",
+                "signal": {
+                    "nx_class": "NXfield",
+                    "datakey": "signal",
+                    "@attrn": "value2",
+                    "@attr2": "value2",
+                },
+            },
+        },
     )
-    class Mum(GrandmaOnMumsSide, GranddadOnMumsSide):
-        direct_parent_int = 1
+    class Device2(Device21, Device22):
+        device_n_int = 2
+        device_2_int = 2
 
-    class Me(Dad, Mum): ...
+    class InheritedButNotWrapped(Device1, Device2): ...
 
-    me = Me("ME", name="me")
+    device = InheritedButNotWrapped("P", name="device")
+    assert device.device_2_int == 2
+    assert device.device_1_int == 1
+    assert device.device_n_int == 1  # Prefers left
 
-    assert me.grandparent_int == 0
+    assert device.device_n_m_int == 11  # Prefers left all the way up
 
-    # Inheritence treats left as more important in the mro.
-    # So do we.
-    assert me.direct_parent_int == 0
-    assert me.hints["NX_schema"] == {
-        "dad_signal": {
-            "datakey": "dad_signal",
-            "nx_alias": "dad_signal",
-            "nx_class": "NXfield",
-        },
-        "granddad_on_dads_side_signal": {
-            "datakey": "granddad_on_dads_side_signal",
-            "nx_alias": "granddad_on_dads_side_signal",
-            "nx_class": "NXfield",
-        },
-        "grandma_on_dads_side_signal": {
-            "datakey": "grandma_on_dads_side_signal",
-            "nx_alias": "grandma_on_dads_side_signal",
-            "nx_class": "NXfield",
-        },
-        "mum_signal": {
-            "datakey": "mum_signal",
-            "nx_alias": "mum_signal",
-            "nx_class": "NXfield",
+    # Prefers left on this level
+    assert device.device_1_n_int == 11
+    assert device.device_2_n_int == 21
+    assert device.device_n_1_int == 11
+    assert device.device_n_2_int == 12
+
+    # The schema follows the same behaviour with overriding...
+    assert device.hints["NX_schema"] == {
+        "GROUP": {
+            "nx_class": "NXobject",
+            "signal": {
+                "@attr1": {
+                    "constant": "value1",
+                    "datakey": None,
+                    "hints_key": None,
+                    "name": "@attr1",
+                },
+                "@attr1n": {
+                    "constant": "value11",
+                    "datakey": None,
+                    "hints_key": None,
+                    "name": "@attr1n",
+                },
+                "@attr2": {
+                    "constant": "value2",
+                    "datakey": None,
+                    "hints_key": None,
+                    "name": "@attr2",
+                },
+                "@attr2n": {
+                    "constant": "value21",
+                    "datakey": None,
+                    "hints_key": None,
+                    "name": "@attr2n",
+                },
+                "@attrn": {
+                    "constant": "value1",
+                    "datakey": None,
+                    "hints_key": None,
+                    "name": "@attrn",
+                },
+                "@attrn1": {
+                    "constant": "value11",
+                    "datakey": None,
+                    "hints_key": None,
+                    "name": "@attrn1",
+                },
+                "@attrn2": {
+                    "constant": "value12",
+                    "datakey": None,
+                    "hints_key": None,
+                    "name": "@attrn2",
+                },
+                "@attrnm": {
+                    "constant": "value11",
+                    "datakey": None,
+                    "hints_key": None,
+                    "name": "@attrnm",
+                },
+                "datakey": "signal",
+                "nx_alias": "signal",
+                "nx_class": "NXfield",
+            },
+            "signal1": {
+                "datakey": "value1",
+                "nx_alias": "signal1",
+                "nx_class": "NXfield",
+            },
+            "signal1n": {
+                "datakey": "value11",
+                "nx_alias": "signal1n",
+                "nx_class": "NXfield",
+            },
+            "signal2": {
+                "datakey": "value2",
+                "nx_alias": "signal2",
+                "nx_class": "NXfield",
+            },
+            "signal2n": {
+                "datakey": "value21",
+                "nx_alias": "signal2n",
+                "nx_class": "NXfield",
+            },
+            "signaln": {
+                "datakey": "value1",
+                "nx_alias": "signaln",
+                "nx_class": "NXfield",
+            },
+            "signaln1": {
+                "datakey": "value11",
+                "nx_alias": "signaln1",
+                "nx_class": "NXfield",
+            },
+            "signaln2": {
+                "datakey": "value12",
+                "nx_alias": "signaln2",
+                "nx_class": "NXfield",
+            },
+            "signalnm": {
+                "datakey": "value11",
+                "nx_alias": "signalnm",
+                "nx_class": "NXfield",
+            },
         },
         "nx_class": "NXobject",
-        "override_group_on_dads_side": {
-            "nx_class": "NXobject",
-            "signal_dad_granddad": {
-                "datakey": "signal_dad_granddad",
-                "nx_alias": "signal_dad_granddad",
-                "nx_class": "NXfield",
-            },
-            "signal_dad_grandma": {
-                "datakey": "signal_dad_grandma",
-                "nx_alias": "signal_dad_grandma",
-                "nx_class": "NXfield",
-            },
-            "signal_from_grandma": {
-                "datakey": "signal_from_grandma",
-                "nx_alias": "signal_from_grandma",
-                "nx_class": "NXfield",
-            },
+        "signal1": {"datakey": "value1", "nx_alias": "signal1", "nx_class": "NXfield"},
+        "signal1n": {
+            "datakey": "value11",
+            "nx_alias": "signal1n",
+            "nx_class": "NXfield",
+        },
+        "signal2": {"datakey": "value2", "nx_alias": "signal2", "nx_class": "NXfield"},
+        "signal2n": {
+            "datakey": "value21",
+            "nx_alias": "signal2n",
+            "nx_class": "NXfield",
+        },
+        "signaln": {"datakey": "value1", "nx_alias": "signaln", "nx_class": "NXfield"},
+        "signaln1": {
+            "datakey": "value11",
+            "nx_alias": "signaln1",
+            "nx_class": "NXfield",
+        },
+        "signaln2": {
+            "datakey": "value12",
+            "nx_alias": "signaln2",
+            "nx_class": "NXfield",
+        },
+        "signalnm": {
+            "datakey": "value11",
+            "nx_alias": "signalnm",
+            "nx_class": "NXfield",
         },
     }
 
@@ -301,6 +474,7 @@ def test_schema_single_inheritance_on_device(
 
     @NexusDevice.from_dictionary(
         {
+            "nx_class": "NXpositioner",
             "SUB_GROUP": {"nx_class": "NXobject", "value_at_open": "open_value"},
         }
     )
@@ -346,3 +520,35 @@ def test_schema_single_inheritance_on_device(
         "velocity",
     ]
     assert list(loaded["shutter_differing"]["SUB_GROUP"]) == ["value_at_open"]
+
+
+def test_description_accross_whole_codebase(
+    RE_directly_subscribed: RuntimeError, tmpdir: Path, monkeypatch
+):
+    # Makeing a new class only to avoid persistence problems in pytest
+    # (monkeypatch is annoying here). This test demonstrates that if I
+    # were to have added description to device in a centralized
+    # device package, I wouldn't have to add the description to any
+    # other devices read.
+    @NexusDevice.from_dictionary(
+        {"nx_class": "NXgroup", "@description": {"hints_key": ["md", "description"]}}
+    )
+    class ThisWouldBeTheRealDeviceInThePackage(Device): ...
+
+    class SynAxisWouldUseTheAbove(ThisWouldBeTheRealDeviceInThePackage, SynAxis): ...
+
+    description = (
+        "This description was added from the patch to ophyd device. "
+        "We can have it in all devices accross the codebase for free."
+    )
+
+    device = SynAxisWouldUseTheAbove(name="device")  # type: ignore
+    device.md = {"description": description}
+
+    RE_directly_subscribed(bp.count([device], num=3))  # type: ignore
+
+    loaded = load_only_generated_nexus_file(tmpdir)["entry"]["primary"]["devices"][
+        "device"
+    ]
+    assert list(loaded.attrs) == ["description", "nxclass"]
+    assert loaded.attrs["description"] == description

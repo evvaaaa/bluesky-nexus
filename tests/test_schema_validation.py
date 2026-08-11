@@ -8,6 +8,7 @@ from ophyd_async.sim import SimPointDetector
 from pydantic import ValidationError
 
 from bluesky_nexus import NexusDevice
+from bluesky_nexus.nx_schema.nx_base import NxBase
 
 
 @pytest.mark.parametrize(
@@ -78,3 +79,181 @@ def test_attempt_with_unknown_schema_from_client():
         @NexusDevice.from_dictionary({"nx_class": "NXbanana", "length": "length"})
         class BananaMotor(SynAxis):
             pass
+
+
+def test_schema_addition():
+    nx_group = NxBase.from_dict(
+        {
+            "nx_class": "NXgroup",
+            "@nx_group_constant_attribute": {"constant": "nx_group_constant"},
+            "SUB_GROUP": {
+                "nx_class": "NXgroup",
+                "field1": {
+                    "nx_class": "NXfield",
+                    "datakey": "nx_group_datakey1",
+                    "@attribute11": "nx_group_attribute11",
+                },
+            },
+            "field2": {
+                "nx_class": "NXfield",
+                "datakey": "nx_group_datakey2",
+                "@attribute21": "nx_group_attribute21",
+                "@attribute22": "nx_group_attribute22",
+            },
+        }
+    )
+    nx_object = NxBase.from_dict(
+        {
+            "nx_class": "NXobject",
+            "@nx_group_constant_attribute": {"hints_key": "nx_object_hints_key"},
+            "@nx_object_constant_attribute": {"constant": "nx_object_constant"},
+            "SUB_GROUP": {
+                "nx_class": "NXobject",
+                "field1": {
+                    "nx_class": "NXfield",
+                    "datakey": "nx_object_datakey1",
+                    "@attribute11": "nx_object_attribute11",
+                    "@attribute12": "nx_object_attribute12",
+                },
+                "field2": {
+                    "nx_class": "NXfield",
+                    "datakey": "nx_object_datakey3",
+                    "@attribute31": "nx_object_attribute31",
+                },
+            },
+            "field2": {
+                "nx_class": "NXfield",
+                "datakey": "nx_object_datakey2",
+                "@attribute21": "nx_object_attribute21",
+                "@attribute22": "nx_object_attribute22",
+            },
+        }
+    )
+
+    assert (nx_group + nx_object).model_dump() == {
+        "@nx_group_constant_attribute": {
+            "constant": "nx_group_constant",
+            "datakey": None,
+            "hints_key": None,
+            "name": "@nx_group_constant_attribute",
+        },
+        "@nx_object_constant_attribute": {
+            "constant": "nx_object_constant",
+            "datakey": None,
+            "hints_key": None,
+            "name": "@nx_object_constant_attribute",
+        },
+        "SUB_GROUP": {
+            "field1": {
+                "@attribute11": {
+                    "constant": "nx_group_attribute11",
+                    "datakey": None,
+                    "hints_key": None,
+                    "name": "@attribute11",
+                },
+                "@attribute12": {
+                    "constant": "nx_object_attribute12",
+                    "datakey": None,
+                    "hints_key": None,
+                    "name": "@attribute12",
+                },
+                "datakey": "nx_group_datakey1",
+                "nx_alias": "field1",
+                "nx_class": "NXfield",
+            },
+            "field2": {
+                "@attribute31": {
+                    "constant": "nx_object_attribute31",
+                    "datakey": None,
+                    "hints_key": None,
+                    "name": "@attribute31",
+                },
+                "datakey": "nx_object_datakey3",
+                "nx_alias": "field2",
+                "nx_class": "NXfield",
+            },
+            "nx_class": "NXgroup",
+        },
+        "field2": {
+            "@attribute21": {
+                "constant": "nx_group_attribute21",
+                "datakey": None,
+                "hints_key": None,
+                "name": "@attribute21",
+            },
+            "@attribute22": {
+                "constant": "nx_group_attribute22",
+                "datakey": None,
+                "hints_key": None,
+                "name": "@attribute22",
+            },
+            "datakey": "nx_group_datakey2",
+            "nx_alias": "field2",
+            "nx_class": "NXfield",
+        },
+        "nx_class": "NXgroup",
+    }
+
+    assert (nx_object + nx_group).model_dump() == {
+        "@nx_group_constant_attribute": {
+            "constant": None,
+            "datakey": None,
+            "hints_key": "nx_object_hints_key",
+            "name": "@nx_group_constant_attribute",
+        },
+        "@nx_object_constant_attribute": {
+            "constant": "nx_object_constant",
+            "datakey": None,
+            "hints_key": None,
+            "name": "@nx_object_constant_attribute",
+        },
+        "SUB_GROUP": {
+            "field1": {
+                "@attribute11": {
+                    "constant": "nx_object_attribute11",
+                    "datakey": None,
+                    "hints_key": None,
+                    "name": "@attribute11",
+                },
+                "@attribute12": {
+                    "constant": "nx_object_attribute12",
+                    "datakey": None,
+                    "hints_key": None,
+                    "name": "@attribute12",
+                },
+                "datakey": "nx_object_datakey1",
+                "nx_alias": "field1",
+                "nx_class": "NXfield",
+            },
+            "field2": {
+                "@attribute31": {
+                    "constant": "nx_object_attribute31",
+                    "datakey": None,
+                    "hints_key": None,
+                    "name": "@attribute31",
+                },
+                "datakey": "nx_object_datakey3",
+                "nx_alias": "field2",
+                "nx_class": "NXfield",
+            },
+            "nx_class": "NXobject",
+        },
+        "field2": {
+            "@attribute21": {
+                "constant": "nx_object_attribute21",
+                "datakey": None,
+                "hints_key": None,
+                "name": "@attribute21",
+            },
+            "@attribute22": {
+                "constant": "nx_object_attribute22",
+                "datakey": None,
+                "hints_key": None,
+                "name": "@attribute22",
+            },
+            "datakey": "nx_object_datakey2",
+            "nx_alias": "field2",
+            "nx_class": "NXfield",
+        },
+        "nx_class": "NXobject",
+    }

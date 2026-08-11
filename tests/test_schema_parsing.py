@@ -347,7 +347,7 @@ def test_attributes_from_hints(RE_directly_subscribed: RunEngine, tmpdir):
     @NexusDevice.from_dictionary(
         {
             "nx_class": "NXobject",
-            "@description": {"hints_key": ["metadata", "description"]},
+            "@description": {"hints_key": ["md", "description"]},
         }
     )
     class SynAxisWithDescription(SynAxis): ...

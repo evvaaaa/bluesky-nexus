@@ -132,6 +132,7 @@ class NxBase(BaseModel, ABC):
 
                     else:
                         kwargs[key] = NxAttribute(name=key, constant=value)
+
                     # TODO: Check that the value is an acceptable on for
                     # nexus schema and raise this error otherwise.
                     # else:
@@ -146,10 +147,10 @@ class NxBase(BaseModel, ABC):
                 case (key, value) if isinstance(value, dict):  # A subgroup.
                     kwargs[key] = NxBase._from_dict(value, parent_key=key)  # type: ignore
 
-                # The bluesky datakey with no alias or units:
-                # e.g {nx_class: NXobject, some_data: None}
+                # No value provided, this field/subgroup was probably specified in
+                # the schema but not provided.
                 case (key, None) if key not in NxField.model_fields:
-                    kwargs[key] = NxField(datakey=key)
+                    pass
 
                 # This is one of the other keys in the `NxField`
                 case (key, value) if key in NxField.model_fields:
@@ -175,6 +176,37 @@ class NxBase(BaseModel, ABC):
     def nx_attributes(self) -> dict[str, NxAttribute]:
         """Gives a dict of the nx attributes defined on this object."""
         return {k: v for k, v in self if isinstance(v, NxAttribute)}
+
+    def __add__(self, other: Self) -> Self:
+        """
+        Add one group to another, treating the left group
+        with priority in the case of conflicts.
+        """
+        in_progress = self.model_dump()
+
+        for other_key, other_value in other:
+            # We only care about nexus attributes
+            # (attributes in the python sense).
+
+            our_value = getattr(self, other_key, None)
+
+            print(other_key, other_value, our_value)
+            # The key is entirely new.
+            if our_value is None:
+                in_progress[other_key] = (
+                    other_value.model_dump()
+                    if isinstance(other_value, NxBase | NxAttribute)
+                    else other_value
+                )
+
+            elif (
+                isinstance(our_value, NxGroup) and isinstance(other_value, NxGroup)
+            ) or (isinstance(our_value, NxField) and isinstance(other_value, NxField)):
+                # The value may be different different,
+                # but similar enough that we can try to merge them.
+                in_progress[other_key] = (our_value + other_value).model_dump()  # type: ignore
+
+        return type(self).from_dict(in_progress)
 
 
 class NxAttribute(BaseModel):

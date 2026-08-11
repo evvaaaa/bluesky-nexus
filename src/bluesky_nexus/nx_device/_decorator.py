@@ -1,6 +1,5 @@
 """A decorator for applying nexus schema to device."""
 
-import copy
 import weakref
 from collections.abc import Callable
 from pathlib import Path
@@ -10,31 +9,13 @@ import yaml
 from bluesky.protocols import HasHints
 from event_model import PerObjectHint
 
-from bluesky_nexus.nx_schema.nx_base import NxGroup
+from bluesky_nexus.nx_schema._nx_classes.nx_object import NxObject
+from bluesky_nexus.nx_schema.nx_base import NxBase
 
 T = TypeVar("T")
 
 
-def _deep_update_raw_schema(destination: dict, source: dict, prefer_source) -> None:
-    """
-    Recursively update `destination` with values from `source,`
-    mutating the destination.
-    """
-    for source_key, source_value in source.items():
-        destination_value = destination.get(source_key)
-        if isinstance(source_value, dict) and isinstance(destination_value, dict):
-            if (source_value.get("nx_class") == "NXfield") ^ (
-                destination_value.get("nx_class") == "NXfield"
-            ):
-                if prefer_source:
-                    destination[source_key] = source_value
-            else:
-                _deep_update_raw_schema(destination_value, source_value, prefer_source)
-        elif (not prefer_source and destination_value is None) or prefer_source:
-            destination[source_key] = source_value
-
-
-_schema_added: weakref.WeakKeyDictionary[type[HasHints], dict] = (
+_schema_added: weakref.WeakKeyDictionary[type[HasHints], NxBase] = (
     weakref.WeakKeyDictionary()
 )
 _inheritance_structure: weakref.WeakKeyDictionary[type[HasHints], bool] = (
@@ -42,50 +23,46 @@ _inheritance_structure: weakref.WeakKeyDictionary[type[HasHints], bool] = (
 )
 
 
-def _parse_parents_schema(cls: type[T], sofar: dict):
-    for direct_parent in reversed(cls.__bases__):
-        # If inherit=False don't look through the parents.
-        # If the below is None then the wrapper wasn't called
-        # on that parent class, but may have been on one of it's parents.
+def _sum_parent_schema(cls: type[T], schema: NxBase | None = None) -> NxBase | None:
+    for direct_parent in cls.__bases__:
         if _inheritance_structure.get(direct_parent) is not False:
-            _parse_parents_schema(direct_parent, sofar)
+            maybe_parent_schema = _sum_parent_schema(direct_parent, schema=schema)
+            if maybe_parent_schema and schema:
+                schema += maybe_parent_schema
+            elif not schema and maybe_parent_schema:
+                schema = maybe_parent_schema
 
         if schema_added := _schema_added.get(direct_parent):
-            _deep_update_raw_schema(sofar, schema_added, True)
+            if schema:
+                schema += schema_added
+            else:
+                schema = schema_added
+
+    return schema
 
 
-def _add_inherited_schema(device_cls: type[HasHints], schema: dict):
-    schema_with_parents: dict = {}
-    _parse_parents_schema(device_cls, schema_with_parents)
-    _deep_update_raw_schema(schema, schema_with_parents, False)
-
-
-def _add_nx_schema_and_device_metadata_to_hints(
-    device_cls: type[T], schema: dict
-) -> None:
+def _add_nx_schema_getter_and_device_metadata_to_hints(device_cls: type[T]) -> None:
     original = device_cls.hints  # type: ignore
 
     @property  # type: ignore
     def new_hints(self: HasHints) -> PerObjectHint:
         hints = original.__get__(self).copy()
+        if hasattr(self, "md"):
+            hints["md"] = self.md  # type: ignore
 
         if type(self) not in _schema_added:
             # This is a subclass of the device which was wrapped,
             # but wasn't itself wrapped.
-            # To support multiinheritance, look up the schema from
+            # To support multinheritance, look up the schema from
             # the baseclasses.
-            new_schema: dict = {}
-            _parse_parents_schema(type(self), new_schema)
-            _schema_added[type(self)] = new_schema
+            new_schema = _sum_parent_schema(type(self))
 
-        schema = _schema_added[type(self)]
+            _schema_added[type(self)] = new_schema or NxObject()
 
-        hints = copy.deepcopy(original.__get__(self))
-        hints["NX_schema"] = schema
-        hints["NX_class"] = schema["nx_class"]
+        raw_schema = _schema_added[type(self)].model_dump()
 
-        if hasattr(self, "md"):
-            hints["metadata"] = self.md  # type: ignore
+        hints["NX_schema"] = raw_schema
+        hints["NX_class"] = raw_schema["nx_class"]
 
         return hints
 
@@ -113,16 +90,21 @@ class NexusDevice:
                     f"Cannot apply nexus schema to {device_cls} as it "
                     "is not `HasHints`."
                 )
+
+            # Validation without parent classes.
+            validated_and_substituted = NxBase.from_dict(nx_schema)
+
             _inheritance_structure[device_cls] = inherit  # type: ignore
             if inherit:
-                _add_inherited_schema(device_cls, nx_schema)  # type: ignore
+                validated_and_substituted = _sum_parent_schema(
+                    cast(type[HasHints], device_cls), validated_and_substituted
+                )
+                assert validated_and_substituted is not None
 
-            # Direct validation with parent classes.
-            validated_and_substituted = NxGroup.from_dict(nx_schema).model_dump()
-            _schema_added[device_cls] = validated_and_substituted  # type: ignore
+            _schema_added[cast(type[HasHints], device_cls)] = validated_and_substituted
 
-            _add_nx_schema_and_device_metadata_to_hints(
-                cast(type[HasHints], device_cls), validated_and_substituted
+            _add_nx_schema_getter_and_device_metadata_to_hints(
+                cast(type[HasHints], device_cls)
             )
             return device_cls
 
