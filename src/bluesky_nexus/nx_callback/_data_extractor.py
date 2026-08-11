@@ -56,24 +56,16 @@ def _new_schema_with_missing_fields(
     nx_schema: NxGroup,
 ) -> NxGroup:
     nx_alias_to_nx_field = nx_schema.all_nx_fields()
-    manually_added_datakeys = [
-        nx_field.datakey for nx_field in nx_alias_to_nx_field.values()
-    ]
-
-    # Add units specified in the schema if not provided through the descriptor.
-    for nx_field in nx_alias_to_nx_field.values():
-        if (
-            (data_key := data_key_data.get(nx_field.datakey))
-            and nx_field.nx_units is None
-            and data_key.units is not None
-        ):  # Add the units
-            data_key.units = nx_field.nx_units
+    schema_specified_datakeys = {
+        nx_field.datakey: nx_field for nx_field in nx_alias_to_nx_field.values()
+    }
 
     raw_schema = nx_schema.model_dump()
 
-    for data_key_name, data_key_datum in data_key_data.items():
-        if data_key_name in manually_added_datakeys:
+    for data_key_name in data_key_data:
+        if schema_specified_datakeys.get(data_key_name):
             continue  # Already added manually.
+
         if data_key_name in DISALLOWED_ALIASES_AND_OBJECT_NAMES:
             # The datakey with the object name stripped is not valid.
             logger.warning(
@@ -86,8 +78,8 @@ def _new_schema_with_missing_fields(
             nx_class="NXfield",
             datakey=data_key_name,
             nx_alias=data_key_name or object_name,  # Special case if data key is ""
-            nx_units=data_key_datum.units,
         )
+
     return NxGroup.from_dict(raw_schema)
 
 
@@ -126,6 +118,8 @@ class ObjectData:
     """A dictionary of nx data key name to data key/configuration key information."""
     separator: str | None = None
     """The separator being used in this device."""
+    hint: PerObjectHint | None = None
+    """The hint of the device."""
 
     @classmethod
     def from_descriptor_data(
@@ -204,6 +198,7 @@ class ObjectData:
                     separator=separator,
                     data_key_name_to_data=data_key_name_to_data,
                     formatted_data_key_name_to_data=formatted_data_key_name_to_data,
+                    hint=hint,
                 )
 
             except Exception as exception:
@@ -224,6 +219,7 @@ class ObjectData:
                 data_key_name_to_data=data_key_name_to_data,
                 formatted_data_key_name_to_data=formatted_data_key_name_to_data,
                 separator=separator,
+                hint=hint,
             )
         else:
             nx_schema = NxObject()
@@ -236,6 +232,7 @@ class ObjectData:
             formatted_data_key_name_to_data=formatted_data_key_name_to_data,
             data_key_name_to_data=data_key_name_to_data,
             separator=separator,
+            hint=hint,
         )
 
 

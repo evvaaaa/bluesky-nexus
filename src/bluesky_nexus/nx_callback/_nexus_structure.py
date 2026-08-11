@@ -8,7 +8,7 @@ from nexusformat import nexus
 
 from bluesky_nexus import __version__, nx_schema
 from bluesky_nexus.common.logging_utils import log_time_taken, logger
-from bluesky_nexus.nx_schema.nx_base import NxField, NxGroup
+from bluesky_nexus.nx_schema.nx_base import NxAttribute, NxField, NxGroup
 
 from ._data_extractor import (
     DataKeyData,
@@ -77,9 +77,28 @@ def add_json_serializable_dict_to_nx_group(
             group[key] = nexus.NXfield(value=value)
 
 
+def _dict_recursive_get(dictionary: dict, *keys: str) -> Any:
+    key, *remaining_keys = keys
+    value = dictionary.get(key)
+    if isinstance(value, dict) and remaining_keys:
+        return _dict_recursive_get(value, *remaining_keys)
+    return value
+
+
+def _attribute_value(attribute: NxAttribute, object_data: ObjectData):
+    if attribute.hints_key and object_data.hint:
+        return _dict_recursive_get(cast(dict, object_data.hint), *attribute.hints_key)
+    if attribute.datakey and (
+        datakey := object_data.formatted_data_key_name_to_data.get(attribute.datakey)
+    ):
+        return datakey.data
+    return attribute.constant
+
+
 def _new_nx_field(
     nx_field_schema: nx_schema.NxField,
     data_key_data: DataKeyData,
+    object_data: ObjectData,
     name: str = "unknown",
 ) -> nexus.NXfield:
     """Util method for adding new nx field. name is not required
@@ -87,8 +106,16 @@ def _new_nx_field(
     e.g group["field_name"] =...
     """
     attrs = {}
-    if nx_field_schema.nx_units:
-        attrs["units"] = nexus.NXfield(value=nx_field_schema.nx_units)
+    # Add the manually specified attributes.
+    for nx_attribute_name, nx_attribute in nx_field_schema.nx_attributes().items():
+        attrs[nx_attribute_name.removeprefix("@")] = _attribute_value(
+            nx_attribute, object_data
+        )
+
+    # Add the units from bluesky if not specified in the schema.
+    if "units" not in attrs and data_key_data.units:
+        attrs["units"] = data_key_data.units
+
     return nexus.NXfield(value=data_key_data.data, name=name, attrs=attrs)
 
 
@@ -108,7 +135,7 @@ def _add_nx_object_data_to_group(
             nx_field_schema.datakey
         ]
         group[nx_field_schema.nx_alias or object_name] = _new_nx_field(
-            nx_field_schema, data_key_data
+            nx_field_schema, data_key_data, object_data
         )
 
     for (
@@ -177,6 +204,14 @@ def add_stream_data_to_group(
                 object_name, device_group, object_data, object_data.nx_schema
             )
             devices_group[object_name] = device_group
+            device_group.attrs.update()
+            for (
+                nx_attribute_name,
+                nx_attribute,
+            ) in object_data.nx_schema.nx_attributes().items():
+                device_group.attrs[nx_attribute_name.removeprefix("@")] = (
+                    _attribute_value(nx_attribute, object_data)
+                )
         elif isinstance(object_data.nx_schema, NxField):
             # It has a single nx_field, no group...
             if (
@@ -193,6 +228,7 @@ def add_stream_data_to_group(
                 object_data.formatted_data_key_name_to_data[
                     object_data.nx_schema.datakey
                 ],
+                object_data,
                 object_name,
             )
 

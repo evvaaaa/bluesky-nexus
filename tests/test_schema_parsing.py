@@ -9,7 +9,15 @@ from bluesky import plans as bp
 from bluesky.preprocessors import baseline_wrapper
 from nexusformat import nexus
 from ophyd.sim import SynAxis
-from ophyd_async.core import StandardReadable, StandardReadableFormat, soft_signal_rw
+from ophyd_async.core import (
+    StandardReadable,
+    StandardReadableFormat,
+    soft_signal_r_and_setter,
+    soft_signal_rw,
+)
+from ophyd_async.core import (
+    StandardReadableFormat as Fmt,
+)
 from ophyd_async.sim import SimMotor, SimPointDetector
 
 from bluesky_nexus import NexusDevice, __version__
@@ -86,8 +94,8 @@ def test_example_schema_and_manual_schema_with_equivalence(
     @NexusDevice.from_dictionary(
         {
             "nx_class": "NXobject",
-            "channel-1-value": None,
-            "channel-2-value": None,
+            "channel-1-value": "channel-1-value",
+            "channel-2-value": "channel-2-value",
         }
     )
     class SimPointDetectorWithSchema(SimPointDetector):
@@ -187,7 +195,6 @@ def test_device_with_only_one_field_schema(
             "datakey": "",
             "nx_alias": expected_alias,
             "nx_class": "NXfield",
-            "nx_units": None,
         },
         "fields": ["my_positioner"],
     }
@@ -266,3 +273,137 @@ def test_schema_client_server_differing_schema(
         "velocity",
     ]
     assert list(loaded["motor"]["motor"]) == [0, 0, 0]
+
+
+def test_constant_attributes(RE_directly_subscribed: RunEngine, tmpdir):
+    @NexusDevice.from_dictionary(
+        {
+            "nx_class": "NXobject",
+            "@description": "Some constant description",
+            "sim_motor_with_description": {
+                "nx_class": "NXfield",
+                "datakey": "",
+                "@units": "overriden",
+                "@long_name": "Long motor name",
+                "@non_standard_attr": 7,
+            },
+        }
+    )
+    class SimMotorWithDescription(SynAxis): ...
+
+    sim_motor_with_description = SimMotorWithDescription(
+        name="sim_motor_with_description"
+    )
+    sim_motor = SimMotor(name="sim_motor")
+    RE_directly_subscribed(bp.count([sim_motor, sim_motor_with_description], num=3))  # type: ignore
+
+    loaded = load_only_generated_nexus_file(tmpdir)["entry"]["primary"]["devices"]
+    assert list(loaded) == [
+        "sim_motor",
+        "sim_motor_with_description",
+        "time",
+    ]
+    assert list(loaded["sim_motor"].attrs) == ["nxclass"]
+    assert list(loaded["sim_motor_with_description"].attrs) == [
+        "description",
+        "nxclass",
+    ]
+    assert (
+        loaded["sim_motor_with_description"].attrs["description"]
+        == "Some constant description"
+    )
+    assert list(loaded["sim_motor"]["sim_motor"].attrs) == ["units"]
+    assert loaded["sim_motor"]["sim_motor"].attrs["units"] == "mm"
+
+    assert list(
+        loaded["sim_motor_with_description"]["sim_motor_with_description"].attrs
+    ) == [
+        "long_name",
+        "non_standard_attr",
+        "units",
+    ]
+
+    assert (
+        loaded["sim_motor_with_description"]["sim_motor_with_description"].attrs[
+            "non_standard_attr"
+        ]
+        == 7
+    )
+    assert (
+        loaded["sim_motor_with_description"]["sim_motor_with_description"].attrs[
+            "units"
+        ]
+        == "overriden"
+    )
+    assert (
+        loaded["sim_motor_with_description"]["sim_motor_with_description"].attrs[
+            "long_name"
+        ]
+        == "Long motor name"
+    )
+
+
+def test_attributes_from_hints(RE_directly_subscribed: RunEngine, tmpdir):
+    @NexusDevice.from_dictionary(
+        {
+            "nx_class": "NXobject",
+            "@description": {"hints_key": ["metadata", "description"]},
+        }
+    )
+    class SynAxisWithDescription(SynAxis): ...
+
+    syn_axis_with_description = SynAxisWithDescription(name="syn_axis_with_description")
+    syn_axis_with_description.md = {"description": "Some description..."}
+    syn_axis_missing_metadata = SynAxisWithDescription(name="syn_axis_missing_metadata")
+    RE_directly_subscribed(
+        bp.count([syn_axis_with_description, syn_axis_missing_metadata], num=3)  # type: ignore
+    )
+    loaded = load_only_generated_nexus_file(tmpdir)["entry"]["primary"]["devices"]
+    assert list(loaded) == [
+        "syn_axis_missing_metadata",
+        "syn_axis_with_description",
+        "time",
+    ]
+    assert list(loaded["syn_axis_missing_metadata"].attrs) == ["nxclass"]
+    assert list(loaded["syn_axis_with_description"].attrs) == ["description", "nxclass"]
+    assert (
+        loaded["syn_axis_with_description"].attrs["description"]
+        == "Some description..."
+    )
+
+
+def test_attributes_from_datakeys(RE_directly_subscribed: RunEngine, tmpdir):
+    @NexusDevice.from_dictionary(
+        {
+            "nx_class": "NXobject",
+            "readback": {
+                "nx_class": "NXfield",
+                "datakey": "readback",
+                "@units": {"datakey": "egu"},
+            },
+        }
+    )
+    class ADeviceForAnUnfortunatelyDesignedIOCWhereUnitsArentInDotEgu(StandardReadable):
+        def __init__(self, name: str = "") -> None:
+            super().__init__(name)
+            with self.add_children_as_readables(format=Fmt.CONFIG_SIGNAL):
+                self.egu, _ = soft_signal_r_and_setter(str, initial_value="Oz")
+            with self.add_children_as_readables(format=Fmt.CHILD):
+                self.readback, _ = soft_signal_r_and_setter(float)
+
+    RE_directly_subscribed(
+        bp.count(
+            [
+                ADeviceForAnUnfortunatelyDesignedIOCWhereUnitsArentInDotEgu(
+                    name="device"
+                )
+            ],
+            num=3,
+        )
+    )
+    loaded = load_only_generated_nexus_file(tmpdir)["entry"]["primary"]["devices"]
+    # Egu is still included as a field even if it's been added as
+    # an attribute to another field.
+    assert list(loaded["device"]) == ["egu", "readback"]
+    assert list(loaded["device"]["readback"].attrs) == ["units"]
+    assert loaded["device"]["readback"].attrs["units"] == "Oz"

@@ -17,7 +17,6 @@ class NxFieldInHints(TypedDict, total=True):
 
     datakey: str
     nx_alias: str
-    nx_units: str | None
     nx_class: Literal["NXfield"]
 
 

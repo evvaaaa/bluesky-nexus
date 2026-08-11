@@ -16,7 +16,7 @@ from functools import cached_property
 from pprint import pformat
 from typing import Any, TypeVar, cast
 
-from pydantic import BaseModel, ConfigDict, computed_field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, computed_field, model_validator
 from typing_extensions import Self
 
 NX_CLASS_TO_BASEMODEL: dict[str, type[NxBase]] = {}
@@ -108,6 +108,39 @@ class NxBase(BaseModel, ABC):
                         )
                     document_cls = maybe_document_cls
 
+                # Attribute specified:
+                case (key, value) if isinstance(key, str) and key.startswith("@"):
+                    # e.g {@units: mA}
+                    if isinstance(value, dict):
+                        if (
+                            name_contained := value.get("name")
+                        ) and name_contained != key:
+                            # Differing reference of parent to attribute
+                            # e.g {"@units": {name="@something_else}}
+                            pretty_key_value = pformat({key: value})
+                            raise TypeError(
+                                f"Malformed attribute found in nx schema:\n"
+                                f"{pretty_key_value}\n"
+                                f"`name: {name_contained}` is defined "
+                                f"explicitely in the attribute but differs from {key} "
+                                "referenced in the parent."
+                            )
+                        value["name"] = (
+                            key  # We've checked it's either not provided or the same
+                        )
+                        kwargs[key] = NxAttribute(**value)
+
+                    else:
+                        kwargs[key] = NxAttribute(name=key, constant=value)
+                    # TODO: Check that the value is an acceptable on for
+                    # nexus schema and raise this error otherwise.
+                    # else:
+                    #     pretty_key_value = pformat({key: value})
+                    #     raise TypeError(
+                    #         f"Malformed attribute found in nx schema:\n"
+                    #         f"{pretty_key_value}\n"
+                    #     )
+
                 # A subgroup/field is specified:
                 # e.g {nx_class: NXobject, SUB_GROUP: {nx_class: NXobject, ...}}
                 case (key, value) if isinstance(value, dict):  # A subgroup.
@@ -139,6 +172,53 @@ class NxBase(BaseModel, ABC):
 
         return cast(Self, document_cls(**kwargs))
 
+    def nx_attributes(self) -> dict[str, NxAttribute]:
+        """Gives a dict of the nx attributes defined on this object."""
+        return {k: v for k, v in self if isinstance(v, NxAttribute)}
+
+
+class NxAttribute(BaseModel):
+    """An attribute which can be attribted to any field or group.
+
+    An attribute can come from one of three sources.
+    * A constant specified in the schema, e.g `constant: "eV"`.
+    * A key of the hints of a device, e.g `hints_key: ["md", "description"].
+    * A bluesky datakey, e.g `"datakey: some_datakey_on_the_object"
+
+    """
+
+    name: str = Field(pattern=r"^@.+$")
+    datakey: str | None = None
+    hints_key: list[str] | str | None = None
+    constant: Any = None
+
+    @model_validator(mode="before")
+    def _check_one_of_the_methods_is_defined(cls, values):
+        """Ensure nx_alias defaults to datakey when not provided."""
+        datakey = values.get("datakey")
+        hints_key = values.get("hints_key")
+
+        constant = values.get("constant")
+        provided_count = len(
+            [v for v in (datakey, hints_key, constant) if v is not None]
+        )
+        if provided_count != 1:
+            pretty_key_value = pformat(
+                {
+                    values.get("name"): {
+                        "datakey": datakey,
+                        "hints_key": hints_key,
+                        "constant": constant,
+                    }
+                }
+            )
+            raise TypeError(
+                f"Malformed attribute found in nx schema. "
+                "One method of obtaining the attribte value should be provided:\n"
+                f"{pretty_key_value}"
+            )
+        return values
+
 
 def add_nx_class_basemodel(cls: type[T]) -> type[T]:
     """
@@ -169,26 +249,20 @@ class NxGroup(NxBase):
 
     def nx_fields(self) -> dict[str, NxField]:
         """Return all `NxField` instances in the group (not subgroups)."""
-        nx_fields = {}
-        for k in self.model_dump():
-            attribute = getattr(self, k)
-            if isinstance(attribute, NxField):
-                nx_fields[k] = attribute
-        return nx_fields
+        return {k: v for k, v in self if isinstance(v, NxField)}
 
     def sub_nx_groups(self) -> dict[str, NxGroup]:
         """Return all `NxGroup`instances in the group."""
-        sub_nx_groups = {}
-        for k in self.model_dump():
-            attribute = getattr(self, k)
-            if isinstance(attribute, NxGroup):
-                sub_nx_groups[k] = attribute
-        return sub_nx_groups
+        return {k: v for k, v in self if isinstance(v, NxGroup)}
 
 
 @add_nx_class_basemodel
 class NxField(NxBase):
-    """Represents a datakey which corresponds to a nexus field type."""
+    """Represents a datakey which corresponds to a nexus field type.
+
+    If the "@units" NxAttribute is not provided then it will be added
+    by the callback using the defintion found in bluesky (if provided).
+    """
 
     datakey: str
     """The bluesky datakey. The '<name>' in this string will be swapped with the
@@ -197,12 +271,6 @@ class NxField(NxBase):
     nx_alias: str = ""
     """The name which is used as the alias. Will default to datakey
     with object name stripped if not provided."""
-
-    nx_units: str | None = None
-    """An optional units field. By default the units from the bluesky
-    document model will be used, but this can be used to override them
-    in the event they aren't specified there.
-    """
 
     @model_validator(mode="before")
     def _set_default_alias(cls, values):

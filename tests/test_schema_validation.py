@@ -36,7 +36,6 @@ def test_methods_of_declaring_datakeys(datakey_subset: dict, expected_alias: str
             expected_alias: {
                 "datakey": "signal",
                 "nx_alias": expected_alias,
-                "nx_units": None,
                 "nx_class": "NXfield",
             },
             "nx_class": "NXobject",

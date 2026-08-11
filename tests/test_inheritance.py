@@ -10,6 +10,7 @@ from ophyd_async.epics.motor import Motor
 from ophyd_async.plan_stubs import ensure_connected
 
 from bluesky_nexus import NexusDevice
+from bluesky_nexus.nx_schema.nx_base import NxBase
 
 from . import load_only_generated_nexus_file
 
@@ -20,7 +21,7 @@ def test_schema_single_inheritance():
             "nx_class": "NXobject",
             "the_odysee": {
                 "nx_class": "NXfield",
-                "nx_units": "lyrics",
+                "@units": "lyrics",
                 "datakey": "signal_made_of_bronze",
             },
         }
@@ -33,14 +34,19 @@ def test_schema_single_inheritance():
             "datakey": "signal_made_of_bronze",
             "nx_alias": "the_odysee",
             "nx_class": "NXfield",
-            "nx_units": "lyrics",
+            "@units": "lyrics",
         }
     }
 
-    assert Grandma("GRANDMA", name="granma").hints["NX_schema"] == {
-        "nx_class": "NXobject",
-        **expected_grandma_schema,
-    }
+    assert (
+        Grandma("GRANDMA", name="granma").hints["NX_schema"]
+        == NxBase.from_dict(
+            {
+                "nx_class": "NXobject",
+                **expected_grandma_schema,
+            }
+        ).model_dump()
+    )
 
     @NexusDevice.from_dictionary(
         {"nx_class": "NXobject", "beowulf": "signal_made_of_iron"}
@@ -53,15 +59,19 @@ def test_schema_single_inheritance():
             "datakey": "signal_made_of_iron",
             "nx_alias": "beowulf",
             "nx_class": "NXfield",
-            "nx_units": None,
         },
     }
     expected_mama_schema.update(expected_grandma_schema)
 
-    assert Mama("MAMA", name="mama").hints["NX_schema"] == {
-        "nx_class": "NXobject",
-        **expected_mama_schema,
-    }
+    assert (
+        Mama("MAMA", name="mama").hints["NX_schema"]
+        == NxBase.from_dict(
+            {
+                "nx_class": "NXobject",
+                **expected_mama_schema,
+            }
+        ).model_dump()
+    )
 
     @NexusDevice.from_dictionary(
         {
@@ -81,7 +91,6 @@ def test_schema_single_inheritance():
             "datakey": "signal_made_of_steel",
             "nx_alias": "pride_and_prejudice",
             "nx_class": "NXfield",
-            "nx_units": None,
         },
     }
     expected_me_schema.update(expected_mama_schema)
@@ -89,16 +98,20 @@ def test_schema_single_inheritance():
         "nx_class": "NXobject",
         "new_movie": {  # We can override fields from the parent
             "nx_class": "NXfield",
-            "nx_units": None,
             "datakey": "signal_made_of_bronze",
             "nx_alias": "new_movie",
         },
     }
 
-    assert Me("ME", name="me").hints["NX_schema"] == {
-        "nx_class": "NXobject",
-        **expected_me_schema,
-    }
+    assert (
+        Me("ME", name="me").hints["NX_schema"]
+        == NxBase.from_dict(
+            {
+                "nx_class": "NXobject",
+                **expected_me_schema,
+            }
+        ).model_dump()
+    )
 
     expected_auntie_schema = {
         "nx_class": "NXobject",
@@ -106,7 +119,6 @@ def test_schema_single_inheritance():
             "datakey": "signal_made_of_iron",
             "nx_alias": "beowulf",
             "nx_class": "NXfield",
-            "nx_units": None,
         },
     }
 
@@ -124,7 +136,6 @@ def test_schema_single_inheritance():
             "datakey": "signal_made_of_steel",
             "nx_alias": "pride_and_prejudice",
             "nx_class": "NXfield",
-            "nx_units": None,
         },
     }
     expected_me_schema.update(expected_auntie_schema)
@@ -187,7 +198,7 @@ def test_schema_multi_inheritance():
             "override_group_on_mums_side": {
                 "nx_class": "NXobject",
                 "signal_mum_grandma": None,
-                "nx_units": "from grandma",
+                "@units": "from grandma",
             },
         }
     )
@@ -227,25 +238,21 @@ def test_schema_multi_inheritance():
             "datakey": "dad_signal",
             "nx_alias": "dad_signal",
             "nx_class": "NXfield",
-            "nx_units": None,
         },
         "granddad_on_dads_side_signal": {
             "datakey": "granddad_on_dads_side_signal",
             "nx_alias": "granddad_on_dads_side_signal",
             "nx_class": "NXfield",
-            "nx_units": None,
         },
         "grandma_on_dads_side_signal": {
             "datakey": "grandma_on_dads_side_signal",
             "nx_alias": "grandma_on_dads_side_signal",
             "nx_class": "NXfield",
-            "nx_units": None,
         },
         "mum_signal": {
             "datakey": "mum_signal",
             "nx_alias": "mum_signal",
             "nx_class": "NXfield",
-            "nx_units": None,
         },
         "nx_class": "NXobject",
         "override_group_on_dads_side": {
@@ -254,19 +261,16 @@ def test_schema_multi_inheritance():
                 "datakey": "signal_dad_granddad",
                 "nx_alias": "signal_dad_granddad",
                 "nx_class": "NXfield",
-                "nx_units": None,
             },
             "signal_dad_grandma": {
                 "datakey": "signal_dad_grandma",
                 "nx_alias": "signal_dad_grandma",
                 "nx_class": "NXfield",
-                "nx_units": None,
             },
             "signal_from_grandma": {
                 "datakey": "signal_from_grandma",
                 "nx_alias": "signal_from_grandma",
                 "nx_class": "NXfield",
-                "nx_units": None,
             },
         },
     }
