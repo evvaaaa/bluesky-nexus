@@ -108,8 +108,11 @@ def _new_nx_field(
     attrs = {}
     # Add the manually specified attributes.
     for nx_attribute_name, nx_attribute in nx_field_schema.nx_attributes().items():
-        attrs[nx_attribute_name.removeprefix("@")] = _attribute_value(
-            nx_attribute, object_data
+        if nx_attribute_name == "nxclass":
+            continue  # This isn't added to fields.
+        attribute_value = _attribute_value(nx_attribute, object_data)
+        attrs[nx_attribute_name.removeprefix("@")] = nexus.NXfield(
+            value=attribute_value
         )
 
     # Add the units from bluesky if not specified in the schema.
@@ -126,7 +129,14 @@ def _add_nx_object_data_to_group(
     group_schema: nx_schema.NxGroup,
 ) -> None:
     """Write the object into a nexus group."""
-    group.attrs["nxclass"] = group_schema.nxclass
+    attrs = {}
+    # Add the manually specified attributes.
+    for nx_attribute_name, nx_attribute in group_schema.nx_attributes().items():
+        attribute_value = _attribute_value(nx_attribute, object_data)
+        attrs[nx_attribute_name.removeprefix("@")] = nexus.NXfield(
+            value=attribute_value
+        )
+    group.attrs.update(attrs)
 
     for nx_field_schema in group_schema.nx_fields().values():
         if nx_field_schema.data_key not in object_data.formatted_data_key_name_to_data:
@@ -204,7 +214,6 @@ def add_stream_data_to_group(
                 object_name, device_group, object_data, object_data.nx_schema
             )
             devices_group[object_name] = device_group
-            device_group.attrs.update()
             for (
                 nx_attribute_name,
                 nx_attribute,

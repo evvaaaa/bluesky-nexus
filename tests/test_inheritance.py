@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import pytest
 from bluesky import RunEngine
 from bluesky import plans as bp
 from ophyd import Component as Cpt
@@ -11,6 +12,7 @@ from ophyd_async.epics.motor import Motor
 from ophyd_async.plan_stubs import ensure_connected
 
 from bluesky_nexus import NexusDevice
+from bluesky_nexus.nx_schema import NxGroup, add_nx_class_basemodel
 from bluesky_nexus.nx_schema.nx_base import NxBase
 
 from . import load_only_generated_nexus_file
@@ -55,13 +57,7 @@ def test_schema_single_inheritance():
     class Mama(Grandma):
         signal_made_of_iron = Cpt(EpicsSignal, "IRON")
 
-    expected_mama_schema = {
-        "beowulf": {
-            "data_key": "signal_made_of_iron",
-            "nx_alias": "beowulf",
-            "@nxclass": "NXfield",
-        },
-    }
+    expected_mama_schema = {"beowulf": "signal_made_of_iron"}
     expected_mama_schema.update(expected_grandma_schema)
 
     assert (
@@ -87,21 +83,11 @@ def test_schema_single_inheritance():
     class Me(Mama):
         signal_made_of_steel = Cpt(EpicsSignal, "STEEL")
 
-    expected_me_schema = {
-        "pride_and_prejudice": {
-            "data_key": "signal_made_of_steel",
-            "nx_alias": "pride_and_prejudice",
-            "@nxclass": "NXfield",
-        },
-    }
+    expected_me_schema = {"pride_and_prejudice": "signal_made_of_steel"}
     expected_me_schema.update(expected_mama_schema)
     expected_me_schema["the_odysee"] = {  # type: ignore
         "@nxclass": "NXobject",
-        "new_movie": {  # We can override fields from the parent
-            "@nxclass": "NXfield",
-            "data_key": "signal_made_of_bronze",
-            "nx_alias": "new_movie",
-        },
+        "new_movie": "signal_made_of_bronze",  # We can override fields from the parent
     }
 
     assert (
@@ -116,11 +102,7 @@ def test_schema_single_inheritance():
 
     expected_auntie_schema = {
         "@nxclass": "NXobject",
-        "beowulf": {
-            "data_key": "signal_made_of_iron",
-            "nx_alias": "beowulf",
-            "@nxclass": "NXfield",
-        },
+        "beowulf": "signal_made_of_iron",
     }
 
     @NexusDevice.from_dictionary(
@@ -133,11 +115,7 @@ def test_schema_single_inheritance():
 
     expected_me_schema = {
         "@nxclass": "NXobject",
-        "pride_and_prejudice": {
-            "data_key": "signal_made_of_steel",
-            "nx_alias": "pride_and_prejudice",
-            "@nxclass": "NXfield",
-        },
+        "pride_and_prejudice": "signal_made_of_steel",
     }
     expected_me_schema.update(expected_auntie_schema)
 
@@ -321,131 +299,39 @@ def test_schema_multi_inheritance():
 
     # The schema follows the same behaviour with overriding...
     assert device.hints["NX_schema"] == {
+        "@nxclass": "NXobject",
         "GROUP": {
             "@nxclass": "NXobject",
             "signal": {
-                "@attr1": {
-                    "constant": "value1",
-                    "data_key": None,
-                    "hints_key": None,
-                    "name": "@attr1",
-                },
-                "@attr1n": {
-                    "constant": "value11",
-                    "data_key": None,
-                    "hints_key": None,
-                    "name": "@attr1n",
-                },
-                "@attr2": {
-                    "constant": "value2",
-                    "data_key": None,
-                    "hints_key": None,
-                    "name": "@attr2",
-                },
-                "@attr2n": {
-                    "constant": "value21",
-                    "data_key": None,
-                    "hints_key": None,
-                    "name": "@attr2n",
-                },
-                "@attrn": {
-                    "constant": "value1",
-                    "data_key": None,
-                    "hints_key": None,
-                    "name": "@attrn",
-                },
-                "@attrn1": {
-                    "constant": "value11",
-                    "data_key": None,
-                    "hints_key": None,
-                    "name": "@attrn1",
-                },
-                "@attrn2": {
-                    "constant": "value12",
-                    "data_key": None,
-                    "hints_key": None,
-                    "name": "@attrn2",
-                },
-                "@attrnm": {
-                    "constant": "value11",
-                    "data_key": None,
-                    "hints_key": None,
-                    "name": "@attrnm",
-                },
+                "@attr1": "value1",
+                "@attr1n": "value11",
+                "@attr2": "value2",
+                "@attr2n": "value21",
+                "@attrn": "value1",
+                "@attrn1": "value11",
+                "@attrn2": "value12",
+                "@attrnm": "value11",
+                "@nxclass": "NXfield",
                 "data_key": "signal",
                 "nx_alias": "signal",
-                "@nxclass": "NXfield",
             },
-            "signal1": {
-                "data_key": "value1",
-                "nx_alias": "signal1",
-                "@nxclass": "NXfield",
-            },
-            "signal1n": {
-                "data_key": "value11",
-                "nx_alias": "signal1n",
-                "@nxclass": "NXfield",
-            },
-            "signal2": {
-                "data_key": "value2",
-                "nx_alias": "signal2",
-                "@nxclass": "NXfield",
-            },
-            "signal2n": {
-                "data_key": "value21",
-                "nx_alias": "signal2n",
-                "@nxclass": "NXfield",
-            },
-            "signaln": {
-                "data_key": "value1",
-                "nx_alias": "signaln",
-                "@nxclass": "NXfield",
-            },
-            "signaln1": {
-                "data_key": "value11",
-                "nx_alias": "signaln1",
-                "@nxclass": "NXfield",
-            },
-            "signaln2": {
-                "data_key": "value12",
-                "nx_alias": "signaln2",
-                "@nxclass": "NXfield",
-            },
-            "signalnm": {
-                "data_key": "value11",
-                "nx_alias": "signalnm",
-                "@nxclass": "NXfield",
-            },
+            "signal1": "value1",
+            "signal1n": "value11",
+            "signal2": "value2",
+            "signal2n": "value21",
+            "signaln": "value1",
+            "signaln1": "value11",
+            "signaln2": "value12",
+            "signalnm": "value11",
         },
-        "@nxclass": "NXobject",
-        "signal1": {"data_key": "value1", "nx_alias": "signal1", "@nxclass": "NXfield"},
-        "signal1n": {
-            "data_key": "value11",
-            "nx_alias": "signal1n",
-            "@nxclass": "NXfield",
-        },
-        "signal2": {"data_key": "value2", "nx_alias": "signal2", "@nxclass": "NXfield"},
-        "signal2n": {
-            "data_key": "value21",
-            "nx_alias": "signal2n",
-            "@nxclass": "NXfield",
-        },
-        "signaln": {"data_key": "value1", "nx_alias": "signaln", "@nxclass": "NXfield"},
-        "signaln1": {
-            "data_key": "value11",
-            "nx_alias": "signaln1",
-            "@nxclass": "NXfield",
-        },
-        "signaln2": {
-            "data_key": "value12",
-            "nx_alias": "signaln2",
-            "@nxclass": "NXfield",
-        },
-        "signalnm": {
-            "data_key": "value11",
-            "nx_alias": "signalnm",
-            "@nxclass": "NXfield",
-        },
+        "signal1": "value1",
+        "signal1n": "value11",
+        "signal2": "value2",
+        "signal2n": "value21",
+        "signaln": "value1",
+        "signaln1": "value11",
+        "signaln2": "value12",
+        "signalnm": "value11",
     }
 
 
@@ -552,3 +438,65 @@ def test_description_accross_whole_codebase(
     ]
     assert list(loaded.attrs) == ["description", "nxclass"]
     assert loaded.attrs["description"] == description
+
+
+def test_deserialization_heirarchy():
+    @add_nx_class_basemodel
+    class NxGroup1(NxGroup): ...
+
+    @add_nx_class_basemodel
+    class NxGroup2(NxGroup1): ...
+
+    @add_nx_class_basemodel
+    class NxGroup3(NxGroup2): ...
+
+    for cls, cls_is_a_subclass in (
+        (
+            NxGroup3,
+            NxGroup3,
+        ),
+        (
+            NxBase,
+            NxGroup,
+        ),
+        (
+            NxGroup,
+            NxGroup1,
+        ),
+        (
+            NxGroup,
+            NxGroup3,
+        ),
+        (
+            NxGroup2,
+            NxGroup3,
+        ),
+    ):
+        assert isinstance(
+            cls.from_dict(cls_is_a_subclass().model_dump()), cls_is_a_subclass
+        )
+
+    for cls, cls_not_a_subclass in (
+        (
+            NxGroup2,
+            NxGroup1,
+        ),
+        (
+            NxGroup3,
+            NxGroup1,
+        ),
+        (
+            NxGroup2,
+            NxGroup1,
+        ),
+        (NxGroup3, NxGroup),
+    ):
+        with pytest.raises(
+            TypeError,
+            match=(
+                f"Found the specified NXclass {cls_not_a_subclass}, but it cannot be "
+                f"initialized from `{cls.__name__}.from_dict` as it isn't a subclass "
+                "of it."
+            ),
+        ):
+            cls.from_dict(cls_not_a_subclass().model_dump())

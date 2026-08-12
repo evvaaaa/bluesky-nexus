@@ -16,8 +16,17 @@ from functools import cached_property
 from pprint import pformat
 from typing import Any, TypeVar, cast
 
-from pydantic import BaseModel, ConfigDict, Field, computed_field, model_validator
+from colored import attr
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    computed_field,
+    model_serializer,
+    model_validator,
+)
 from typing_extensions import Self
+
+from .nx_attribute import NxAttribute
 
 NX_CLASS_TO_BASEMODEL: dict[str, type[NxBase]] = {}
 """Stores all the allowable nexus_class names and maps them
@@ -39,22 +48,52 @@ def _nexus_class_name_from_python_class(cls: type[NxBase]) -> str:
 T = TypeVar("T", bound="NxBase")
 
 
+def _prepend_at_key_to_attributes(name: str, value: Any) -> str:
+    return f"@{name.removeprefix('@')}" if isinstance(value, NxAttribute) else name
+
+
 class NxBase(BaseModel, ABC):
     """The initial base class of any nx schema in the device to nexus mapping."""
 
+    @model_serializer
+    def _use_shorthand_and_add_at_key_to_attributes(self) -> dict[str, Any]:
+        """Dump the schema with short-hand."""
+        # Manually add the computed field.
+        shortened = {"@nxclass": self.nxclass.constant}
+
+        for key, value in self:
+            key = _prepend_at_key_to_attributes(key, value)
+            match value:
+                case NxAttribute(
+                    constant=constant_value, data_key=None, hints_key=None
+                ):
+                    shortened[key] = constant_value
+                case NxField(data_key=data_key) if value.model_fields_set == {
+                    "nx_alias",
+                    "data_key",
+                }:
+                    # Shorten a datakey if there arent' additional attributes
+                    # to nxclass.
+                    shortened[key] = data_key
+
+                case _:
+                    shortened[key] = value
+
+        return shortened
+
     @computed_field  # type: ignore
     @cached_property
-    def nxclass(self) -> str:
+    def nxclass(self) -> NxAttribute:
         """
-        A computed proprty for getting the nexus base class name from
-        the python class name.
+        A computed proprty for getting the nexus base class
+        attribute from the python class name.
         """
-        return _nexus_class_name_from_python_class(self.__class__)
+        return NxAttribute(
+            constant=_nexus_class_name_from_python_class(self.__class__),
+        )
 
     model_config = ConfigDict(
         extra="allow",
-        alias_generator=lambda n: "@nxclass" if n == "nxclass" else n,
-        serialize_by_alias=True,
     )
 
     @classmethod
@@ -72,78 +111,24 @@ class NxBase(BaseModel, ABC):
         cls, dictionary: dict[str, Any], parent_key: str | None = None
     ) -> Self:
         kwargs: dict[str, Any] = {}
-        document_cls: type[NxBase] | None = None
+        document_nx_class_name: str | None = None
 
         for key, value in dictionary.items():
             match (key, value):
-                # The class is specified. It is fetched from the environment for
-                # validation on instantiation. This is the only attribute which
-                # has to be constant.
-                case ("@nxclass", value):
-                    nx_class_name = value
-                    maybe_document_cls = NX_CLASS_TO_BASEMODEL.get(nx_class_name)
-                    if maybe_document_cls is None:
-                        pretty_allowed_classes = pformat(set(NX_CLASS_TO_BASEMODEL))
-                        raise TypeError(
-                            f"Requested `@nxclass: {nx_class_name}` but this isn't "
-                            f"defined with pydantic schemas: {pretty_allowed_classes}"
-                        )
-                    # Add the parent key to the child:
-                    # e.g {"data": {@nxclass: NXfield, ...}} ->
-                    # {"data": {}, {@nxclass: NXfield, nx_alias: data, ...}}
-                    if value == "NXfield" and not kwargs.get("nx_alias") and parent_key:
-                        kwargs["nx_alias"] = parent_key
-
-                    # Differing reference of parent to sub group/field
-                    # e.g {"data": {@nxclass: NXfield, nx_alias: not_data}}
-                    if (
-                        value == "NXfield"
-                        and (nx_alias := kwargs.get("nx_alias"))
-                        and parent_key
-                        and nx_alias != parent_key
-                    ):
-                        pretty_key_value = pformat({parent_key: dictionary})
-                        raise TypeError(
-                            f"Malformed key, value pair found in nx schema:\n"
-                            f"{pretty_key_value}\n"
-                            f"`nx_alias: {nx_alias}` is defined explicitely in the "
-                            "field but differs from how it's referenced in the parent."
-                        )
-                    document_cls = maybe_document_cls
-
                 # Attribute specified:
                 case (key, value) if isinstance(key, str) and key.startswith("@"):
-                    # e.g {@units: mA}
-                    if isinstance(value, dict):
-                        if (
-                            name_contained := value.get("name")
-                        ) and name_contained != key:
-                            # Differing reference of parent to attribute
-                            # e.g {"@units": {name="@something_else}}
-                            pretty_key_value = pformat({key: value})
-                            raise TypeError(
-                                f"Malformed attribute found in nx schema:\n"
-                                f"{pretty_key_value}\n"
-                                f"`name: {name_contained}` is defined "
-                                f"explicitely in the attribute but differs from {key} "
-                                "referenced in the parent."
-                            )
-                        value["name"] = (
-                            key  # We've checked it's either not provided or the same
-                        )
-                        kwargs[key] = NxAttribute(**value)
-
+                    attribute = (
+                        NxAttribute(**value)
+                        if isinstance(value, dict)
+                        else NxAttribute(constant=value)
+                    )
+                    key = key.removeprefix("@")  # deserialized key
+                    if key == "nxclass":
+                        document_nx_class_name = attribute.constant
+                        # Attribute is thrown away. It is used to select
+                        # the correct class where it is a computed property.
                     else:
-                        kwargs[key] = NxAttribute(name=key, constant=value)
-
-                    # TODO: Check that the value is an acceptable on for
-                    # nexus schema and raise this error otherwise.
-                    # else:
-                    #     pretty_key_value = pformat({key: value})
-                    #     raise TypeError(
-                    #         f"Malformed attribute found in nx schema:\n"
-                    #         f"{pretty_key_value}\n"
-                    #     )
+                        kwargs[key] = attribute
 
                 # A subgroup/field is specified:
                 # e.g {@nxclass: NXobject, SUB_GROUP: {@nxclass: NXobject, ...}}
@@ -171,16 +156,59 @@ class NxBase(BaseModel, ABC):
                         f"{pretty_key_value}"
                     )
 
+        if document_nx_class_name is None:
+            raise TypeError("No @nxclass attrbute specified in nx schema.")
+
+        # The class is specified. It is fetched from the environment for
+        # validation on instantiation
+
+        document_cls = NX_CLASS_TO_BASEMODEL.get(document_nx_class_name)
         if document_cls is None:
+            pretty_allowed_classes = pformat(set(NX_CLASS_TO_BASEMODEL))
             raise TypeError(
-                f"No `@nxclass` specified in a parsed dictionary {pformat(dictionary)}."
+                f"Requested `@nxclass: {document_nx_class_name}` but this isn't "
+                f"defined with pydantic schemas: {pretty_allowed_classes}"
             )
 
+        # Add the parent key to the child:
+        # e.g {"data": {@nxclass: NXfield, ...}} ->
+        # {"data": {}, {@nxclass: NXfield, nx_alias: data, ...}}
+        if (
+            document_nx_class_name == "NXfield"
+            and not kwargs.get("nx_alias")
+            and parent_key
+        ):
+            kwargs["nx_alias"] = parent_key
+
+        # Differing reference of parent to sub group/field
+        # e.g {"data": {@nxclass: NXfield, nx_alias: not_data}}
+        if (
+            document_nx_class_name == "NXfield"
+            and (nx_alias := kwargs.get("nx_alias"))
+            and parent_key
+            and nx_alias != parent_key
+        ):
+            pretty_key_value = pformat({parent_key: dictionary})
+            raise TypeError(
+                f"Malformed key, value pair found in nx schema:\n"
+                f"{pretty_key_value}\n"
+                f"`nx_alias: {nx_alias}` is defined explicitely in the "
+                "field but differs from how it's referenced in the parent."
+            )
+
+        if not issubclass(document_cls, cls):
+            raise TypeError(
+                f"Found the specified NXclass {document_cls}, but it cannot be "
+                f"initialized from `{cls.__name__}.from_dict` as it isn't a subclass "
+                "of it."
+            )
         return cast(Self, document_cls(**kwargs))
 
     def nx_attributes(self) -> dict[str, NxAttribute]:
         """Gives a dict of the nx attributes defined on this object."""
-        return {k: v for k, v in self if isinstance(v, NxAttribute)}
+        attributes = {k: v for k, v in self if isinstance(v, NxAttribute)}
+        attributes.update({"nxclass": self.nxclass})
+        return attributes
 
     def __add__(self, other: Self) -> Self:
         """
@@ -197,7 +225,7 @@ class NxBase(BaseModel, ABC):
 
             # The key is entirely new.
             if our_value is None:
-                in_progress[other_key] = (
+                in_progress[_prepend_at_key_to_attributes(other_key, other_value)] = (
                     other_value.model_dump()
                     if isinstance(other_value, NxBase | NxAttribute)
                     else other_value
@@ -208,52 +236,11 @@ class NxBase(BaseModel, ABC):
             ) or (isinstance(our_value, NxField) and isinstance(other_value, NxField)):
                 # The value may be different different,
                 # but similar enough that we can try to merge them.
-                in_progress[other_key] = (our_value + other_value).model_dump()  # type: ignore
+                in_progress[_prepend_at_key_to_attributes(other_key, other_value)] = (
+                    our_value + other_value  # type: ignore
+                ).model_dump()
 
         return type(self).from_dict(in_progress)
-
-
-class NxAttribute(BaseModel):
-    """An attribute which can be attribted to any field or group.
-
-    An attribute can come from one of three sources.
-    * A constant specified in the schema, e.g `constant: "eV"`.
-    * A key of the hints of a device, e.g `hints_key: ["md", "description"].
-    * A bluesky data_key, e.g `"data_key: some_data_key_on_the_object"
-
-    """
-
-    name: str = Field(pattern=r"^@.+$")
-    data_key: str | None = None
-    hints_key: list[str] | str | None = None
-    constant: Any = None
-
-    @model_validator(mode="before")
-    def _check_one_of_the_methods_is_defined(cls, values):
-        """Ensure nx_alias defaults to data_key when not provided."""
-        data_key = values.get("data_key")
-        hints_key = values.get("hints_key")
-
-        constant = values.get("constant")
-        provided_count = len(
-            [v for v in (data_key, hints_key, constant) if v is not None]
-        )
-        if provided_count != 1:
-            pretty_key_value = pformat(
-                {
-                    values.get("name"): {
-                        "data_key": data_key,
-                        "hints_key": hints_key,
-                        "constant": constant,
-                    }
-                }
-            )
-            raise TypeError(
-                f"Malformed attribute found in nx schema. "
-                "One method of obtaining the attribte value should be provided:\n"
-                f"{pretty_key_value}"
-            )
-        return values
 
 
 def add_nx_class_basemodel(cls: type[T]) -> type[T]:
