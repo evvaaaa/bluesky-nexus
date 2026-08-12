@@ -18,7 +18,7 @@ from bluesky_nexus.nx_schema.nx_base import NxBase
 from . import load_only_generated_nexus_file
 
 
-def test_schema_single_inheritance():
+def test_schema_single_inheritance() -> None:
     @NexusDevice.from_dictionary(
         {
             "@nxclass": "NXobject",
@@ -51,9 +51,7 @@ def test_schema_single_inheritance():
         ).model_dump()
     )
 
-    @NexusDevice.from_dictionary(
-        {"@nxclass": "NXobject", "beowulf": "signal_made_of_iron"}
-    )
+    @NexusDevice.from_dictionary({"@nxclass": "NXobject", "beowulf": "signal_made_of_iron"})
     class Mama(Grandma):
         signal_made_of_iron = Cpt(EpicsSignal, "IRON")
 
@@ -128,12 +126,10 @@ def test_schema_single_inheritance():
     class ITakeOnlyAfterMyAunt(Auntie):
         signal_made_of_steel = Cpt(EpicsSignal, "STEEL")
 
-    assert (
-        ITakeOnlyAfterMyAunt("ME", name="me").hints["NX_schema"] == expected_me_schema
-    )
+    assert ITakeOnlyAfterMyAunt("ME", name="me").hints["NX_schema"] == expected_me_schema
 
 
-def test_schema_multi_inheritance():
+def test_schema_multi_inheritance() -> None:
     @NexusDevice.from_dictionary(
         {
             "@nxclass": "NXobject",
@@ -337,7 +333,7 @@ def test_schema_multi_inheritance():
 
 def test_schema_single_inheritance_on_device(
     RE_directly_subscribed: RunEngine, tmpdir: Path
-):
+) -> None:
     NexusDevice.from_dictionary(
         {
             "@nxclass": "NXpositioner",
@@ -352,7 +348,7 @@ def test_schema_single_inheritance_on_device(
     )(Motor)
 
     class Shutter(Motor):
-        def __init__(self, prefix: str, name: str = ""):
+        def __init__(self, prefix: str, name: str = "") -> None:
             super().__init__(prefix, name=name)
             with self.add_children_as_readables(format=Fmt.CONFIG_SIGNAL):
                 self.open_value = epics_signal_r(float, f"{prefix}:OPEN_VAL")
@@ -375,9 +371,7 @@ def test_schema_single_inheritance_on_device(
     RE_directly_subscribed(
         ensure_connected(shutter_with_some_differing_schema, shutter, mock=True)
     )
-    RE_directly_subscribed(
-        bp.count([shutter, shutter_with_some_differing_schema], num=3)
-    )  # type: ignore
+    RE_directly_subscribed(bp.count([shutter, shutter_with_some_differing_schema], num=3))  # type: ignore
 
     loaded = load_only_generated_nexus_file(tmpdir)["entry"]["primary"]["devices"]
     assert list(loaded) == ["shutter", "shutter_differing", "time"]
@@ -410,7 +404,7 @@ def test_schema_single_inheritance_on_device(
 
 def test_description_accross_whole_codebase(
     RE_directly_subscribed: RuntimeError, tmpdir: Path, monkeypatch
-):
+) -> None:
     # Makeing a new class only to avoid persistence problems in pytest
     # (monkeypatch is annoying here). This test demonstrates that if I
     # were to have added description to device in a centralized
@@ -433,14 +427,12 @@ def test_description_accross_whole_codebase(
 
     RE_directly_subscribed(bp.count([device], num=3))  # type: ignore
 
-    loaded = load_only_generated_nexus_file(tmpdir)["entry"]["primary"]["devices"][
-        "device"
-    ]
+    loaded = load_only_generated_nexus_file(tmpdir)["entry"]["primary"]["devices"]["device"]
     assert list(loaded.attrs) == ["description", "nxclass"]
     assert loaded.attrs["description"] == description
 
 
-def test_deserialization_heirarchy():
+def test_deserialization_heirarchy() -> None:
     @add_nx_class_basemodel
     class NxGroup1(NxGroup): ...
 
@@ -472,9 +464,7 @@ def test_deserialization_heirarchy():
             NxGroup3,
         ),
     ):
-        assert isinstance(
-            cls.from_dict(cls_is_a_subclass().model_dump()), cls_is_a_subclass
-        )
+        assert isinstance(cls.from_dict(cls_is_a_subclass().model_dump()), cls_is_a_subclass)
 
     for cls, cls_not_a_subclass in (
         (

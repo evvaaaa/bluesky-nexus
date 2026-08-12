@@ -16,7 +16,7 @@ Please see the [CONTRIBUTING.md](CONTRIBUTING.md) file for contribution guidelin
 
 <!-- Developer documentation placeholder
 Place developer documentation in the `docs/` directory when using Sphinx,
-or in this file for smaller projects, and follow the steps in the Documentation page. 
+or in this file for smaller projects, and follow the steps in the Documentation page.
 See CONTRIBUTING.md for more details.
 -->
 

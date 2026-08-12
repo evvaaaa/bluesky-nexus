@@ -18,19 +18,19 @@ from bluesky_nexus.nx_schema import NX_CLASS_TO_BASEMODEL
 
 
 @pytest.fixture()
-def tmpdir(tmpdir: PurePath):
+def tmpdir(tmpdir: PurePath) -> Path:
     """Quick patch to get the full Path object from the PurePath."""
     return Path(tmpdir)
 
 
 @pytest.fixture(scope="session", autouse=True)
-def logs_on_during_tests():
+def logs_on_during_tests() -> None:
     """Set up default logging across all tests."""
     setup_logging()
 
 
 @pytest.fixture(scope="function", autouse=True)
-def ensure_fresh_mutable_global_caches(monkeypatch):
+def ensure_fresh_mutable_global_caches(monkeypatch) -> None:
     """It's important that any tests adding basemodels, or adding schema to
     classes don't modify the environment.
     """
@@ -49,7 +49,7 @@ def ensure_fresh_mutable_global_caches(monkeypatch):
 
 
 @pytest.fixture()
-def RE_directly_subscribed(tmpdir: Path):
+def RE_directly_subscribed(tmpdir: Path) -> RunEngine:
     RE = RunEngine()
     RE.subscribe(NexusCallback(NexusHdfWriter(tmpdir)))
     return RE
@@ -89,6 +89,8 @@ def _start_zmq_dispatcher(
         from bluesky_nexus.logger import LOGGER, setup_logging
 
         setup_logging()
+
+        # Make this subprocess spit out logs into the provided directory.
         file_handler = logging.FileHandler(
             log_path,
             mode="a",

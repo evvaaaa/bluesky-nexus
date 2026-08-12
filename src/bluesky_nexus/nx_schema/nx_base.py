@@ -14,9 +14,8 @@ from __future__ import annotations
 from abc import ABC
 from functools import cached_property
 from pprint import pformat
-from typing import Any, TypeVar, cast
+from typing import Any, Self, TypeVar, cast
 
-from colored import attr
 from pydantic import (
     BaseModel,
     ConfigDict,
@@ -24,7 +23,6 @@ from pydantic import (
     model_serializer,
     model_validator,
 )
-from typing_extensions import Self
 
 from .nx_attribute import NxAttribute
 
@@ -233,7 +231,7 @@ class NxBase(BaseModel, ABC):
         return type(self).from_dict(in_progress)
 
 
-def add_nx_class_basemodel(cls: type[T]) -> type[T]:
+def add_nx_class_basemodel[T: "NxBase"](cls: type[T]) -> type[T]:
     """
     Use to wrap a subclass of `NxGroup` so that it can be loaded
     from the literal in any static schema.

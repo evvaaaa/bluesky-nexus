@@ -3,7 +3,7 @@ from __future__ import annotations
 import time
 from collections.abc import Iterable
 from importlib.metadata import version
-from typing import Any, TypeAlias, Union, cast
+from typing import Any, cast
 
 import numpy as np
 from nexusformat import nexus
@@ -20,18 +20,13 @@ from ._data_extractor import (
 
 __version__ = version("bluesky_nexus")
 
-JsonSerializableScalar: TypeAlias = str | int | bool | float | None
+type JsonSerializableScalar = str | int | bool | float | None
 # typing.Union required for future recursive references... annoooooying
-JsonSerializableList: TypeAlias = list[Union[JsonSerializableScalar, "JsonSerializableList"]]
-JsonSerializableTuple: TypeAlias = tuple[Union[JsonSerializableScalar, "JsonSerializableTuple"]]
-JsonSerializableDict: TypeAlias = dict[
+type JsonSerializableList = list[JsonSerializableScalar | "JsonSerializableList"]
+type JsonSerializableTuple = tuple[JsonSerializableScalar | "JsonSerializableTuple"]
+type JsonSerializableDict = dict[
     str,
-    Union[
-        JsonSerializableScalar,
-        JsonSerializableList,
-        JsonSerializableTuple,
-        "JsonSerializableDict",
-    ],
+    JsonSerializableScalar | JsonSerializableList | JsonSerializableTuple | "JsonSerializableDict",
 ]
 
 

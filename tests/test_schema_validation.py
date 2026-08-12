@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pytest
-from numpy import isin
 from ophyd import Component as Cpt
 from ophyd import Device, EpicsSignal
 from ophyd.sim import SynAxis
@@ -23,7 +22,7 @@ from bluesky_nexus.nx_schema.nx_base import NxAttribute, NxBase, NxField
         {"some_alias": "signal"},  # Just the alias.
     ),
 )
-def test_methods_of_declaring_data_keys(data_key_subset: dict):
+def test_methods_of_declaring_data_keys(data_key_subset: dict) -> None:
     dictionary_schema = {"@nxclass": "NXobject"}
     dictionary_schema.update(data_key_subset)
 
@@ -41,7 +40,7 @@ def test_methods_of_declaring_data_keys(data_key_subset: dict):
     }
 
 
-def test_writer_behaviour_with_failing_schema_specified_in_yaml():
+def test_writer_behaviour_with_failing_schema_specified_in_yaml() -> None:
     with pytest.raises(
         ValidationError,
         match=("Input should be a valid dictionary or instance of NxField"),
@@ -63,13 +62,10 @@ def test_writer_behaviour_with_failing_schema_specified_in_yaml():
             pass
 
 
-def test_attempt_with_unknown_schema_from_client():
+def test_attempt_with_unknown_schema_from_client() -> None:
     with pytest.raises(
         TypeError,
-        match=(
-            "Requested `@nxclass: NXbanana` but this isn't defined with pydantic "
-            "schemas:"
-        ),
+        match=("Requested `@nxclass: NXbanana` but this isn't defined with pydantic schemas:"),
     ):
 
         @NexusDevice.from_dictionary({"@nxclass": "NXbanana", "length": "length"})
@@ -77,7 +73,7 @@ def test_attempt_with_unknown_schema_from_client():
             pass
 
 
-def test_schema_addition():
+def test_schema_addition() -> None:
     nx_group = NxBase.from_dict(
         {
             "@nxclass": "NXgroup",
@@ -191,7 +187,7 @@ def test_schema_addition():
     assert (nx_object + nx_object) == nx_object
 
 
-def test_serialization_deserialization():
+def test_serialization_deserialization() -> None:
     @add_nx_class_basemodel
     class NxTestGroup(NxGroup):
         constant_attribute_shorthand: NxAttribute
@@ -242,7 +238,7 @@ def test_serialization_deserialization():
         )
         assert group.field == NxField(
             data_key="some_field_datakey",
-            some_field_attribute=NxAttribute(constant="some_field_attribute"),
+            some_field_attribute=NxAttribute(constant="some_field_attribute"),  # type: ignore
             nx_alias="field",
         )
 

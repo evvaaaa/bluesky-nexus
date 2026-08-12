@@ -1,4 +1,5 @@
 """Sphinx configuration."""
+
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
@@ -15,6 +16,7 @@ copyright = f"{datetime.now(tz=UTC).year}, {author}"  # noqa: A001
 # The version info from the project
 try:
     from bluesky_nexus import __version__
+
     release = __version__
     version = ".".join(__version__.split(".")[:2])
 except ImportError:

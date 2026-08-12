@@ -130,6 +130,7 @@ Verify the installation by checking the version:
 
 ```python
 import bluesky_nexus
+
 print(bluesky_nexus.__version__)
 ```
 

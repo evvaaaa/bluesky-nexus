@@ -1,5 +1,3 @@
-"""Main module for bluesky-nexus."""
-
 """Command-line interface for the ``bluesky_nexus`` writer service.
 
 The CLI writes NeXus files from Bluesky documents using one of two backends:

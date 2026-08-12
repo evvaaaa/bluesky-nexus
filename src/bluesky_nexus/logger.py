@@ -2,8 +2,6 @@
 
 import logging
 import sys
-import time
-from typing import Any, Callable
 
 LOGGER = logging.getLogger("bluesky_nexus")
 

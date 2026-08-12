@@ -30,7 +30,7 @@ from bluesky_nexus.nx_schema import (
 from . import get_logs, load_only_generated_nexus_file, wait_for_nexus_file
 
 
-def test_structure(RE_directly_subscribed: RunEngine, tmpdir: Path):
+def test_structure(RE_directly_subscribed: RunEngine, tmpdir: Path) -> None:
     some_primary_pv_positioner = SynAxis(name="some_primary_pv_positioner")
     some_baseline_pv_positioner = SynAxis(name="some_baseline_pv_positioner")
 
@@ -88,7 +88,7 @@ def test_structure(RE_directly_subscribed: RunEngine, tmpdir: Path):
 def test_example_schema_and_manual_schema_with_equivalence(
     RE_directly_subscribed: RunEngine,
     tmpdir: Path,
-):
+) -> None:
     """Checks that the autofilled schema is equivalent to what we're expecting."""
 
     @NexusDevice.from_dictionary(
@@ -132,7 +132,7 @@ def test_example_schema_and_manual_schema_with_equivalence(
 def test_simple_nx_detector(
     RE_directly_subscribed: RunEngine,
     tmpdir: Path,
-):
+) -> None:
     @NexusDevice.from_dictionary(
         {
             "@nxclass": "NXdetector",
@@ -171,12 +171,12 @@ def test_device_with_only_one_field_schema(
     tmpdir: Path,
     passed_alias: str | None,
     expected_alias: str,
-):
+) -> None:
     """Demonstrates that the tree structure doesn't require a group."""
 
     @NexusDevice.from_dictionary({"@nxclass": "NXfield", "data_key": "", "nx_alias": passed_alias})
     class MyPositioner(StandardReadable):
-        def __init__(self, name: str):
+        def __init__(self, name: str) -> None:
             with self.add_children_as_readables(StandardReadableFormat.HINTED_SIGNAL):
                 self.signal = soft_signal_rw(int)
             with self.add_children_as_readables(StandardReadableFormat.CHILD):
@@ -203,7 +203,7 @@ def test_device_with_only_one_field_schema(
 def test_nexus_writer_on_signals(
     RE_directly_subscribed: RunEngine,
     tmpdir: Path,
-):
+) -> None:
     some_signal = soft_signal_rw(int, name="some_signal")
     another_signal = soft_signal_rw(int, name="another_signal")
     motor = SimMotor(name="motor")
@@ -223,7 +223,9 @@ def test_nexus_writer_on_signals(
     assert loaded["motor"].attrs == {"nxclass": "NXobject"}
 
 
-def test_schema_client_server_differing_schema(RE_subscribed_over_zmq: RunEngine, tmpdir: Path):
+def test_schema_client_server_differing_schema(
+    RE_subscribed_over_zmq: RunEngine, tmpdir: Path
+) -> None:
     new_motor_schema = {"@nxclass": "NXnew", "some_data": "foo"}
 
     with pytest.raises(
@@ -267,7 +269,7 @@ def test_schema_client_server_differing_schema(RE_subscribed_over_zmq: RunEngine
     assert list(loaded["motor"]["motor"]) == [0, 0, 0]
 
 
-def test_constant_attributes(RE_directly_subscribed: RunEngine, tmpdir):
+def test_constant_attributes(RE_directly_subscribed: RunEngine, tmpdir) -> None:
     @NexusDevice.from_dictionary(
         {
             "@nxclass": "NXobject",

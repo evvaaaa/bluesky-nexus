@@ -11,15 +11,16 @@ from pathlib import Path
 
 from bluesky import RunEngine
 from bluesky import plan_stubs as bps
+from bluesky.utils import MsgGenerator
 from ophyd.sim import SynAxis
 
 from . import load_only_generated_nexus_file
 
 
-def test_descriptor_reconfiguration(RE_directly_subscribed: RunEngine, tmpdir: Path):
+def test_descriptor_reconfiguration(RE_directly_subscribed: RunEngine, tmpdir: Path) -> None:
     motor = SynAxis(name="motor")
 
-    def plan():
+    def plan() -> MsgGenerator:
         yield from bps.open_run()
         yield from bps.one_shot([motor])  # type: ignore
         yield from bps.declare_stream(motor, name="primary")  # type: ignore
@@ -28,9 +29,7 @@ def test_descriptor_reconfiguration(RE_directly_subscribed: RunEngine, tmpdir: P
         yield from bps.close_run()
 
     RE_directly_subscribed(plan())
-    loaded = load_only_generated_nexus_file(tmpdir)["entry"]["primary"]["devices"][
-        "motor"
-    ]
+    loaded = load_only_generated_nexus_file(tmpdir)["entry"]["primary"]["devices"]["motor"]
     assert list(loaded) == [
         "acceleration",
         "motor",

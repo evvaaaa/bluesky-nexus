@@ -21,7 +21,7 @@ _inheritance_structure: weakref.WeakKeyDictionary[type[HasHints], bool] = (
 )
 
 
-def _sum_parent_schema(cls: type[T], schema: NxBase | None = None) -> NxBase | None:
+def _sum_parent_schema[T](cls: type[T], schema: NxBase | None = None) -> NxBase | None:
     for direct_parent in cls.__bases__:
         if _inheritance_structure.get(direct_parent) is not False:
             maybe_parent_schema = _sum_parent_schema(direct_parent, schema=schema)
@@ -39,7 +39,7 @@ def _sum_parent_schema(cls: type[T], schema: NxBase | None = None) -> NxBase | N
     return schema
 
 
-def _add_nx_schema_getter_and_device_metadata_to_hints(device_cls: type[T]) -> None:
+def _add_nx_schema_getter_and_device_metadata_to_hints[T](device_cls: type[T]) -> None:
     original = device_cls.hints  # type: ignore
 
     @property  # type: ignore
@@ -96,9 +96,8 @@ class NexusDevice:
                 validated_and_substituted = _sum_parent_schema(
                     cast(type[HasHints], device_cls), validated_and_substituted
                 )
-                assert validated_and_substituted is not None
 
-            _schema_added[cast(type[HasHints], device_cls)] = validated_and_substituted
+            _schema_added[cast(type[HasHints], device_cls)] = validated_and_substituted  # type: ignore
 
             _add_nx_schema_getter_and_device_metadata_to_hints(cast(type[HasHints], device_cls))
             return device_cls
