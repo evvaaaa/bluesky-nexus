@@ -94,7 +94,7 @@ def _new_nx_field(
     data_key_data: DataKeyData,
     object_data: ObjectData,
     name: str = "unknown",
-) -> nexus.NXfield:
+) -> nexus.NXlog:
     """Util method for adding new nx field. name is not required
     if the field is directly added to a parent,
     e.g group["field_name"] =...
@@ -111,7 +111,14 @@ def _new_nx_field(
     if "units" not in attrs and data_key_data.units:
         attrs["units"] = data_key_data.units
 
-    return nexus.NXfield(value=data_key_data.data, name=name, attrs=attrs)
+    log_with_timestamps = nexus.NXlog()
+    log_with_timestamps["time"] = nexus.NXfield(
+        value=data_key_data.timestamps,
+        name="timestamps",
+        attrs={"units": nexus.NXfield(value="s")},
+    )
+    log_with_timestamps["value"] = nexus.NXfield(value=data_key_data.data, name=name, attrs=attrs)
+    return log_with_timestamps
 
 
 def _add_nx_object_data_to_group(
@@ -161,24 +168,9 @@ def add_stream_data_to_group(
     add_json_serializable_dict_to_nx_group(
         descriptor_group, cast(JsonSerializableDict, stream_data.descriptor)
     )
-    # Add new timestamps group
-    timestamps_group = nexus.NXgroup(nxclass="NXsubentry")
-    stream_info_group["timestamps"] = timestamps_group
-    timestamps_group.attrs["description"] = (
-        "The timestamps of the reads of each individual read on the device signal, "
-        "instead of the read of the stream through bluesky."
-    )
-    for object_data in stream_data.object_data.values():
-        for (
-            data_key,
-            data_key_data,
-        ) in object_data.data_key_name_to_data.items():
-            timestamps_group[data_key] = nexus.NXfield(value=data_key_data.timestamps)
 
-    # Add devices
-    devices_group = nexus.NXgroup(nxclass="NXinstrument")
-    stream_group["devices"] = devices_group
-    devices_group["time"] = nexus.NXdata(
+    # Add stream times, e.g event timestamps.
+    stream_info_group["time"] = nexus.NXdata(
         signal=nexus.NXfield(
             value=np.array(stream_data.times) - run_start_time,
             name="time",
@@ -194,6 +186,10 @@ def add_stream_data_to_group(
             ),
         ),
     )
+
+    # Add devices
+    devices_group = nexus.NXgroup(nxclass="NXinstrument")
+    stream_group["devices"] = devices_group
 
     for object_name, object_data in stream_data.object_data.items():
         if isinstance(object_data.nx_schema, NxGroup):

@@ -39,5 +39,5 @@ def test_descriptor_reconfiguration(RE_directly_subscribed: RunEngine, tmpdir: P
 
     assert "motor_velocity" in motor.describe_configuration()
     assert "motor_setpoint" in motor.describe()
-    assert list(loaded["velocity"]) == [1, 1]
-    assert list(loaded["motor"]) == [0, 0, 0]
+    assert list(loaded["velocity"]["value"]) == [1, 1]
+    assert list(loaded["motor"]["value"]) == [0, 0, 0]

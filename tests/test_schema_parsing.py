@@ -68,21 +68,13 @@ def test_structure(RE_directly_subscribed: RunEngine, tmpdir: Path) -> None:
 
         devices = stream["devices"]
         assert devices.nxclass == "NXinstrument"
-        assert list(devices) == [f"some_{stream_name}_pv_positioner", "time"]
+        assert list(devices) == [f"some_{stream_name}_pv_positioner"]
         assert devices[f"some_{stream_name}_pv_positioner"].nxclass == "NXgroup"
-        assert devices["time"].nxclass == "NXdata"
 
         stream_info = stream["stream_info"]
         assert stream_info.nxclass == "NXcollection"
-        assert list(stream_info) == ["descriptor", "timestamps"]
+        assert list(stream_info) == ["descriptor", "time"]
         assert stream_info["descriptor"].nxclass == "NXcollection"
-        assert stream_info["timestamps"].nxclass == "NXsubentry"
-        assert list(stream_info["timestamps"]) == [
-            f"some_{stream_name}_pv_positioner",
-            f"some_{stream_name}_pv_positioner_acceleration",
-            f"some_{stream_name}_pv_positioner_setpoint",
-            f"some_{stream_name}_pv_positioner_velocity",
-        ]
 
 
 def test_example_schema_and_manual_schema_with_equivalence(
@@ -160,7 +152,8 @@ def test_simple_nx_detector(
         "channel-3-value",
         "data",
     ]
-    assert list(loaded["data"]) == [290, 290, 290]
+    assert list(loaded["data"]) == ["time", "value"]
+    assert list(loaded["data"]["value"]) == [290, 290, 290]
 
 
 @pytest.mark.parametrize(
@@ -196,8 +189,9 @@ def test_device_with_only_one_field_schema(
     }
     RE_directly_subscribed(bp.count([device], num=3))
     loaded = load_only_generated_nexus_file(tmpdir)["entry"]["primary"]["devices"]
-    assert list(loaded) == ["my_positioner", "time"]
-    assert list(loaded["my_positioner"]) == [0, 0, 0]
+    assert list(loaded) == ["my_positioner"]
+    assert list(loaded["my_positioner"]) == ["time", "value"]
+    assert list(loaded["my_positioner"]["value"]) == [0, 0, 0]
 
 
 def test_nexus_writer_on_signals(
@@ -215,9 +209,8 @@ def test_nexus_writer_on_signals(
         "another_signal",
         "motor",
         "some_signal",
-        "time",
     ]
-    assert list(loaded["another_signal"]) == [0, 0, 0]
+    assert list(loaded["another_signal"]["value"]) == [0, 0, 0]
     assert loaded["another_signal"].attrs == {}
     assert list(loaded["motor"]) == ["acceleration_time", "motor", "velocity"]
     assert loaded["motor"].attrs == {"nxclass": "NXobject"}
@@ -266,7 +259,7 @@ def test_schema_client_server_differing_schema(
         "motor",
         "velocity",
     ]
-    assert list(loaded["motor"]["motor"]) == [0, 0, 0]
+    assert list(loaded["motor"]["motor"]["value"]) == [0, 0, 0]
 
 
 def test_constant_attributes(RE_directly_subscribed: RunEngine, tmpdir) -> None:
@@ -293,7 +286,6 @@ def test_constant_attributes(RE_directly_subscribed: RunEngine, tmpdir) -> None:
     assert list(loaded) == [
         "sim_motor",
         "sim_motor_with_description",
-        "time",
     ]
     assert list(loaded["sim_motor"].attrs) == ["nxclass"]
     assert list(loaded["sim_motor_with_description"].attrs) == [
@@ -301,27 +293,31 @@ def test_constant_attributes(RE_directly_subscribed: RunEngine, tmpdir) -> None:
         "nxclass",
     ]
     assert loaded["sim_motor_with_description"].attrs["description"] == "Some constant description"
-    assert list(loaded["sim_motor"]["sim_motor"].attrs) == ["units"]
-    assert loaded["sim_motor"]["sim_motor"].attrs["units"] == "mm"
+    assert list(loaded["sim_motor"]["sim_motor"]["value"].attrs) == ["units"]
+    assert loaded["sim_motor"]["sim_motor"]["value"].attrs["units"] == "mm"
 
-    assert list(loaded["sim_motor_with_description"]["sim_motor_with_description"].attrs) == [
+    assert list(
+        loaded["sim_motor_with_description"]["sim_motor_with_description"]["value"].attrs
+    ) == [
         "long_name",
         "non_standard_attr",
         "units",
     ]
 
     assert (
-        loaded["sim_motor_with_description"]["sim_motor_with_description"].attrs[
+        loaded["sim_motor_with_description"]["sim_motor_with_description"]["value"].attrs[
             "non_standard_attr"
         ]
         == 7
     )
     assert (
-        loaded["sim_motor_with_description"]["sim_motor_with_description"].attrs["units"]
+        loaded["sim_motor_with_description"]["sim_motor_with_description"]["value"].attrs["units"]
         == "overriden"
     )
     assert (
-        loaded["sim_motor_with_description"]["sim_motor_with_description"].attrs["long_name"]
+        loaded["sim_motor_with_description"]["sim_motor_with_description"]["value"].attrs[
+            "long_name"
+        ]
         == "Long motor name"
     )
 
@@ -345,7 +341,6 @@ def test_attributes_from_hints(RE_directly_subscribed: RunEngine, tmpdir):
     assert list(loaded) == [
         "syn_axis_missing_metadata",
         "syn_axis_with_description",
-        "time",
     ]
     assert list(loaded["syn_axis_missing_metadata"].attrs) == ["nxclass"]
     assert list(loaded["syn_axis_with_description"].attrs) == ["description", "nxclass"]
@@ -381,5 +376,5 @@ def test_attributes_from_data_keys(RE_directly_subscribed: RunEngine, tmpdir):
     # Egu is still included as a field even if it's been added as
     # an attribute to another field.
     assert list(loaded["device"]) == ["egu", "readback"]
-    assert list(loaded["device"]["readback"].attrs) == ["units"]
-    assert loaded["device"]["readback"].attrs["units"] == "Oz"
+    assert list(loaded["device"]["readback"]["value"].attrs) == ["units"]
+    assert loaded["device"]["readback"]["value"].attrs["units"] == "Oz"

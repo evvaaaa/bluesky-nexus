@@ -374,7 +374,7 @@ def test_schema_single_inheritance_on_device(
     RE_directly_subscribed(bp.count([shutter, shutter_with_some_differing_schema], num=3))  # type: ignore
 
     loaded = load_only_generated_nexus_file(tmpdir)["entry"]["primary"]["devices"]
-    assert list(loaded) == ["shutter", "shutter_differing", "time"]
+    assert list(loaded) == ["shutter", "shutter_differing"]
     assert list(loaded["shutter"]) == [
         "close_value",
         "motor_egu",
@@ -403,7 +403,7 @@ def test_schema_single_inheritance_on_device(
 
 
 def test_description_accross_whole_codebase(
-    RE_directly_subscribed: RuntimeError, tmpdir: Path, monkeypatch
+    RE_directly_subscribed: RuntimeError, tmpdir: Path
 ) -> None:
     # Makeing a new class only to avoid persistence problems in pytest
     # (monkeypatch is annoying here). This test demonstrates that if I
