@@ -20,7 +20,7 @@ from event_model import (
 )
 from event_model.documents.event_descriptor import Dtype, DtypeNumpy, DtypeNumpyItem
 
-from bluesky_nexus.common.logging_utils import logger
+from bluesky_nexus.logger import LOGGER
 from bluesky_nexus.nx_schema import NxField, NxGroup, NxObject
 from bluesky_nexus.nx_schema.nx_base import DISALLOWED_ALIASES_AND_OBJECT_NAMES, NxBase
 
@@ -64,7 +64,7 @@ def _new_schema_with_missing_fields(
 
         if data_key_name in DISALLOWED_ALIASES_AND_OBJECT_NAMES:
             # The data_key with the object name stripped is not valid.
-            logger.warning(
+            LOGGER.warning(
                 f"Cannot automatically add data_key {data_key_name}"
                 f"because it has a is disallowed name. It will be skipped."
             )
@@ -129,7 +129,7 @@ class ObjectData:
         # Check for common elements in configuration and read data keys.
         # In practice the user won't do this, but it's allowed in event-model.
         if common := list(configuration_data_keys.keys() & read_data_keys.keys()):
-            logger.warning(
+            LOGGER.warning(
                 f"Received data_keys {common} in both configuration and "
                 "read data_keys. The writer will use the read data key."
             )
@@ -148,10 +148,7 @@ class ObjectData:
             dtype_numpy = data_key_value.get(  # type: ignore
                 "dtype_numpy"
             )
-            if (
-                data_key_name in configuration_data_keys
-                and data_key_name not in read_data_keys
-            ):
+            if data_key_name in configuration_data_keys and data_key_name not in read_data_keys:
                 data = [configuration["data"][data_key_name]]  # type: ignore
                 timestamps = [
                     configuration["timestamps"][data_key_name]  # type: ignore
@@ -198,7 +195,7 @@ class ObjectData:
                 )
 
             except Exception as exception:
-                logger.warning(
+                LOGGER.warning(
                     f"Received a malformed schema in {object_name}. "
                     f"The error was:\n    {exception!s}\n"
                     "A default schema will be used instead.",
@@ -209,7 +206,7 @@ class ObjectData:
             # This is very likely if the plan throws in signals of a device,
             # but not the device itself.
             only_key = next(iter(formatted_data_key_name_to_data))
-            logger.debug(f"Creating new NxField schema for device {object_name}.")
+            LOGGER.debug(f"Creating new NxField schema for device {object_name}.")
             return ObjectData(
                 nx_schema=NxField(data_key=only_key),
                 data_key_name_to_data=data_key_name_to_data,
@@ -222,7 +219,7 @@ class ObjectData:
             nx_schema = _new_schema_with_missing_fields(
                 object_name, formatted_data_key_name_to_data, nx_schema
             )
-            logger.debug(f"Creating new NxObject schema for device {object_name}.")
+            LOGGER.debug(f"Creating new NxObject schema for device {object_name}.")
         return ObjectData(
             nx_schema=nx_schema,
             formatted_data_key_name_to_data=formatted_data_key_name_to_data,
@@ -255,14 +252,12 @@ class StreamData:
         # e.g "some-dev".
         for object_name, data_key_names in descriptor.get("object_keys", {}).items():
             if object_name in cls.DISALLOWED_OBJECT_NAMES:
-                logger.warning(
+                LOGGER.warning(
                     f"Received an object called {object_name}. "
                     "This is disallowed in the nexus writer. "
                     "The device will be skipped..."
                 )
-            data_keys = {
-                k: v for k, v in descriptor["data_keys"].items() if k in data_key_names
-            }
+            data_keys = {k: v for k, v in descriptor["data_keys"].items() if k in data_key_names}
             configuration = descriptor.get("configuration", {}).get(object_name, {})
             hint = descriptor.get("hints", {}).get(object_name, {})
             object_data[object_name] = ObjectData.from_descriptor_data(
@@ -272,18 +267,16 @@ class StreamData:
                 configuration,
             )
 
-        return StreamData(
-            descriptor, object_data=dict(sorted(object_data.items(), reverse=True))
-        )
+        return StreamData(descriptor, object_data=dict(sorted(object_data.items(), reverse=True)))
 
-    def reconfigure(self, descriptor: Descriptor):
+    def reconfigure(self, descriptor: Descriptor) -> None:
         """
         Append data from a second descriptor of a stream into existing
         configuration.
         """
         for object_name in cast(dict, descriptor.get("object_keys", {})):
             if object_name in self.DISALLOWED_OBJECT_NAMES:
-                logger.warning(
+                LOGGER.warning(
                     f"Received an object called {object_name}. "
                     "This is disallowed in the nexus writer. "
                     "The device will be skipped..."
@@ -300,14 +293,10 @@ class StreamData:
                     data_key_data,
                 ) in object_data.data_key_name_to_data.items():
                     configuration_data = cast(dict, configuration.get("data", {}))
-                    configuration_timestamps = cast(
-                        dict, configuration.get("timestamps", {})
-                    )
+                    configuration_timestamps = cast(dict, configuration.get("timestamps", {}))
                     if data_key_name in configuration_data:
                         data_key_data.data.append(configuration_data[data_key_name])
-                        data_key_data.timestamps.append(
-                            configuration_timestamps[data_key_name]
-                        )
+                        data_key_data.timestamps.append(configuration_timestamps[data_key_name])
 
     def _extract_event_or_event_page(
         self, document: Event | EventPage, operation: Callable[[list, Any], None]
@@ -370,7 +359,7 @@ class RunData:
     def extract_descriptor(self, descriptor: EventDescriptor) -> None:
         stream_name = descriptor["name"]  # type: ignore
         if stream_name in self.DISALLOWED_STREAM_NAMES:
-            logger.warning(
+            LOGGER.warning(
                 f"Received stream name {stream_name} which isn't "
                 "permitted in the nexus writer. Continuing without it..."
             )
@@ -393,9 +382,8 @@ class RunData:
     def extract_event(self, event: Event) -> None:
         stream_name = self.descriptor_uid_to_stream_name.get(event["descriptor"])
         if stream_name is None:
-            logger.warning(
-                "Received event for stream that wasn't processed. "
-                "Continuing without it..."
+            LOGGER.warning(
+                "Received event for stream that wasn't processed. Continuing without it..."
             )
             return
         self.stream_name_to_stream_data[stream_name].extract_event(event)
@@ -403,9 +391,8 @@ class RunData:
     def extract_event_page(self, event_page: EventPage) -> None:
         stream_name = self.descriptor_uid_to_stream_name.get(event_page["descriptor"])
         if stream_name is None:
-            logger.warning(
-                "Received event page for stream that wasn't processed. "
-                "Continuing without it..."
+            LOGGER.warning(
+                "Received event page for stream that wasn't processed. Continuing without it..."
             )
             return
         self.stream_name_to_stream_data[stream_name].extract_event_page(event_page)

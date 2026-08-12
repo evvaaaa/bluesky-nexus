@@ -1,17 +1,37 @@
 [build-system]
-requires = ["setuptools", "setuptools-scm"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling>=1.18", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.version]
+source = "vcs"
+raw-options = { version_scheme = "release-branch-semver" }
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/bluesky_nexus"]
+
+[tool.hatch.build.targets.sdist]
+exclude = [
+  "/.venv",
+  "/.uv-cache",
+  "/.git",
+  "/.github",
+]
 
 [project]
-name = "bluesky_nexus"
+name = "bluesky-nexus"
 dynamic = ["version"]
-description = "Generation of the NeXus file from a blusky run using pydantic schema-model approach."
+description = "A package for generating a standard NeXus structure for bluesky plans."
+readme = "README.md"
+license = { text = "MIT" }
 keywords = ["bluesky", "nexus", "hdf5", "data-science", "pydantic"]
 authors = [
   { name = "Daniel Tomecki", email = "daniel.tomecki@helmholtz-berlin.de" },
+  { name = "Eva Lott", email = "eva.lott@helmholtz-berlin.de" }
 ]
-license = { file = "LICENSE" }
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 dependencies = [
   "bluesky",
   "bluesky-kafka",
@@ -25,53 +45,129 @@ dependencies = [
   "fastapi",
 ]
 
-[tool.setuptools_scm]
-version_file = "src/bluesky_nexus/_version.py"
 
 [project.optional-dependencies]
 dev = [
-  "ruff",
-  "mypy",
-  "types-PyYAML",
-  "ophyd",
-  "ophyd-async[sim, ca]",
-  "pytest",
-  "pre-commit",
-  "pytest-html",
-  "pyepics",              # For ophyd device definitions.
+    "ruff",
+    "mypy",
+    "bandit[toml]",
+    "pre-commit",
+    "pytest",
+    "pytest-asyncio",
+    "pytest-html",
+    "pytest-cov",
+    "pytest-timeout" ,
+    "coverage",
+    "py",
+]
+docs = [
+    "sphinx",
+    "sphinx-rtd-theme",
+    "sphinx-autodoc-typehints",
+    "myst-parser",
+    "types-PyYAML",
+]
+test = [
+    "pytest",
+    "pytest-asyncio",
+    "pytest-html",
+    "pytest-cov",
+    "pytest-timeout",
+    "coverage",
+    "py",
+
+    # For device definitions in tests
+    "ophyd",
+    "ophyd-async[sim, ca]",
+    "pytest",
+    "pre-commit",
+    "pytest-html",
+    "pyepics",
 ]
 
+
+[tool.ruff]
+line-length = 99
+indent-width = 4
+target-version = "py312" # Specify python version
+exclude = ["tests/functional/", "tests/input", "tests/**/data/", "doc/"]
+fix = true  # Enable auto-fixing (equivalent to --fix in pre-commit)
+
+[tool.ruff.lint]
+select = [
+    "B",       # flake8-bugbear - https://docs.astral.sh/ruff/rules/#flake8-bugbear-b
+    "C4",      # flake8-comprehensions - https://docs.astral.sh/ruff/rules/#flake8-comprehensions-c4
+    "E",       # pycodestyle errors - https://docs.astral.sh/ruff/rules/#error-e
+    "F",       # pyflakes rules - https://docs.astral.sh/ruff/rules/#pyflakes-f
+    "W",       # pycodestyle warnings - https://docs.astral.sh/ruff/rules/#warning-w
+    "I",       # isort - https://docs.astral.sh/ruff/rules/#isort-i
+    "UP",      # pyupgrade - https://docs.astral.sh/ruff/rules/#pyupgrade-up
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["S101"]  # Allow assert statements in tests
+
+[tool.ruff.format]
+quote-style = "double"
+docstring-code-format = true
+docstring-code-line-length = 99
+indent-style = "space"
+skip-magic-trailing-comma = false
+
+[tool.mypy]
+mypy_path = "src"
+disallow_untyped_defs = true  # Enforce typing
+warn_return_any = true        # Check that function does not return Any value
+warn_unused_configs = true
+exclude_gitignore = true      # Excludes gitignore checking
+namespace_packages = true     # Enables namespace packages
+explicit_package_bases = true # Packages will be based in either the current directory or a member of MYPYPATH environment
+ignore_missing_imports = true # Surpresses error messages about imports that cannot be resolved
+check_untyped_defs = true     # type checks the interior of functions without type annotations
+
+[tool.bandit]
+exclude_dirs = ["tests", "venv", ".venv", "build", "dist"]
+severity = "low"
+
+[tool.bandit.assert_used]
+skips = ["**/test_*.py", "**/tests/*"]
+
+[tool.coverage.run]
+data_file = ".reports/coverage/.coverage"
+omit = [
+    "tests/*",
+    "src/bluesky_nexus/__main__.py",
+    "src/bluesky_nexus/logger.py",
+]
+
+[tool.coverage.paths]
+source = ["src", "**/site-packages/"]
+
+[tool.coverage.html]
+directory = ".reports/coverage"
+
+# Pytest configuration
 [tool.pytest.ini_options]
-# Show everything in pytest
-addopts = """
-    --tb=native -vv --strict-markers
-"""
+asyncio_mode = "auto"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "-vv",
+    "--tb=native",
+    "--strict-markers",
+    "--log-level=INFO",
+    "--log-cli-level=INFO",
+    "--log-cli-format=%(asctime)s [%(levelname)8s] %(name)s: %(message)s",
+    "--log-cli-date-format=%Y-%m-%d %H:%M:%S",
+    "--capture=no"
+]
+log_auto_indent = true
+log_cli = true
 
 # Warning in use of fork process instead of spawn in `zmq_proxy_subprocess`...
 # This isn't really a problem and spawn can't pickle objects for some reason.
 filterwarnings = [
   "ignore:.*use of fork.*:DeprecationWarning:multiprocessing\\.popen_fork",
 ]
-
-[tool.ruff]
-line-length = 88
-fix = true
-target-version = "py310"
-
-[tool.ruff.lint]
-extend-select = [
-  "D", # pydocstyle rules (PEP 257)
-  "E", # pycodestyle errors (PEP 8)
-  "W", # pycodestyle warnings (PEP 8)
-  "F", # pyflakes
-  "I", # isort
-  "B", # flake8-bugbear
-]
-ignore = ["D205", "D103", "D100", "D401", "BLE001", "DTZ006"]
-
-[tool.ruff.lint.pydocstyle]
-convention = "pep257"
-
-[[tool.mypy.overrides]]
-module = ["nexusformat.*", "bluesky_kafka.*"]
-ignore_missing_imports = true

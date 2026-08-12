@@ -38,8 +38,7 @@ def _nexus_class_name_from_python_class(cls: type[NxBase]) -> str:
 
     if not python_name.startswith("Nx"):
         raise ValueError(
-            f"Nexus basemodels must start with 'Nx'. This basemodel is called "
-            f"'{python_name}'."
+            f"Nexus basemodels must start with 'Nx'. This basemodel is called '{python_name}'."
         )
 
     return f"NX{python_name.removeprefix('Nx').lower()}"
@@ -64,9 +63,7 @@ class NxBase(BaseModel, ABC):
         for key, value in self:
             key = _prepend_at_key_to_attributes(key, value)
             match value:
-                case NxAttribute(
-                    constant=constant_value, data_key=None, hints_key=None
-                ):
+                case NxAttribute(constant=constant_value, data_key=None, hints_key=None):
                     shortened[key] = constant_value
                 case NxField(data_key=data_key) if value.model_fields_set == {
                     "nx_alias",
@@ -107,9 +104,7 @@ class NxBase(BaseModel, ABC):
         return cls._from_dict(dictionary=dictionary)
 
     @classmethod
-    def _from_dict(
-        cls, dictionary: dict[str, Any], parent_key: str | None = None
-    ) -> Self:
+    def _from_dict(cls, dictionary: dict[str, Any], parent_key: str | None = None) -> Self:
         kwargs: dict[str, Any] = {}
         document_nx_class_name: str | None = None
 
@@ -152,8 +147,7 @@ class NxBase(BaseModel, ABC):
                 case (key, value) if key not in NxField.model_fields:
                     pretty_key_value = pformat({key: value})
                     raise TypeError(
-                        f"Malformed key, value pair found in nx schema:\n"
-                        f"{pretty_key_value}"
+                        f"Malformed key, value pair found in nx schema:\n{pretty_key_value}"
                     )
 
         if document_nx_class_name is None:
@@ -173,11 +167,7 @@ class NxBase(BaseModel, ABC):
         # Add the parent key to the child:
         # e.g {"data": {@nxclass: NXfield, ...}} ->
         # {"data": {}, {@nxclass: NXfield, nx_alias: data, ...}}
-        if (
-            document_nx_class_name == "NXfield"
-            and not kwargs.get("nx_alias")
-            and parent_key
-        ):
+        if document_nx_class_name == "NXfield" and not kwargs.get("nx_alias") and parent_key:
             kwargs["nx_alias"] = parent_key
 
         # Differing reference of parent to sub group/field
@@ -231,9 +221,9 @@ class NxBase(BaseModel, ABC):
                     else other_value
                 )
 
-            elif (
-                isinstance(our_value, NxGroup) and isinstance(other_value, NxGroup)
-            ) or (isinstance(our_value, NxField) and isinstance(other_value, NxField)):
+            elif (isinstance(our_value, NxGroup) and isinstance(other_value, NxGroup)) or (
+                isinstance(our_value, NxField) and isinstance(other_value, NxField)
+            ):
                 # The value may be different different,
                 # but similar enough that we can try to merge them.
                 in_progress[_prepend_at_key_to_attributes(other_key, other_value)] = (
@@ -296,7 +286,7 @@ class NxField(NxBase):
     with object name stripped if not provided."""
 
     @model_validator(mode="before")
-    def _set_default_alias(cls, values):
+    def _set_default_alias(cls, values: dict) -> dict:
         """Ensure nx_alias defaults to data_key when not provided."""
         if isinstance(values, dict) and not values.get("nx_alias"):
             values["nx_alias"] = values.get("data_key")

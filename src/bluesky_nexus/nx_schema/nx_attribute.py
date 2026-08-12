@@ -23,15 +23,13 @@ class NxAttribute(BaseModel):
     constant: Any = None
 
     @model_validator(mode="before")
-    def _check_one_of_the_methods_is_defined(cls, values):
+    def _check_one_of_the_methods_is_defined(cls, values: dict) -> dict:
         """Ensure nx_alias defaults to data_key when not provided."""
         data_key = values.get("data_key")
         hints_key = values.get("hints_key")
 
         constant = values.get("constant")
-        provided_count = len(
-            [v for v in (data_key, hints_key, constant) if v is not None]
-        )
+        provided_count = len([v for v in (data_key, hints_key, constant) if v is not None])
         if provided_count != 1:
             pretty_key_value = pformat(
                 {

@@ -150,9 +150,7 @@ def test_simple_nx_detector(
         )
     )
 
-    loaded = load_only_generated_nexus_file(tmpdir)["entry"]["primary"]["devices"][
-        "detector"
-    ]
+    loaded = load_only_generated_nexus_file(tmpdir)["entry"]["primary"]["devices"]["detector"]
 
     assert list(loaded) == [
         "channel-1-mode",
@@ -176,9 +174,7 @@ def test_device_with_only_one_field_schema(
 ):
     """Demonstrates that the tree structure doesn't require a group."""
 
-    @NexusDevice.from_dictionary(
-        {"@nxclass": "NXfield", "data_key": "", "nx_alias": passed_alias}
-    )
+    @NexusDevice.from_dictionary({"@nxclass": "NXfield", "data_key": "", "nx_alias": passed_alias})
     class MyPositioner(StandardReadable):
         def __init__(self, name: str):
             with self.add_children_as_readables(StandardReadableFormat.HINTED_SIGNAL):
@@ -227,16 +223,12 @@ def test_nexus_writer_on_signals(
     assert loaded["motor"].attrs == {"nxclass": "NXobject"}
 
 
-def test_schema_client_server_differing_schema(
-    RE_subscribed_over_zmq: RunEngine, tmpdir: Path
-):
+def test_schema_client_server_differing_schema(RE_subscribed_over_zmq: RunEngine, tmpdir: Path):
     new_motor_schema = {"@nxclass": "NXnew", "some_data": "foo"}
 
     with pytest.raises(
         TypeError,
-        match=(
-            "Requested `@nxclass: NXnew` but this isn't defined with pydantic schemas:"
-        ),
+        match=("Requested `@nxclass: NXnew` but this isn't defined with pydantic schemas:"),
     ):
 
         @NexusDevice.from_dictionary(new_motor_schema)
@@ -291,9 +283,7 @@ def test_constant_attributes(RE_directly_subscribed: RunEngine, tmpdir):
     )
     class SimMotorWithDescription(SynAxis): ...
 
-    sim_motor_with_description = SimMotorWithDescription(
-        name="sim_motor_with_description"
-    )
+    sim_motor_with_description = SimMotorWithDescription(name="sim_motor_with_description")
     sim_motor = SimMotor(name="sim_motor")
     RE_directly_subscribed(bp.count([sim_motor, sim_motor_with_description], num=3))  # type: ignore
 
@@ -308,16 +298,11 @@ def test_constant_attributes(RE_directly_subscribed: RunEngine, tmpdir):
         "description",
         "nxclass",
     ]
-    assert (
-        loaded["sim_motor_with_description"].attrs["description"]
-        == "Some constant description"
-    )
+    assert loaded["sim_motor_with_description"].attrs["description"] == "Some constant description"
     assert list(loaded["sim_motor"]["sim_motor"].attrs) == ["units"]
     assert loaded["sim_motor"]["sim_motor"].attrs["units"] == "mm"
 
-    assert list(
-        loaded["sim_motor_with_description"]["sim_motor_with_description"].attrs
-    ) == [
+    assert list(loaded["sim_motor_with_description"]["sim_motor_with_description"].attrs) == [
         "long_name",
         "non_standard_attr",
         "units",
@@ -330,15 +315,11 @@ def test_constant_attributes(RE_directly_subscribed: RunEngine, tmpdir):
         == 7
     )
     assert (
-        loaded["sim_motor_with_description"]["sim_motor_with_description"].attrs[
-            "units"
-        ]
+        loaded["sim_motor_with_description"]["sim_motor_with_description"].attrs["units"]
         == "overriden"
     )
     assert (
-        loaded["sim_motor_with_description"]["sim_motor_with_description"].attrs[
-            "long_name"
-        ]
+        loaded["sim_motor_with_description"]["sim_motor_with_description"].attrs["long_name"]
         == "Long motor name"
     )
 
@@ -366,10 +347,7 @@ def test_attributes_from_hints(RE_directly_subscribed: RunEngine, tmpdir):
     ]
     assert list(loaded["syn_axis_missing_metadata"].attrs) == ["nxclass"]
     assert list(loaded["syn_axis_with_description"].attrs) == ["description", "nxclass"]
-    assert (
-        loaded["syn_axis_with_description"].attrs["description"]
-        == "Some description..."
-    )
+    assert loaded["syn_axis_with_description"].attrs["description"] == "Some description..."
 
 
 def test_attributes_from_data_keys(RE_directly_subscribed: RunEngine, tmpdir):
@@ -393,11 +371,7 @@ def test_attributes_from_data_keys(RE_directly_subscribed: RunEngine, tmpdir):
 
     RE_directly_subscribed(
         bp.count(
-            [
-                ADeviceForAnUnfortunatelyDesignedIOCWhereUnitsArentInDotEgu(
-                    name="device"
-                )
-            ],
+            [ADeviceForAnUnfortunatelyDesignedIOCWhereUnitsArentInDotEgu(name="device")],
             num=3,
         )
     )

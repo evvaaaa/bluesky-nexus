@@ -1,13 +1,14 @@
 from __future__ import annotations
 
+import time
 from collections.abc import Iterable
+from importlib.metadata import version
 from typing import Any, TypeAlias, Union, cast
 
 import numpy as np
 from nexusformat import nexus
 
-from bluesky_nexus import __version__, nx_schema
-from bluesky_nexus.common.logging_utils import log_time_taken, logger
+from bluesky_nexus.logger import LOGGER
 from bluesky_nexus.nx_schema.nx_base import NxAttribute, NxField, NxGroup
 
 from ._data_extractor import (
@@ -17,14 +18,12 @@ from ._data_extractor import (
     StreamData,
 )
 
+__version__ = version("bluesky_nexus")
+
 JsonSerializableScalar: TypeAlias = str | int | bool | float | None
 # typing.Union required for future recursive references... annoooooying
-JsonSerializableList: TypeAlias = list[
-    Union[JsonSerializableScalar, "JsonSerializableList"]
-]
-JsonSerializableTuple: TypeAlias = tuple[
-    Union[JsonSerializableScalar, "JsonSerializableTuple"]
-]
+JsonSerializableList: TypeAlias = list[Union[JsonSerializableScalar, "JsonSerializableList"]]
+JsonSerializableTuple: TypeAlias = tuple[Union[JsonSerializableScalar, "JsonSerializableTuple"]]
 JsonSerializableDict: TypeAlias = dict[
     str,
     Union[
@@ -85,7 +84,7 @@ def _dict_recursive_get(dictionary: dict, *keys: str) -> Any:
     return value
 
 
-def _attribute_value(attribute: NxAttribute, object_data: ObjectData):
+def _attribute_value(attribute: NxAttribute, object_data: ObjectData) -> Any:
     if attribute.hints_key and object_data.hint:
         return _dict_recursive_get(cast(dict, object_data.hint), *attribute.hints_key)
     if attribute.data_key and (
@@ -96,7 +95,7 @@ def _attribute_value(attribute: NxAttribute, object_data: ObjectData):
 
 
 def _new_nx_field(
-    nx_field_schema: nx_schema.NxField,
+    nx_field_schema: NxField,
     data_key_data: DataKeyData,
     object_data: ObjectData,
     name: str = "unknown",
@@ -111,9 +110,7 @@ def _new_nx_field(
         if nx_attribute_name == "nxclass":
             continue  # This isn't added to fields.
         attribute_value = _attribute_value(nx_attribute, object_data)
-        attrs[nx_attribute_name.removeprefix("@")] = nexus.NXfield(
-            value=attribute_value
-        )
+        attrs[nx_attribute_name.removeprefix("@")] = nexus.NXfield(value=attribute_value)
 
     # Add the units from bluesky if not specified in the schema.
     if "units" not in attrs and data_key_data.units:
@@ -126,24 +123,20 @@ def _add_nx_object_data_to_group(
     object_name: str,
     group: nexus.NXgroup,
     object_data: ObjectData,
-    group_schema: nx_schema.NxGroup,
+    group_schema: NxGroup,
 ) -> None:
     """Write the object into a nexus group."""
     attrs = {}
     # Add the manually specified attributes.
     for nx_attribute_name, nx_attribute in group_schema.nx_attributes().items():
         attribute_value = _attribute_value(nx_attribute, object_data)
-        attrs[nx_attribute_name.removeprefix("@")] = nexus.NXfield(
-            value=attribute_value
-        )
+        attrs[nx_attribute_name.removeprefix("@")] = nexus.NXfield(value=attribute_value)
     group.attrs.update(attrs)
 
     for nx_field_schema in group_schema.nx_fields().values():
         if nx_field_schema.data_key not in object_data.formatted_data_key_name_to_data:
             continue
-        data_key_data = object_data.formatted_data_key_name_to_data[
-            nx_field_schema.data_key
-        ]
+        data_key_data = object_data.formatted_data_key_name_to_data[nx_field_schema.data_key]
         group[nx_field_schema.nx_alias or object_name] = _new_nx_field(
             nx_field_schema, data_key_data, object_data
         )
@@ -218,32 +211,27 @@ def add_stream_data_to_group(
                 nx_attribute_name,
                 nx_attribute,
             ) in object_data.nx_schema.nx_attributes().items():
-                device_group.attrs[nx_attribute_name.removeprefix("@")] = (
-                    _attribute_value(nx_attribute, object_data)
+                device_group.attrs[nx_attribute_name.removeprefix("@")] = _attribute_value(
+                    nx_attribute, object_data
                 )
         elif isinstance(object_data.nx_schema, NxField):
             # It has a single nx_field, no group...
-            if (
-                object_data.nx_schema.data_key
-                not in object_data.formatted_data_key_name_to_data
-            ):
-                logger.warning(
+            if object_data.nx_schema.data_key not in object_data.formatted_data_key_name_to_data:
+                LOGGER.warning(
                     f"Datakey `{object_data.nx_schema.data_key}` in schema not "
                     "accounted for in an event stream captured... Skipping it."
                 )
                 continue
             devices_group[object_name] = _new_nx_field(
                 object_data.nx_schema,
-                object_data.formatted_data_key_name_to_data[
-                    object_data.nx_schema.data_key
-                ],
+                object_data.formatted_data_key_name_to_data[object_data.nx_schema.data_key],
                 object_data,
                 object_name,
             )
 
 
-@log_time_taken
 def create_nexus_structure(run_data: RunData) -> nexus.NXroot:
+    start_time = time.perf_counter()
     root = nexus.NXroot()
     entry = nexus.NXentry()
     add_json_serializable_dict_to_nx_group(
@@ -277,11 +265,12 @@ def create_nexus_structure(run_data: RunData) -> nexus.NXroot:
             new_stream_group = nexus.NXgroup(nxclass="NXsubentry")
             add_stream_data_to_group(run_data.start_time, new_stream_group, stream_data)
         except Exception as _:
-            logger.warning(
+            LOGGER.warning(
                 f"Failed to write stream {stream_name}, will try with the others...",
                 exc_info=True,
             )
         else:
             entry[stream_name] = new_stream_group
 
+    LOGGER.info(f"Parsed nexus structure from run in {time.perf_counter() - start_time}s.")
     return root

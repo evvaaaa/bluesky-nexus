@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+
+# Python artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.venv/
+venv/
+.tox/
+
+# Build outputs
+dist/
+build/
+*.whl
+
+# Lock files
+uv.lock
+poetry.lock
+package-lock.json
+
+# Git
+.git/
+
+# CI/CD and docs that should remain as-is
+CHANGELOG.md

@@ -1,3 +1,4 @@
+import logging
 import time
 from collections.abc import Iterator
 from multiprocessing import Process, Queue
@@ -10,8 +11,8 @@ from bluesky import RunEngine
 from bluesky.callbacks.zmq import Proxy, Publisher
 
 from bluesky_nexus import NexusCallback, NexusHdfWriter
-from bluesky_nexus.common.logging_utils import setup_nx_logger
 from bluesky_nexus.dispatchers import run_zmq_dispatcher
+from bluesky_nexus.logger import setup_logging
 from bluesky_nexus.nx_device._decorator import _inheritance_structure, _schema_added
 from bluesky_nexus.nx_schema import NX_CLASS_TO_BASEMODEL
 
@@ -25,7 +26,7 @@ def tmpdir(tmpdir: PurePath):
 @pytest.fixture(scope="session", autouse=True)
 def logs_on_during_tests():
     """Set up default logging across all tests."""
-    setup_nx_logger()
+    setup_logging()
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -81,11 +82,19 @@ def zmq_proxy_subprocess() -> Iterator[Process]:
         zmq_proxy.close()
 
 
-def _start_zmq_dispatcher(tmpdir: Path, exception_queue: MultiprocessingQueue) -> None:
+def _start_zmq_dispatcher(
+    tmpdir: Path, exception_queue: MultiprocessingQueue, log_path: Path
+) -> None:
     try:
-        from bluesky_nexus.common.logging_utils import setup_nx_logger
+        from bluesky_nexus.logger import LOGGER, setup_logging
 
-        setup_nx_logger(log_file_dir_path=tmpdir)
+        setup_logging()
+        file_handler = logging.FileHandler(
+            log_path,
+            mode="a",
+            encoding="utf-8",
+        )
+        LOGGER.addHandler(file_handler)
         run_zmq_dispatcher(tmpdir, zmq_ip="127.0.0.1", zmq_port=5578)
 
     except Exception as e:
@@ -94,10 +103,12 @@ def _start_zmq_dispatcher(tmpdir: Path, exception_queue: MultiprocessingQueue) -
 
 @pytest.fixture(scope="function")
 def zmq_callback_process(
-    tmpdir: Path, zmq_proxy_subprocess: Process
+    tmpdir: Path, zmq_proxy_subprocess: Process, caplog: pytest.LogCaptureFixture
 ) -> Iterator[Process]:
     exception_queue: MultiprocessingQueue[Exception] = Queue()
-    zmq_callback = Process(target=_start_zmq_dispatcher, args=(tmpdir, exception_queue))
+    zmq_callback = Process(
+        target=_start_zmq_dispatcher, args=(tmpdir, exception_queue, tmpdir / "test-log.log")
+    )
     try:
         zmq_callback.start()
         time.sleep(0.1)  # Enough time for the process to start.

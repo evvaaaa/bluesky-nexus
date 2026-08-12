@@ -1,8 +1,14 @@
-"""Initialize the bluesky_nexus package."""
+"""bluesky-nexus
 
-from ._version import __version__ as __version__
+A package for generating a standard NeXus structure for bluesky plans.
+"""
+
+from importlib.metadata import version
+
 from .nx_callback import NexusCallback
 from .nx_consumers import NexusHdfWriter
 from .nx_device import NexusDevice
 
-__all__ = ["NexusCallback", "NexusDevice", "NexusHdfWriter"]
+__version__ = version("bluesky_nexus")
+
+__all__ = ["__version__", "NexusCallback", "NexusDevice", "NexusHdfWriter"]

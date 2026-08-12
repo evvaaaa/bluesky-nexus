@@ -1,13 +1,47 @@
+import os
+import time
 from datetime import datetime
 from pathlib import Path
 
 from event_model import RunStart
 from nexusformat import nexus
 
-from bluesky_nexus.common.logging_utils import log_time_taken, logger
-from bluesky_nexus.common.validation_utils import validate_directory
+from bluesky_nexus.logger import LOGGER
 
 NX_FILE_EXTENSION = ".nxs"
+
+
+def _validate_directory(path: str | Path, name: str) -> Path:
+    """Validate that ``path`` exists, is a directory, and is writable.
+
+    Parameters
+    ----------
+    path : str or pathlib.Path
+        Path to validate.
+
+    Returns
+    -------
+    pathlib.Path
+        Normalized and validated path.
+
+    Raises
+    ------
+    ValueError
+        If the directory does not exist, is not a directory,
+        or is not writable.
+    """
+    p = Path(path)
+
+    if not p.exists():
+        raise ValueError(f"{name} does not exist: {path}.")
+
+    if not p.is_dir():
+        raise ValueError(f"{name} exists but is not a directory: {p}")
+
+    if not os.access(str(p), os.W_OK):
+        raise ValueError(f"{name} is not writable: {p}")
+
+    return p
 
 
 def _create_nx_file_path(root_directory: Path, start: RunStart) -> Path:
@@ -37,7 +71,7 @@ def _create_nx_file_path(root_directory: Path, start: RunStart) -> Path:
         if isinstance(sub_project_name, str) and sub_project_name.strip():
             dir_path = dir_path / sub_project_name.strip()
         elif sub_project_name is not None:
-            logger.info(
+            LOGGER.info(
                 "Run %s contained sub_project_name=%r, but it was not a "
                 "non-empty string. Writing under project directory %s only.",
                 start.get("uid"),
@@ -45,7 +79,7 @@ def _create_nx_file_path(root_directory: Path, start: RunStart) -> Path:
                 dir_path,
             )
     elif project_name is not None:
-        logger.info(
+        LOGGER.info(
             "Run %s contained project_name=%r, but it was not a non-empty string. "
             "Writing under root output directory %s.",
             start.get("uid"),
@@ -53,9 +87,8 @@ def _create_nx_file_path(root_directory: Path, start: RunStart) -> Path:
             dir_path,
         )
     else:
-        logger.debug(
-            "Run %s did not contain project_name. "
-            "Writing under root output directory %s.",
+        LOGGER.debug(
+            "Run %s did not contain project_name. Writing under root output directory %s.",
             start.get("uid"),
             dir_path,
         )
@@ -78,7 +111,7 @@ class NexusHdfWriter:
     def __init__(self, output_root_directory: Path = Path(".")) -> None:
         """Pass the root directory path which the writer will dump nexus files to."""
         super().__init__()
-        self.OUTPUT_ROOT_DIRECTORY = validate_directory(
+        self.OUTPUT_ROOT_DIRECTORY = _validate_directory(
             output_root_directory, "Output root directory"
         )
         self._current_output_path: Path | None = None
@@ -96,6 +129,7 @@ class NexusHdfWriter:
                 _create_nx_file_path(self.OUTPUT_ROOT_DIRECTORY, run_start), nexus_root
             )
 
-    @log_time_taken
-    def _write_to_file(self, output_path: Path, nexus_root: nexus.NXroot):
+    def _write_to_file(self, output_path: Path, nexus_root: nexus.NXroot) -> None:
+        start_time = time.perf_counter()
         nexus_root.save(output_path)
+        LOGGER.info(f"Wrote to file in {time.perf_counter() - start_time}s.")

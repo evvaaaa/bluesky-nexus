@@ -1,61 +1,31 @@
-Skip to content
-Search or jump to…
-
-Pull requests
-Issues
-Marketplace
-Explore
-
-
-@whs92
-NSLS-II-HXN
-/
-hxntools
-13
-0
-3
-Code
-Issues
-1
-Pull requests
-Actions
-Projects
-Wiki
-Security
-Insights
-hxntools/.gitignore
-
-HXN Operator MNT: Fix typo and add .gitignore
-Latest commit d5e42c6 on Apr 17, 2015
- History
- 0 contributors
-94 lines (75 sloc)  1011 Bytes
-
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
+*$py.class
 
 # C extensions
 *.so
 
 # Distribution / packaging
 .Python
-env/
-bin/
 build/
 develop-eggs/
 dist/
+downloads/
 eggs/
+.eggs/
 lib/
 lib64/
 parts/
 sdist/
 var/
-.venv/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-doc/_build
+MANIFEST
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -70,77 +40,84 @@ pip-delete-this-directory.txt
 # Unit test / coverage reports
 htmlcov/
 .tox/
-cover/
+.nox/
 .coverage
+.coverage.*
 .cache
 nosetests.xml
 coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+.reports/
 
 # Translations
 *.mo
 *.pot
 
-# Mr Developer
-.mr.developer.cfg
-.project
-.pydevproject
-
-# Rope
-.ropeproject
-
-# Django stuff:
-*.log
-*.pot
+# Flask stuff:
+instance/
+.webassets-cache
 
 # Sphinx documentation
 docs/_build/
 
-#mac
-.DS_Store
-*~
-
-#vim
-*.swp
-
-#pycharm
-.idea/*
-
-#Dolphin browser files
-.directory/
-.directory
-
-#Binary data files
-*.volume
-*.am
-*.tiff
-*.tif
-*.dat
-*.DAT
-
-#generated documntation files
-doc/resource/api/generated/
-
-# Enaml
-__enamlcache__/
-
-
 # PyBuilder
 target/
-© 2021 GitHub, Inc.
-Terms
-Privacy
-Security
-Status
-Docs
-Contact GitHub
-Pricing
-API
-Training
-Blog
-About
-Loading complete
 
-# vscode related files
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+
+# version
+**/_version.py
+
+# pipenv
+#   According to pypa/pipenv#598, it is recommended to include Pipfile.lock in version control.
+#   However, in case of collaboration, if having platform-specific dependencies or dependencies
+#   having no cross-platform support, pipenv may install dependencies that don't work, or not
+#   install all needed dependencies.
+#Pipfile.lock
+
+# PEP 582; used by e.g. github.com/David-OConnor/pyflow
+__pypackages__/
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# IDEs
 .vscode/
+.idea/
+*.swp
+*.swo
+*~
 
-src/bluesky_nexus/_version.py
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db

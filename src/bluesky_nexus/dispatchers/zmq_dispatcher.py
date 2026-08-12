@@ -8,7 +8,7 @@ It consumes Bluesky documents from a ZeroMQ publisher and forwards them to
 from pathlib import Path
 
 from bluesky_nexus import NexusCallback, NexusHdfWriter
-from bluesky_nexus.common.logging_utils import logger
+from bluesky_nexus.logger import LOGGER
 
 
 def run_zmq_dispatcher(root_output_directory: Path, zmq_ip: str, zmq_port: int) -> None:
@@ -40,19 +40,19 @@ def run_zmq_dispatcher(root_output_directory: Path, zmq_ip: str, zmq_port: int) 
     # Create and start the RemoteDispatcher
     # ---------------------------------------------------------------------------
     address = f"{zmq_ip}:{zmq_port}"
-    logger.info("Connecting to ZeroMQ publisher at %s", address)
+    LOGGER.info("Connecting to ZeroMQ publisher at %s", address)
 
     dispatcher = RemoteDispatcher(address)
     dispatcher.subscribe(writer)
 
-    logger.info("ZMQ RemoteDispatcher ready. Press Ctrl+C to stop.")
+    LOGGER.info("ZMQ RemoteDispatcher ready. Press Ctrl+C to stop.")
 
     try:
         dispatcher.start()
     except KeyboardInterrupt:
-        logger.warning("Shutdown requested by user (Ctrl+C).")
+        LOGGER.warning("Shutdown requested by user (Ctrl+C).")
         try:
             dispatcher.stop()
         except Exception:
-            logger.exception("Error stopping ZMQ dispatcher cleanly.")
-        logger.info("ZMQ dispatcher stopped.")
+            LOGGER.exception("Error stopping ZMQ dispatcher cleanly.")
+        LOGGER.info("ZMQ dispatcher stopped.")

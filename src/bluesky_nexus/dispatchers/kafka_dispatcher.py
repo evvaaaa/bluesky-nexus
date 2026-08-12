@@ -8,7 +8,7 @@ It consumes Bluesky documents from a ZeroMQ publisher and forwards them to
 from pathlib import Path
 
 from bluesky_nexus import NexusCallback, NexusHdfWriter
-from bluesky_nexus.common.logging_utils import logger
+from bluesky_nexus.logger import LOGGER
 
 
 def run_kafka_dispatcher(
@@ -44,7 +44,7 @@ def run_kafka_dispatcher(
     # ---------------------------------------------------------------------------
     # Create and start the RemoteDispatcher
     # ---------------------------------------------------------------------------
-    logger.info(
+    LOGGER.info(
         "Connecting to Kafka brokers '%s' on topic '%s' with group '%s'.",
         kafka_brokers,
         kafka_topic,
@@ -58,16 +58,16 @@ def run_kafka_dispatcher(
         group_id=kafka_group,
     )
     dispatcher.subscribe(writer)
-    logger.info("Kafka RemoteDispatcher ready. Press Ctrl+C to stop.")
+    LOGGER.info("Kafka RemoteDispatcher ready. Press Ctrl+C to stop.")
 
     try:
         dispatcher.start()
     except KeyboardInterrupt:
-        logger.warning("Shutdown requested by user (Ctrl+C).")
+        LOGGER.warning("Shutdown requested by user (Ctrl+C).")
         try:
             dispatcher.stop()
         except Exception:
-            logger.exception("Error stopping Kafka dispatcher cleanly.")
-        logger.info("Kafka dispatcher stopped.")
+            LOGGER.exception("Error stopping Kafka dispatcher cleanly.")
+        LOGGER.info("Kafka dispatcher stopped.")
 
-    logger.info("Kafka RemoteDispatcher ready. Press Ctrl+C to stop.")
+    LOGGER.info("Kafka RemoteDispatcher ready. Press Ctrl+C to stop.")

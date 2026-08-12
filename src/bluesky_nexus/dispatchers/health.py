@@ -10,9 +10,7 @@ import threading
 
 from fastapi import FastAPI
 
-from bluesky_nexus.common.logging_utils import (
-    logger,
-)
+from bluesky_nexus.logger import LOGGER
 
 
 class HealthManager:
@@ -67,18 +65,16 @@ class HealthManager:
         while not self._stop_event.is_set():
             # ZMQ check
             try:
-                with socket.create_connection(
-                    (self.zmq_host, self.zmq_port), timeout=2
-                ):
+                with socket.create_connection((self.zmq_host, self.zmq_port), timeout=2):
                     if not self._healthy:
-                        logger.debug(
+                        LOGGER.debug(
                             f"ZMQ TCP port {self.zmq_host}:{self.zmq_port} is "
                             "available. Marking as healthy."
                         )
                     self._healthy = True
             except Exception:
                 if self._healthy:
-                    logger.debug(
+                    LOGGER.debug(
                         f"ZMQ TCP port {self.zmq_host}:{self.zmq_port} is unavailable."
                         f" Marking as unhealthy."
                     )

@@ -1,17 +1,19 @@
 """NeXus Writer callback for bluesky plans."""
 
 from collections.abc import Callable
+from importlib.metadata import version
 from typing import Any
 
 from event_model import RunStop, documents
 from event_model.documents import Document, RunStart
 from nexusformat import nexus
 
-from bluesky_nexus import __version__
-from bluesky_nexus.common.logging_utils import logger
+from bluesky_nexus.logger import LOGGER
 
 from ._data_extractor import RunData
 from ._nexus_structure import create_nexus_structure
+
+__version__ = version("bluesky_nexus")
 
 
 class NexusCallback:
@@ -23,7 +25,7 @@ class NexusCallback:
         Initialize the NeXus callback and save consumers.
         """
         # Log the version of the package
-        logger.info(f"NexusCallback Initialized: version - {__version__}")
+        LOGGER.info(f"NexusCallback Initialized: version - {__version__}")
         self._run_data: RunData | None = None
         self._consumers = consumers
 
@@ -35,7 +37,7 @@ class NexusCallback:
             self.run_start(document)  # type: ignore
             return
         if self._run_data is None:
-            logger.warning(f"Received {name} without a run start...")
+            LOGGER.warning(f"Received {name} without a run start...")
             return
 
         if name == "descriptor":

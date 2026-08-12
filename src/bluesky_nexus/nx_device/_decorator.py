@@ -15,9 +15,7 @@ from bluesky_nexus.nx_schema.nx_base import NxBase
 T = TypeVar("T")
 
 
-_schema_added: weakref.WeakKeyDictionary[type[HasHints], NxBase] = (
-    weakref.WeakKeyDictionary()
-)
+_schema_added: weakref.WeakKeyDictionary[type[HasHints], NxBase] = weakref.WeakKeyDictionary()
 _inheritance_structure: weakref.WeakKeyDictionary[type[HasHints], bool] = (
     weakref.WeakKeyDictionary()
 )
@@ -64,7 +62,7 @@ def _add_nx_schema_getter_and_device_metadata_to_hints(device_cls: type[T]) -> N
         hints["NX_schema"] = raw_schema
         hints["NX_class"] = raw_schema["@nxclass"]
 
-        return hints
+        return cast(PerObjectHint, hints)
 
     device_cls.hints = new_hints  # type: ignore
 
@@ -87,8 +85,7 @@ class NexusDevice:
         def decorator(device_cls: type[T]) -> type[T]:
             if not isinstance(device_cls, HasHints):
                 raise TypeError(
-                    f"Cannot apply nexus schema to {device_cls} as it "
-                    "is not `HasHints`."
+                    f"Cannot apply nexus schema to {device_cls} as it is not `HasHints`."
                 )
 
             # Validation without parent classes.
@@ -103,17 +100,13 @@ class NexusDevice:
 
             _schema_added[cast(type[HasHints], device_cls)] = validated_and_substituted
 
-            _add_nx_schema_getter_and_device_metadata_to_hints(
-                cast(type[HasHints], device_cls)
-            )
+            _add_nx_schema_getter_and_device_metadata_to_hints(cast(type[HasHints], device_cls))
             return device_cls
 
         return decorator
 
     @classmethod
-    def from_path(
-        cls, path: str | Path, inherit: bool = True
-    ) -> Callable[[type[T]], type[T]]:
+    def from_path(cls, path: str | Path, inherit: bool = True) -> Callable[[type[T]], type[T]]:
         """Load the chosen nx_schema path into the hints of the decorated device.
 
         If `inherit` then parent device schema will be included.

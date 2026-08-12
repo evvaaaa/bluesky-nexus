@@ -37,7 +37,7 @@ def wait_for_nexus_file(
 
 
 def get_logs(directory: Path) -> Path:
-    potential = directory / "nx_log.log"
+    potential = directory / "test-log.log"
     if not potential.exists():
         raise ValueError("Log directory not found")
     return potential
