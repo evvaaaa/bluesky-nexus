@@ -1,5 +1,6 @@
 """A decorator for applying nexus schema to device."""
 
+import inspect
 import weakref
 from collections.abc import Callable
 from pathlib import Path
@@ -73,6 +74,40 @@ class NexusDevice:
     """
 
     @classmethod
+    def from_schema(cls, nx_schema: str | Path | dict | NxBase) -> Callable[[type[T]], type[T]]:
+        if isinstance(nx_schema, str | Path):
+            return cls.from_path(Path(nx_schema))
+        if isinstance(nx_schema, dict):
+            return cls.from_dictionary(nx_schema)
+        if isinstance(nx_schema, NxBase):
+            return cls.from_pydantic_schema(nx_schema)
+
+    @classmethod
+    def from_pydantic_schema(
+        cls, nx_schema: NxBase, inherit: bool = True
+    ) -> Callable[[type[T]], type[T]]:
+        def decorator(device_cls: type[T]) -> type[T]:
+            if not isinstance(device_cls, HasHints):
+                raise TypeError(
+                    f"Cannot apply nexus schema to {device_cls} as it is not `HasHints`."
+                )
+
+            _inheritance_structure[device_cls] = inherit  # type: ignore
+            maybe_with_parents = (
+                _sum_parent_schema(cast(type[HasHints], device_cls), nx_schema)
+                if inherit
+                else nx_schema
+            )
+
+            _schema_added[cast(type[HasHints], device_cls)] = maybe_with_parents  # type: ignore
+
+            _add_nx_schema_getter_and_device_metadata_to_hints(cast(type[HasHints], device_cls))
+
+            return device_cls
+
+        return decorator
+
+    @classmethod
     def from_dictionary(
         cls, nx_schema: dict, inherit: bool = True
     ) -> Callable[[type[T]], type[T]]:
@@ -81,37 +116,41 @@ class NexusDevice:
         If `inherit` then parent device schema will be included.
         """
 
-        def decorator(device_cls: type[T]) -> type[T]:
-            if not isinstance(device_cls, HasHints):
-                raise TypeError(
-                    f"Cannot apply nexus schema to {device_cls} as it is not `HasHints`."
-                )
-
-            # Validation without parent classes.
-            validated_and_substituted = NxBase.from_dictionary(nx_schema)
-
-            _inheritance_structure[device_cls] = inherit  # type: ignore
-            if inherit:
-                validated_and_substituted = _sum_parent_schema(
-                    cast(type[HasHints], device_cls), validated_and_substituted
-                )
-
-            _schema_added[cast(type[HasHints], device_cls)] = validated_and_substituted  # type: ignore
-
-            _add_nx_schema_getter_and_device_metadata_to_hints(cast(type[HasHints], device_cls))
-            return device_cls
-
-        return decorator
+        deserialized = NxBase.from_dictionary(nx_schema)
+        return cls.from_pydantic_schema(deserialized, inherit=inherit)
 
     @classmethod
-    def from_path(cls, path: str | Path, inherit: bool = True) -> Callable[[type[T]], type[T]]:
-        """Load the chosen nx_schema path into the hints of the decorated device.
+    def from_path(
+        cls, nx_schema: str | Path, inherit: bool = True
+    ) -> Callable[[type[T]], type[T]]:
+        """Load the chosen nx_schema from a given path either absolute across the files system, or
+        relative to the device definition/where this wrapper is called from.
 
         If `inherit` then parent device schema will be included.
         """
-        path = Path(path)
+
+        this_file = Path(__file__).resolve()
+        frame = inspect.currentframe()
+        assert frame
+        caller_file = None
+        # skip current frame and walk back
+        frame = frame.f_back
+        while frame:
+            try:
+                fpath = Path(frame.f_code.co_filename).resolve()
+            except Exception:
+                frame = frame.f_back
+                continue
+            if fpath != this_file:
+                caller_file = fpath
+                break
+            frame = frame.f_back
+
+        base_dir = caller_file.parent if caller_file is not None else Path.cwd()
+        path = (base_dir / Path(nx_schema)).resolve()
+
         if not path.exists():
-            raise ValueError(f"Path `{path}` does not exist.")
+            raise ValueError(f"Path `{path.absolute()}` does not exist.")
         with path.open("r") as f:
-            nx_schema = yaml.safe_load(f)
-        return cls.from_dictionary(nx_schema, inherit=inherit)
+            loaded_dictionary = yaml.safe_load(f)
+        return cls.from_dictionary(loaded_dictionary, inherit=inherit)

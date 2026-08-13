@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 from ophyd import Component as Cpt
 from ophyd import Device, EpicsSignal
@@ -11,6 +13,51 @@ from pydantic import ValidationError
 
 from bluesky_nexus import NexusDevice
 from bluesky_nexus.nx_schema import NxAttribute, NxBase, NxField, NxGroup, add_nx_class_basemodel
+from bluesky_nexus.nx_schema._nx_classes.nx_object import NxObject
+
+
+@pytest.mark.parametrize(
+    ("argument"),
+    (
+        "a_relative_schema.yaml",
+        Path("a_relative_schema.yaml"),
+        (Path(__file__).parent.absolute() / "a_relative_schema.yaml"),
+        {
+            "@nxclass": "NXgroup",
+            "SOME_SUBGROUP": {"@nxclass": "NXobject", "some_data_key": "some_data_key_value"},
+            "@some_attribute": "some_attribute_value",
+            "another_data_key": "another_data_key_value",
+        },
+        NxGroup(
+            SOME_SUBGROUP=NxObject(some_data_key=NxField(data_key="some_data_key_value")),
+            some_attribute=NxAttribute(constant="some_attribute_value"),
+            another_data_key=NxField(data_key="another_data_key_value"),
+        ),
+    ),
+)
+def test_methods_of_loading_schema(argument) -> None:
+    @NexusDevice.from_schema(argument)
+    class SomeDevice(Device): ...
+
+    assert SomeDevice("X", name="device").hints == {
+        "NX_class": "NXgroup",
+        "NX_schema": {
+            "@nxclass": "NXgroup",
+            "@some_attribute": "some_attribute_value",
+            "SOME_SUBGROUP": {"@nxclass": "NXobject", "some_data_key": "some_data_key_value"},
+            "another_data_key": "another_data_key_value",
+        },
+        "fields": [],
+    }
+
+
+def test_loading_schema_from_a_non_existent_path() -> None:
+    with pytest.raises(
+        ValueError, match=r"Path `/.*/tests/some_sub_package/my_schema.yaml` does not exist\."
+    ):  # Becomes absolute, includin root.
+
+        @NexusDevice.from_path("some_sub_package/my_schema.yaml")
+        class SomeDevice(Device): ...
 
 
 @pytest.mark.parametrize(
