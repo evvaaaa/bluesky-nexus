@@ -34,55 +34,64 @@ authors = [
 requires-python = ">=3.12"
 dependencies = [
   "bluesky",
-  "bluesky-kafka",
   "nexusformat",
   "event-model",
   "numpy",
   "pydantic",
   "PyYAML",
+]
+
+[project.optional-dependencies]
+zmq = [
   "pyzmq",
   "uvicorn",
   "fastapi",
 ]
 
+kafka = ["bluesky-kafka"]
 
-[project.optional-dependencies]
 dev = [
-    "ruff",
-    "mypy",
-    "bandit[toml]",
-    "pre-commit",
-    "pytest",
-    "pytest-asyncio",
-    "pytest-html",
-    "pytest-cov",
-    "pytest-timeout" ,
-    "coverage",
-    "py",
+  "ruff",
+  "mypy",
+  "bandit[toml]",
+  "pre-commit",
+  "pytest",
+  "pytest-asyncio",
+  "pytest-html",
+  "pytest-cov",
+  "pytest-timeout" ,
+  "coverage",
+  "py",
 ]
 docs = [
-    "sphinx",
-    "sphinx-rtd-theme",
-    "sphinx-autodoc-typehints",
-    "myst-parser",
-    "types-PyYAML",
+  "sphinx",
+  "sphinx-rtd-theme",
+  "sphinx-autodoc-typehints",
+  "myst-parser",
+  "types-PyYAML",
 ]
 test = [
-    "pytest",
-    "pytest-asyncio",
-    "pytest-html",
-    "pytest-cov",
-    "pytest-timeout",
-    "coverage",
-    "py",
+  "pytest",
+  "pytest-asyncio",
+  "pytest-html",
+  "pytest-cov",
+  "pytest-timeout",
+  "coverage",
+  "py",
 
-    # For device definitions in tests
-    "ophyd",
-    "ophyd-async[sim, ca]",
-    "pytest",
-    "pre-commit",
-    "pytest-html",
-    "pyepics",
+  # For device definitions in tests.
+  "ophyd",
+  "ophyd-async[sim, ca]",
+  "pytest",
+  "pre-commit",
+  "pytest-html",
+  "pyepics",
+
+
+  # So we can test zmq.
+  "pyzmq",
+  "uvicorn",
+  "fastapi",
 ]
 
 

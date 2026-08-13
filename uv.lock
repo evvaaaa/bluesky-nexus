@@ -175,15 +175,11 @@ name = "bluesky-nexus"
 source = { editable = "." }
 dependencies = [
     { name = "bluesky" },
-    { name = "bluesky-kafka" },
     { name = "event-model" },
-    { name = "fastapi" },
     { name = "nexusformat" },
     { name = "numpy" },
     { name = "pydantic" },
     { name = "pyyaml" },
-    { name = "pyzmq" },
-    { name = "uvicorn" },
 ]
 
 [package.optional-dependencies]
@@ -207,8 +203,12 @@ docs = [
     { name = "sphinx-rtd-theme" },
     { name = "types-pyyaml" },
 ]
+kafka = [
+    { name = "bluesky-kafka" },
+]
 test = [
     { name = "coverage" },
+    { name = "fastapi" },
     { name = "ophyd" },
     { name = "ophyd-async", extra = ["ca", "sim"] },
     { name = "pre-commit" },
@@ -219,17 +219,25 @@ test = [
     { name = "pytest-cov" },
     { name = "pytest-html" },
     { name = "pytest-timeout" },
+    { name = "pyzmq" },
+    { name = "uvicorn" },
+]
+zmq = [
+    { name = "fastapi" },
+    { name = "pyzmq" },
+    { name = "uvicorn" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "bandit", extras = ["toml"], marker = "extra == 'dev'" },
     { name = "bluesky" },
-    { name = "bluesky-kafka" },
+    { name = "bluesky-kafka", marker = "extra == 'kafka'" },
     { name = "coverage", marker = "extra == 'dev'" },
     { name = "coverage", marker = "extra == 'test'" },
     { name = "event-model" },
-    { name = "fastapi" },
+    { name = "fastapi", marker = "extra == 'test'" },
+    { name = "fastapi", marker = "extra == 'zmq'" },
     { name = "mypy", marker = "extra == 'dev'" },
     { name = "myst-parser", marker = "extra == 'docs'" },
     { name = "nexusformat" },
@@ -253,15 +261,17 @@ requires-dist = [
     { name = "pytest-timeout", marker = "extra == 'dev'" },
     { name = "pytest-timeout", marker = "extra == 'test'" },
     { name = "pyyaml" },
-    { name = "pyzmq" },
+    { name = "pyzmq", marker = "extra == 'test'" },
+    { name = "pyzmq", marker = "extra == 'zmq'" },
     { name = "ruff", marker = "extra == 'dev'" },
     { name = "sphinx", marker = "extra == 'docs'" },
     { name = "sphinx-autodoc-typehints", marker = "extra == 'docs'" },
     { name = "sphinx-rtd-theme", marker = "extra == 'docs'" },
     { name = "types-pyyaml", marker = "extra == 'docs'" },
-    { name = "uvicorn" },
+    { name = "uvicorn", marker = "extra == 'test'" },
+    { name = "uvicorn", marker = "extra == 'zmq'" },
 ]
-provides-extras = ["dev", "docs", "test"]
+provides-extras = ["dev", "docs", "kafka", "test", "zmq"]
 
 [[package]]
 name = "certifi"

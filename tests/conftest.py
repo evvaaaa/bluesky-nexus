@@ -10,7 +10,7 @@ import zmq
 from bluesky import RunEngine
 from bluesky.callbacks.zmq import Proxy, Publisher
 
-from bluesky_nexus import NexusCallback, NexusHdfWriter
+from bluesky_nexus import NexusHdfWriterCallback
 from bluesky_nexus.dispatchers import run_zmq_dispatcher
 from bluesky_nexus.logger import setup_logging
 from bluesky_nexus.nx_device._decorator import _inheritance_structure, _schema_added
@@ -51,7 +51,7 @@ def ensure_fresh_mutable_global_caches(monkeypatch) -> None:
 @pytest.fixture()
 def RE_directly_subscribed(tmpdir: Path) -> RunEngine:
     RE = RunEngine()
-    RE.subscribe(NexusCallback(NexusHdfWriter(tmpdir)))
+    RE.subscribe(NexusHdfWriterCallback(tmpdir))
     return RE
 
 

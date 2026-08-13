@@ -7,7 +7,7 @@ It consumes Bluesky documents from a ZeroMQ publisher and forwards them to
 
 from pathlib import Path
 
-from bluesky_nexus import NexusCallback, NexusHdfWriter
+from bluesky_nexus import NexusHdfWriterCallback
 from bluesky_nexus.logger import LOGGER
 
 
@@ -39,7 +39,7 @@ def run_kafka_dispatcher(
             "Did you install `bluesky-nexus-callback[kafka]`?"
         ) from exception
 
-    writer = NexusCallback(NexusHdfWriter(root_output_directory))
+    writer = NexusHdfWriterCallback(root_output_directory)
 
     # ---------------------------------------------------------------------------
     # Create and start the RemoteDispatcher
