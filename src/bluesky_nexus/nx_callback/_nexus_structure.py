@@ -135,13 +135,11 @@ def _add_nx_object_data_to_group(
         attrs[nx_attribute_name.removeprefix("@")] = nexus.NXfield(value=attribute_value)
     group.attrs.update(attrs)
 
-    for nx_field_schema in group_schema.nx_fields().values():
+    for nx_alias, nx_field_schema in group_schema.nx_fields().items():
         if nx_field_schema.data_key not in object_data.formatted_data_key_name_to_data:
             continue
         data_key_data = object_data.formatted_data_key_name_to_data[nx_field_schema.data_key]
-        group[nx_field_schema.nx_alias or object_name] = _new_nx_field(
-            nx_field_schema, data_key_data, object_data
-        )
+        group[nx_alias or object_name] = _new_nx_field(nx_field_schema, data_key_data, object_data)
 
     for (
         sub_group_name,

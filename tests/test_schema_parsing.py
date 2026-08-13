@@ -11,7 +11,6 @@ from nexusformat import nexus
 from ophyd.sim import SynAxis
 from ophyd_async.core import (
     StandardReadable,
-    StandardReadableFormat,
     soft_signal_r_and_setter,
     soft_signal_rw,
 )
@@ -128,7 +127,7 @@ def test_simple_nx_detector(
     @NexusDevice.from_dictionary(
         {
             "@nxclass": "NXdetector",
-            "data": {"@nxclass": "NXfield", "data_key": "channel-1-value"},
+            "data": {"data_key": "channel-1-value"},
         }
     )
     class NxSimPointDetector(SimPointDetector):
@@ -154,44 +153,6 @@ def test_simple_nx_detector(
     ]
     assert list(loaded["data"]) == ["time", "value"]
     assert list(loaded["data"]["value"]) == [290, 290, 290]
-
-
-@pytest.mark.parametrize(
-    ("passed_alias", "expected_alias"), [(None, ""), ("some_alias", "some_alias")]
-)
-def test_device_with_only_one_field_schema(
-    RE_directly_subscribed: RunEngine,
-    tmpdir: Path,
-    passed_alias: str | None,
-    expected_alias: str,
-) -> None:
-    """Demonstrates that the tree structure doesn't require a group."""
-
-    @NexusDevice.from_dictionary({"@nxclass": "NXfield", "data_key": "", "nx_alias": passed_alias})
-    class MyPositioner(StandardReadable):
-        def __init__(self, name: str) -> None:
-            with self.add_children_as_readables(StandardReadableFormat.HINTED_SIGNAL):
-                self.signal = soft_signal_rw(int)
-            with self.add_children_as_readables(StandardReadableFormat.CHILD):
-                self.other_signal_which_wont_end_up_in_nexus = soft_signal_rw(int)
-            super().__init__(name=name)
-            self.signal.set_name(name)
-
-    device = MyPositioner(name="my_positioner")
-    assert device.hints == {
-        "NX_class": "NXfield",
-        "NX_schema": {
-            "data_key": "",
-            "nx_alias": expected_alias,
-            "@nxclass": "NXfield",
-        },
-        "fields": ["my_positioner"],
-    }
-    RE_directly_subscribed(bp.count([device], num=3))
-    loaded = load_only_generated_nexus_file(tmpdir)["entry"]["primary"]["devices"]
-    assert list(loaded) == ["my_positioner"]
-    assert list(loaded["my_positioner"]) == ["time", "value"]
-    assert list(loaded["my_positioner"]["value"]) == [0, 0, 0]
 
 
 def test_nexus_writer_on_signals(
@@ -268,7 +229,6 @@ def test_constant_attributes(RE_directly_subscribed: RunEngine, tmpdir) -> None:
             "@nxclass": "NXobject",
             "@description": "Some constant description",
             "sim_motor_with_description": {
-                "@nxclass": "NXfield",
                 "data_key": "",
                 "@units": "overriden",
                 "@long_name": "Long motor name",
@@ -352,7 +312,6 @@ def test_attributes_from_data_keys(RE_directly_subscribed: RunEngine, tmpdir):
         {
             "@nxclass": "NXobject",
             "readback": {
-                "@nxclass": "NXfield",
                 "data_key": "readback",
                 "@units": {"data_key": "egu"},
             },

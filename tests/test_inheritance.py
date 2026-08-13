@@ -23,7 +23,6 @@ def test_schema_single_inheritance() -> None:
         {
             "@nxclass": "NXobject",
             "the_odysee": {
-                "@nxclass": "NXfield",
                 "@units": "lyrics",
                 "data_key": "signal_made_of_bronze",
             },
@@ -35,15 +34,13 @@ def test_schema_single_inheritance() -> None:
     expected_grandma_schema = {
         "the_odysee": {
             "data_key": "signal_made_of_bronze",
-            "nx_alias": "the_odysee",
-            "@nxclass": "NXfield",
             "@units": "lyrics",
         }
     }
 
     assert (
         Grandma("GRANDMA", name="granma").hints["NX_schema"]
-        == NxBase.from_dict(
+        == NxBase.from_dictionary(
             {
                 "@nxclass": "NXobject",
                 **expected_grandma_schema,
@@ -60,7 +57,7 @@ def test_schema_single_inheritance() -> None:
 
     assert (
         Mama("MAMA", name="mama").hints["NX_schema"]
-        == NxBase.from_dict(
+        == NxBase.from_dictionary(
             {
                 "@nxclass": "NXobject",
                 **expected_mama_schema,
@@ -90,7 +87,7 @@ def test_schema_single_inheritance() -> None:
 
     assert (
         Me("ME", name="me").hints["NX_schema"]
-        == NxBase.from_dict(
+        == NxBase.from_dictionary(
             {
                 "@nxclass": "NXobject",
                 **expected_me_schema,
@@ -142,7 +139,6 @@ def test_schema_multi_inheritance() -> None:
                 "signal1n": "value11",
                 "signaln1": "value11",
                 "signal": {
-                    "@nxclass": "NXfield",
                     "data_key": "signal",
                     "@attrnm": "value11",
                     "@attr1n": "value11",
@@ -168,7 +164,6 @@ def test_schema_multi_inheritance() -> None:
                 "signal1n": "value12",
                 "signaln2": "value12",
                 "signal": {
-                    "@nxclass": "NXfield",
                     "data_key": "signal",
                     "@attrnm": "value12",
                     "@attr1n": "value12",
@@ -192,7 +187,6 @@ def test_schema_multi_inheritance() -> None:
                 "signaln": "value1",
                 "signal1": "value1",
                 "signal": {
-                    "@nxclass": "NXfield",
                     "data_key": "signal",
                     "@attrn": "value1",
                     "@attr1": "value1",
@@ -216,7 +210,6 @@ def test_schema_multi_inheritance() -> None:
                 "signal2n": "value21",
                 "signaln1": "value21",
                 "signal": {
-                    "@nxclass": "NXfield",
                     "data_key": "signal",
                     "@attrnm": "value21",
                     "@attr2n": "value21",
@@ -242,7 +235,6 @@ def test_schema_multi_inheritance() -> None:
                 "signal2n": "value22",
                 "signaln2": "value22",
                 "signal": {
-                    "@nxclass": "NXfield",
                     "data_key": "signal",
                     "@attrnm": "value22",
                     "@attr2n": "value22",
@@ -266,7 +258,6 @@ def test_schema_multi_inheritance() -> None:
                 "signaln": "value2",
                 "signal2": "value2",
                 "signal": {
-                    "@nxclass": "NXfield",
                     "data_key": "signal",
                     "@attrn": "value2",
                     "@attr2": "value2",
@@ -307,9 +298,7 @@ def test_schema_multi_inheritance() -> None:
                 "@attrn1": "value11",
                 "@attrn2": "value12",
                 "@attrnm": "value11",
-                "@nxclass": "NXfield",
                 "data_key": "signal",
-                "nx_alias": "signal",
             },
             "signal1": "value1",
             "signal1n": "value11",
@@ -464,7 +453,7 @@ def test_deserialization_heirarchy() -> None:
             NxGroup3,
         ),
     ):
-        assert isinstance(cls.from_dict(cls_is_a_subclass().model_dump()), cls_is_a_subclass)
+        assert isinstance(cls.from_dictionary(cls_is_a_subclass().model_dump()), cls_is_a_subclass)
 
     for cls, cls_not_a_subclass in (
         (
@@ -485,8 +474,8 @@ def test_deserialization_heirarchy() -> None:
             TypeError,
             match=(
                 f"Found the specified NXclass {cls_not_a_subclass}, but it cannot be "
-                f"initialized from `{cls.__name__}.from_dict` as it isn't a subclass "
+                f"initialized from `{cls.__name__}.from_dictionary` as it isn't a subclass "
                 "of it."
             ),
         ):
-            cls.from_dict(cls_not_a_subclass().model_dump())
+            cls.from_dictionary(cls_not_a_subclass().model_dump())

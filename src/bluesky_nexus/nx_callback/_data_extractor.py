@@ -5,7 +5,7 @@ RunData to write to disk.
 
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
-from typing import Any, cast
+from typing import Any, NotRequired, cast
 
 from bluesky.protocols import Descriptor
 from event_model import (
@@ -71,12 +71,10 @@ def _new_schema_with_missing_fields(
             continue
 
         raw_schema[data_key_name] = {
-            "@nxclass": "NXfield",
             "data_key": data_key_name,
-            "nx_alias": data_key_name or object_name,  # Special case if data key is ""
         }
 
-    return NxGroup.from_dict(raw_schema)
+    return NxGroup.from_dictionary(raw_schema)
 
 
 def _separator_from_data_keys(
@@ -104,6 +102,11 @@ def _data_key_to_nx_formatted_data_key(
     return data_key_name.removeprefix(object_name).removeprefix(separator or "")
 
 
+class _PerObjectHintMaybeWithNxClass(PerObjectHint):
+    NX_class: NotRequired[str]
+    NX_schema: NotRequired[dict]
+
+
 @dataclass
 class ObjectData:
     nx_schema: NxBase
@@ -121,7 +124,7 @@ class ObjectData:
     def from_descriptor_data(
         cls,
         object_name: str,
-        hint: PerObjectHint,
+        hint: _PerObjectHintMaybeWithNxClass,
         read_data_keys: dict[str, DataKey],
         configuration: Configuration,
     ) -> "ObjectData":
@@ -171,14 +174,13 @@ class ObjectData:
 
         # Parse the nexus schema or make a new NXobject, add the missing keys
         # (if possible).
-        if "NX_schema" in hint:
+        if isinstance(raw_schema := hint.get("NX_schema"), dict):
             # Only validate with NxGroup to ensure maximum campatibility with packages
             # adding their own schema in the device layer.
             # If a device passes validation on `NxGroup` it can be added
             try:
-                raw_schema = hint["NX_schema"]  # type: ignore
                 # Perform an initial validation on the provided schema.
-                nx_schema = NxBase.from_dict(cast(dict, raw_schema))
+                nx_schema = NxBase.from_dictionary(raw_schema)
 
                 if isinstance(nx_schema, NxGroup):
                     # If the object's `@nxclass` is a subclass of `NxGroup`,
@@ -262,7 +264,7 @@ class StreamData:
             hint = descriptor.get("hints", {}).get(object_name, {})
             object_data[object_name] = ObjectData.from_descriptor_data(
                 object_name,
-                cast(PerObjectHint, hint),
+                cast(_PerObjectHintMaybeWithNxClass, hint),
                 data_keys,
                 configuration,
             )

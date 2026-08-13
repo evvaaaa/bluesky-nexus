@@ -89,7 +89,7 @@ class NexusDevice:
                 )
 
             # Validation without parent classes.
-            validated_and_substituted = NxBase.from_dict(nx_schema)
+            validated_and_substituted = NxBase.from_dictionary(nx_schema)
 
             _inheritance_structure[device_cls] = inherit  # type: ignore
             if inherit:
