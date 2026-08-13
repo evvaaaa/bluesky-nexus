@@ -337,3 +337,26 @@ def test_attributes_from_data_keys(RE_directly_subscribed: RunEngine, tmpdir):
     assert list(loaded["device"]) == ["egu", "readback"]
     assert list(loaded["device"]["readback"]["value"].attrs) == ["units"]
     assert loaded["device"]["readback"]["value"].attrs["units"] == "Oz"
+
+
+# TODO: Currently the nexusformat validator doesn't seem capable of this.
+# def test_passing_bluesky_nexus_nx_schema_but_incorrect_nexusformat_definitions(
+#     RE_directly_subscribed: RunEngine, tmpdir, caplog: pytest.LogCaptureFixture
+# ):
+#     @add_nx_class_basemodel
+#     class NxData(NxGroup):
+#         data: NxObject  # A NXdata should contain a single field for `data:`
+#
+#     @NexusDevice.from_pydantic_schema(
+#         NxData(data=NxObject(some_data_key=NxField(data_key="user_readback")))
+#     )
+#     class SomeSimMotor(SimMotor): ...
+#
+#     RE_directly_subscribed(bp.count([SomeSimMotor(name="sim_motor")]))
+#     assert (
+#         "Created a nexus structure for sim_motor but it cannot be validated against the "
+#         "nexusformat definitions. A default NXObject will be used..."
+#     ) in caplog.text
+#     loaded = load_only_generated_nexus_file(tmpdir)["entry"]["primary"]["devices"]["sim_motor"]
+#     assert loaded.attrs == {"nxclass": "NXobject"}
+#     assert list(loaded) == ["acceleration_time", "sim_motor", "velocity"]

@@ -195,7 +195,6 @@ def add_stream_data_to_group(
             _add_nx_object_data_to_group(
                 object_name, device_group, object_data, object_data.nx_schema
             )
-            devices_group[object_name] = device_group
             for (
                 nx_attribute_name,
                 nx_attribute,
@@ -203,6 +202,33 @@ def add_stream_data_to_group(
                 device_group.attrs[nx_attribute_name.removeprefix("@")] = _attribute_value(
                     nx_attribute, object_data
                 )
+
+            # TODO: Something like this where we can validate if individual NXgroups are
+            # correct and just use NXObject if not... This is promising with nexusformat,
+            # but it doesn't currently seem capable of it, or at least I'm finding the
+            # interface to the class to be insufficient.
+            # group_validator = GroupValidator(object_data.nx_schema.nxclass.constant)
+            # group_validator.validate(devices_group, level="info")
+            #
+            # if not group_validator.valid_groups:
+            #     LOGGER.warning(
+            #         f"Created a nexus structure for {object_name} "
+            #         "but it cannot be validated against the nexusformat definitions. "
+            #         "A default NXObject will be used..."
+            #     )
+            #     device_group = nexus.NXgroup()
+            #
+            #     _add_nx_object_data_to_group(
+            #         object_name,
+            #         device_group,
+            #         object_data,
+            #         new_schema_with_missing_fields(
+            #             object_data.formatted_data_key_name_to_data, NxObject()
+            #         ),
+            #     )
+            #
+            devices_group[object_name] = device_group
+
         elif isinstance(object_data.nx_schema, NxField):
             # It has a single nx_field, no group...
             if object_data.nx_schema.data_key not in object_data.formatted_data_key_name_to_data:

@@ -50,7 +50,7 @@ class DataKeyData:
     """The units for this data_key received through the descriptor."""
 
 
-def _new_schema_with_missing_fields(
+def new_schema_with_missing_fields(
     data_key_data: dict[str, DataKeyData],
     nx_schema: NxGroup,
 ) -> NxGroup:
@@ -180,7 +180,7 @@ class ObjectData:
                 if isinstance(nx_schema, NxGroup):
                     # If the object's `@nxclass` is a subclass of `NxGroup`,
                     # instead of e.g an NxField directly, add this missing data_keys.
-                    nx_schema = _new_schema_with_missing_fields(
+                    nx_schema = new_schema_with_missing_fields(
                         formatted_data_key_name_to_data, nx_schema
                     )
                 return ObjectData(
@@ -213,7 +213,7 @@ class ObjectData:
             )
         else:
             nx_schema = NxObject()
-            nx_schema = _new_schema_with_missing_fields(formatted_data_key_name_to_data, nx_schema)
+            nx_schema = new_schema_with_missing_fields(formatted_data_key_name_to_data, nx_schema)
             LOGGER.debug(f"Creating new NxObject schema for device {object_name}.")
         return ObjectData(
             nx_schema=nx_schema,
