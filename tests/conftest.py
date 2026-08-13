@@ -43,7 +43,7 @@ def ensure_fresh_mutable_global_caches(monkeypatch) -> None:
         _inheritance_structure.copy(),
     )
     monkeypatch.setattr(
-        "bluesky_nexus.nx_schema.nx_base.NX_CLASS_TO_BASEMODEL",
+        "bluesky_nexus.nx_schema._nx_base.NX_CLASS_TO_BASEMODEL",
         NX_CLASS_TO_BASEMODEL.copy(),
     )
 

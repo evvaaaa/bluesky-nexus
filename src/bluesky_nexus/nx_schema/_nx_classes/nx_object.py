@@ -1,6 +1,6 @@
 """Contains the definition for NXobject."""
 
-from ..nx_base import NxGroup, add_nx_class_basemodel
+from .._nx_base import NxGroup, add_nx_class_basemodel
 
 
 @add_nx_class_basemodel

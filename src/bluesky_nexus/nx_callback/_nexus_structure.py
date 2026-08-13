@@ -9,7 +9,7 @@ import numpy as np
 from nexusformat import nexus
 
 from bluesky_nexus.logger import LOGGER
-from bluesky_nexus.nx_schema.nx_base import NxAttribute, NxField, NxGroup
+from bluesky_nexus.nx_schema import NxAttribute, NxField, NxGroup
 
 from ._data_extractor import (
     DataKeyData,
@@ -185,7 +185,7 @@ def add_stream_data_to_group(
         ),
     )
 
-    # Add devices
+    # Add devices.
     devices_group = nexus.NXgroup(nxclass="NXinstrument")
     stream_group["devices"] = devices_group
 
@@ -250,6 +250,12 @@ def create_nexus_structure(run_data: RunData) -> nexus.NXroot:
 
     # Add each stream.
     for stream_name, stream_data in run_data.stream_name_to_stream_data.items():
+        if stream_name in entry:
+            LOGGER.warning(
+                f"Cannot add stream {stream_name} as there is already a field named that "
+                "in the bluesky nexus structure."
+            )
+            continue
         try:
             new_stream_group = nexus.NXgroup(nxclass="NXsubentry")
             add_stream_data_to_group(run_data.start_time, new_stream_group, stream_data)

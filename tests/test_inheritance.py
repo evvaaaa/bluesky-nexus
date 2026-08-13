@@ -12,8 +12,7 @@ from ophyd_async.epics.motor import Motor
 from ophyd_async.plan_stubs import ensure_connected
 
 from bluesky_nexus import NexusDevice
-from bluesky_nexus.nx_schema import NxGroup, add_nx_class_basemodel
-from bluesky_nexus.nx_schema.nx_base import NxBase
+from bluesky_nexus.nx_schema import NxBase, NxGroup, add_nx_class_basemodel
 
 from . import load_only_generated_nexus_file
 

@@ -21,8 +21,12 @@ from event_model import (
 from event_model.documents.event_descriptor import Dtype, DtypeNumpy, DtypeNumpyItem
 
 from bluesky_nexus.logger import LOGGER
-from bluesky_nexus.nx_schema import NxField, NxGroup, NxObject
-from bluesky_nexus.nx_schema.nx_base import DISALLOWED_ALIASES_AND_OBJECT_NAMES, NxBase
+from bluesky_nexus.nx_schema import (
+    NxBase,
+    NxField,
+    NxGroup,
+    NxObject,
+)
 
 
 def _add_lists_mutably(list1: list, list2: list) -> None:
@@ -47,7 +51,6 @@ class DataKeyData:
 
 
 def _new_schema_with_missing_fields(
-    object_name: str,
     data_key_data: dict[str, DataKeyData],
     nx_schema: NxGroup,
 ) -> NxGroup:
@@ -61,14 +64,6 @@ def _new_schema_with_missing_fields(
     for data_key_name in data_key_data:
         if schema_specified_data_keys.get(data_key_name):
             continue  # Already added manually.
-
-        if data_key_name in DISALLOWED_ALIASES_AND_OBJECT_NAMES:
-            # The data_key with the object name stripped is not valid.
-            LOGGER.warning(
-                f"Cannot automatically add data_key {data_key_name}"
-                f"because it has a is disallowed name. It will be skipped."
-            )
-            continue
 
         raw_schema[data_key_name] = {
             "data_key": data_key_name,
@@ -186,7 +181,7 @@ class ObjectData:
                     # If the object's `@nxclass` is a subclass of `NxGroup`,
                     # instead of e.g an NxField directly, add this missing data_keys.
                     nx_schema = _new_schema_with_missing_fields(
-                        object_name, formatted_data_key_name_to_data, nx_schema
+                        formatted_data_key_name_to_data, nx_schema
                     )
                 return ObjectData(
                     nx_schema=nx_schema,
@@ -218,9 +213,7 @@ class ObjectData:
             )
         else:
             nx_schema = NxObject()
-            nx_schema = _new_schema_with_missing_fields(
-                object_name, formatted_data_key_name_to_data, nx_schema
-            )
+            nx_schema = _new_schema_with_missing_fields(formatted_data_key_name_to_data, nx_schema)
             LOGGER.debug(f"Creating new NxObject schema for device {object_name}.")
         return ObjectData(
             nx_schema=nx_schema,
@@ -240,10 +233,6 @@ class StreamData:
     sequence_numbers: list[int] = field(default_factory=list)
     times: list[float] = field(default_factory=list)
 
-    DISALLOWED_OBJECT_NAMES = frozenset(["time"])
-    """Keys which can't be selected because they're used to store information
-    about the stream."""
-
     @classmethod
     def from_descriptor(cls, descriptor: EventDescriptor) -> "StreamData":
         """Parse descriptor into individual object data."""
@@ -253,12 +242,6 @@ class StreamData:
         # We'll parse e.g "some-device" first (earlier in this list) before we parse
         # e.g "some-dev".
         for object_name, data_key_names in descriptor.get("object_keys", {}).items():
-            if object_name in cls.DISALLOWED_OBJECT_NAMES:
-                LOGGER.warning(
-                    f"Received an object called {object_name}. "
-                    "This is disallowed in the nexus writer. "
-                    "The device will be skipped..."
-                )
             data_keys = {k: v for k, v in descriptor["data_keys"].items() if k in data_key_names}
             configuration = descriptor.get("configuration", {}).get(object_name, {})
             hint = descriptor.get("hints", {}).get(object_name, {})
@@ -277,13 +260,6 @@ class StreamData:
         configuration.
         """
         for object_name in cast(dict, descriptor.get("object_keys", {})):
-            if object_name in self.DISALLOWED_OBJECT_NAMES:
-                LOGGER.warning(
-                    f"Received an object called {object_name}. "
-                    "This is disallowed in the nexus writer. "
-                    "The device will be skipped..."
-                )
-
             configuration = cast(
                 PerObjectHint,
                 descriptor.get("configuration", {}).get(object_name, {}),  # type: ignore

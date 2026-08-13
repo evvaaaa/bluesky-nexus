@@ -10,8 +10,7 @@ from ophyd_async.sim import SimPointDetector
 from pydantic import ValidationError
 
 from bluesky_nexus import NexusDevice
-from bluesky_nexus.nx_schema import NxGroup, add_nx_class_basemodel
-from bluesky_nexus.nx_schema.nx_base import NxAttribute, NxBase, NxField
+from bluesky_nexus.nx_schema import NxAttribute, NxBase, NxField, NxGroup, add_nx_class_basemodel
 
 
 @pytest.mark.parametrize(

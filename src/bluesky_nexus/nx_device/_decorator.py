@@ -9,8 +9,7 @@ import yaml
 from bluesky.protocols import HasHints
 from event_model import PerObjectHint
 
-from bluesky_nexus.nx_schema._nx_classes.nx_object import NxObject
-from bluesky_nexus.nx_schema.nx_base import NxBase
+from bluesky_nexus.nx_schema import NxBase, NxObject
 
 T = TypeVar("T")
 

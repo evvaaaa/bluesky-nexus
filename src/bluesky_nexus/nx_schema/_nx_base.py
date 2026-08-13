@@ -23,7 +23,7 @@ from pydantic import (
     model_serializer,
 )
 
-from .nx_attribute import NxAttribute
+from ._nx_attribute import NxAttribute
 
 NX_CLASS_TO_BASEMODEL: dict[str, type[NxBase]] = {}
 """Stores all the allowable nexus_class names and maps them
@@ -286,6 +286,3 @@ class NxField(NxBase):
                     )
 
         return cls(**kwargs)
-
-
-DISALLOWED_ALIASES_AND_OBJECT_NAMES = frozenset(NxField.model_fields)
