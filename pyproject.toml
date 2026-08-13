@@ -124,6 +124,10 @@ namespace_packages = true     # Enables namespace packages
 explicit_package_bases = true # Packages will be based in either the current directory or a member of MYPYPATH environment
 ignore_missing_imports = true # Surpresses error messages about imports that cannot be resolved
 check_untyped_defs = true     # type checks the interior of functions without type annotations
+plugins = ['pydantic.mypy']
+
+[tool.pydantic-mypy]
+init_forbid_extra = false # Used to allow extra options to nx schema basemodels
 
 [tool.bandit]
 exclude_dirs = ["tests", "venv", ".venv", "build", "dist"]
