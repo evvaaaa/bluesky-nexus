@@ -9,3 +9,7 @@ class NxDetector(NxGroup):
 
     data: NxField
     # TODO: Add the others
+
+    time_of_flight: NxField | None = None
+    """Total time of flight."""
+    raw_time_of_flight: NxField | None = None

@@ -12,24 +12,30 @@ from ophyd_async.sim import SimPointDetector
 from pydantic import ValidationError
 
 from bluesky_nexus import NexusDevice
-from bluesky_nexus.nx_schema import NxAttribute, NxBase, NxField, NxGroup, add_nx_class_basemodel
-from bluesky_nexus.nx_schema._nx_classes.nx_object import NxObject
+from bluesky_nexus.nx_schema import (
+    NxAttribute,
+    NxBase,
+    NxField,
+    NxGroup,
+    NxSubEntry,
+    add_nx_class_basemodel,
+)
 
 
 @pytest.mark.parametrize(
     ("argument"),
     (
-        "a_relative_schema.yaml",
-        Path("a_relative_schema.yaml"),
-        (Path(__file__).parent.absolute() / "a_relative_schema.yaml"),
+        "some_schema.yaml",
+        Path("some_schema.yaml"),
+        (Path(__file__).parent.absolute() / "some_schema.yaml"),
         {
             "@nxclass": "NXgroup",
-            "SOME_SUBGROUP": {"@nxclass": "NXobject", "some_data_key": "some_data_key_value"},
+            "SOME_SUBGROUP": {"@nxclass": "NXsubentry", "some_data_key": "some_data_key_value"},
             "@some_attribute": "some_attribute_value",
             "another_data_key": "another_data_key_value",
         },
         NxGroup(
-            SOME_SUBGROUP=NxObject(some_data_key=NxField(data_key="some_data_key_value")),
+            SOME_SUBGROUP=NxSubEntry(some_data_key=NxField(data_key="some_data_key_value")),
             some_attribute=NxAttribute(constant="some_attribute_value"),
             another_data_key=NxField(data_key="another_data_key_value"),
         ),
@@ -44,7 +50,7 @@ def test_methods_of_loading_schema(argument) -> None:
         "NX_schema": {
             "@nxclass": "NXgroup",
             "@some_attribute": "some_attribute_value",
-            "SOME_SUBGROUP": {"@nxclass": "NXobject", "some_data_key": "some_data_key_value"},
+            "SOME_SUBGROUP": {"@nxclass": "NXsubentry", "some_data_key": "some_data_key_value"},
             "another_data_key": "another_data_key_value",
         },
         "fields": [],
@@ -69,7 +75,7 @@ def test_loading_schema_from_a_non_existent_path() -> None:
     ),
 )
 def test_methods_of_declaring_data_keys(data_key_subset: dict) -> None:
-    dictionary_schema = {"@nxclass": "NXobject"}
+    dictionary_schema = {"@nxclass": "NXsubentry"}
     dictionary_schema.update(data_key_subset)
 
     @NexusDevice.from_dictionary(dictionary_schema)
@@ -77,10 +83,10 @@ def test_methods_of_declaring_data_keys(data_key_subset: dict) -> None:
         signal = Cpt(EpicsSignal, "SIGNAL")
 
     assert SomeDevice(name="foo").hints == {
-        "NX_class": "NXobject",
+        "NX_class": "NXsubentry",
         "NX_schema": {
             "some_alias": "signal",
-            "@nxclass": "NXobject",
+            "@nxclass": "NXsubentry",
         },
         "fields": [],
     }
@@ -96,7 +102,7 @@ def test_writer_behaviour_with_failing_schema_specified_in_yaml() -> None:
             {
                 "@nxclass": "NXdetector",
                 "data": {
-                    "@nxclass": "NXobject",
+                    "@nxclass": "NXsubentry",
                     "second_data_level_that_shouldnt_exist": {
                         "data_key": "channel-1-mode",
                     },
@@ -139,11 +145,11 @@ def test_schema_addition() -> None:
     )
     nx_object = NxBase.from_dictionary(
         {
-            "@nxclass": "NXobject",
+            "@nxclass": "NXsubentry",
             "@nx_group_constant_attribute": {"hints_key": "nx_object_hints_key"},
             "@nx_object_constant_attribute": {"constant": "nx_object_constant"},
             "SUB_GROUP": {
-                "@nxclass": "NXobject",
+                "@nxclass": "NXsubentry",
                 "field1": {
                     "data_key": "nx_object_data_key1",
                     "@attribute11": "nx_object_attribute11",
@@ -192,9 +198,9 @@ def test_schema_addition() -> None:
             "hints_key": "nx_object_hints_key",
         },
         "@nx_object_constant_attribute": "nx_object_constant",
-        "@nxclass": "NXobject",
+        "@nxclass": "NXsubentry",
         "SUB_GROUP": {
-            "@nxclass": "NXobject",
+            "@nxclass": "NXsubentry",
             "field1": {
                 "@attribute11": "nx_object_attribute11",
                 "@attribute12": "nx_object_attribute12",

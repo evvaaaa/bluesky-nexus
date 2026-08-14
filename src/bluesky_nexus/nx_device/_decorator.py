@@ -10,7 +10,8 @@ import yaml
 from bluesky.protocols import HasHints
 from event_model import PerObjectHint
 
-from bluesky_nexus.nx_schema import NxBase, NxObject
+from bluesky_nexus.nx_schema import NxBase
+from bluesky_nexus.nx_schema._nx_classes.nx_sub_entry import NxSubEntry
 
 T = TypeVar("T")
 
@@ -52,10 +53,11 @@ def _add_nx_schema_getter_and_device_metadata_to_hints[T](device_cls: type[T]) -
             # This is a subclass of the device which was wrapped,
             # but wasn't itself wrapped.
             # To support multinheritance, look up the schema from
-            # the baseclasses.
+            # the baseclasses. This only has to happen the first time
+            # hints are called on any of the instances of the class.
             new_schema = _sum_parent_schema(type(self))
 
-            _schema_added[type(self)] = new_schema or NxObject()
+            _schema_added[type(self)] = new_schema or NxSubEntry()
 
         raw_schema = _schema_added[type(self)].model_dump()
 

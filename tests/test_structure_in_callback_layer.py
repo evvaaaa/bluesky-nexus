@@ -62,13 +62,13 @@ def test_structure(RE_directly_subscribed: RunEngine, tmpdir: Path) -> None:
 
     for stream_name in ("primary", "baseline"):
         stream = entry[stream_name]
-        assert stream.nxclass == "NXsubentry"
+        assert stream.nxclass == "NXcollection"
         assert list(stream) == ["devices", "stream_info"]
 
         devices = stream["devices"]
         assert devices.nxclass == "NXinstrument"
         assert list(devices) == [f"some_{stream_name}_pv_positioner"]
-        assert devices[f"some_{stream_name}_pv_positioner"].nxclass == "NXgroup"
+        assert devices[f"some_{stream_name}_pv_positioner"].nxclass == "NXsubentry"
 
         stream_info = stream["stream_info"]
         assert stream_info.nxclass == "NXcollection"
@@ -84,9 +84,9 @@ def test_example_schema_and_manual_schema_with_equivalence(
 
     @NexusDevice.from_dictionary(
         {
-            "@nxclass": "NXobject",
-            "channel-1-value": "channel-1-value",
-            "channel-2-value": "channel-2-value",
+            "@nxclass": "NXsubentry",
+            "channel_1_value": "channel-1-value",
+            "channel_2_value": "channel-2-value",
         }
     )
     class SimPointDetectorWithSchema(SimPointDetector):
@@ -110,12 +110,12 @@ def test_example_schema_and_manual_schema_with_equivalence(
         list(sim_point_detector_with_some_schema)
         == list(sim_point_detector_with_without_schema)
         == [
-            "channel-1-mode",
-            "channel-1-value",
-            "channel-2-mode",
-            "channel-2-value",
-            "channel-3-mode",
-            "channel-3-value",
+            "channel_1_mode",
+            "channel_1_value",
+            "channel_2_mode",
+            "channel_2_value",
+            "channel_3_mode",
+            "channel_3_value",
         ]
     )
 
@@ -144,11 +144,11 @@ def test_simple_nx_detector(
     loaded = load_only_generated_nexus_file(tmpdir)["entry"]["primary"]["devices"]["detector"]
 
     assert list(loaded) == [
-        "channel-1-mode",
-        "channel-2-mode",
-        "channel-2-value",
-        "channel-3-mode",
-        "channel-3-value",
+        "channel_1_mode",
+        "channel_2_mode",
+        "channel_2_value",
+        "channel_3_mode",
+        "channel_3_value",
         "data",
     ]
     assert list(loaded["data"]) == ["time", "value"]
@@ -174,7 +174,7 @@ def test_nexus_writer_on_signals(
     assert list(loaded["another_signal"]["value"]) == [0, 0, 0]
     assert loaded["another_signal"].attrs == {}
     assert list(loaded["motor"]) == ["acceleration_time", "motor", "velocity"]
-    assert loaded["motor"].attrs == {"nxclass": "NXobject"}
+    assert loaded["motor"].attrs == {"nxclass": "NXsubentry"}
 
 
 def test_schema_client_server_differing_schema(
@@ -212,9 +212,9 @@ def test_schema_client_server_differing_schema(
     )
 
     # The subprocess didn't have the schema we made in this process, so it wrote a new
-    # NXobject for the device after raising the error.
+    # NXsubentry for the device after raising the error.
     assert pattern.search(logs)
-    assert str(loaded["motor"].attrs["nxclass"]) == nexus.NXattr("NXobject")
+    assert str(loaded["motor"].attrs["nxclass"]) == nexus.NXattr("NXsubentry")
     assert list(loaded["motor"]) == [
         "acceleration_time",
         "motor",
@@ -226,7 +226,7 @@ def test_schema_client_server_differing_schema(
 def test_constant_attributes(RE_directly_subscribed: RunEngine, tmpdir) -> None:
     @NexusDevice.from_dictionary(
         {
-            "@nxclass": "NXobject",
+            "@nxclass": "NXsubentry",
             "@description": "Some constant description",
             "sim_motor_with_description": {
                 "data_key": "",
@@ -285,7 +285,7 @@ def test_constant_attributes(RE_directly_subscribed: RunEngine, tmpdir) -> None:
 def test_attributes_from_hints(RE_directly_subscribed: RunEngine, tmpdir):
     @NexusDevice.from_dictionary(
         {
-            "@nxclass": "NXobject",
+            "@nxclass": "NXsubentry",
             "@description": {"hints_key": ["md", "description"]},
         }
     )
@@ -310,7 +310,7 @@ def test_attributes_from_hints(RE_directly_subscribed: RunEngine, tmpdir):
 def test_attributes_from_data_keys(RE_directly_subscribed: RunEngine, tmpdir):
     @NexusDevice.from_dictionary(
         {
-            "@nxclass": "NXobject",
+            "@nxclass": "NXsubentry",
             "readback": {
                 "data_key": "readback",
                 "@units": {"data_key": "egu"},
@@ -339,7 +339,7 @@ def test_attributes_from_data_keys(RE_directly_subscribed: RunEngine, tmpdir):
     assert loaded["device"]["readback"]["value"].attrs["units"] == "Oz"
 
 
-# TODO: Currently the nexusformat validator doesn't seem capable of this.
+# TODO: Commented out for now, see TODO in nx_structure._nexus_structure.add_stream_data_to_group
 # def test_passing_bluesky_nexus_nx_schema_but_incorrect_nexusformat_definitions(
 #     RE_directly_subscribed: RunEngine, tmpdir, caplog: pytest.LogCaptureFixture
 # ):
@@ -353,10 +353,3 @@ def test_attributes_from_data_keys(RE_directly_subscribed: RunEngine, tmpdir):
 #     class SomeSimMotor(SimMotor): ...
 #
 #     RE_directly_subscribed(bp.count([SomeSimMotor(name="sim_motor")]))
-#     assert (
-#         "Created a nexus structure for sim_motor but it cannot be validated against the "
-#         "nexusformat definitions. A default NXObject will be used..."
-#     ) in caplog.text
-#     loaded = load_only_generated_nexus_file(tmpdir)["entry"]["primary"]["devices"]["sim_motor"]
-#     assert loaded.attrs == {"nxclass": "NXobject"}
-#     assert list(loaded) == ["acceleration_time", "sim_motor", "velocity"]

@@ -10,12 +10,15 @@ from nexusformat import nexus
 
 from bluesky_nexus.logger import LOGGER
 from bluesky_nexus.nx_schema import NxAttribute, NxField, NxGroup
+from bluesky_nexus.nx_schema._nx_base import NX_ATTRIBUTE_SERIALIZED_PREFIX
 
 from ._data_extractor import (
     DataKeyData,
     ObjectData,
     RunData,
     StreamData,
+    new_schema_with_missing_fields,
+    sanitize_datakey_for_nexus,
 )
 
 __version__ = version("bluesky_nexus")
@@ -93,6 +96,7 @@ def _new_nx_field(
     nx_field_schema: NxField,
     data_key_data: DataKeyData,
     object_data: ObjectData,
+    run_start_time: float,
     name: str = "unknown",
 ) -> nexus.NXlog:
     """Util method for adding new nx field. name is not required
@@ -105,7 +109,9 @@ def _new_nx_field(
         if nx_attribute_name == "nxclass":
             continue  # This isn't added to fields.
         attribute_value = _attribute_value(nx_attribute, object_data)
-        attrs[nx_attribute_name.removeprefix("@")] = nexus.NXfield(value=attribute_value)
+        attrs[nx_attribute_name.removeprefix(NX_ATTRIBUTE_SERIALIZED_PREFIX)] = nexus.NXfield(
+            value=attribute_value
+        )
 
     # Add the units from bluesky if not specified in the schema.
     if "units" not in attrs and data_key_data.units:
@@ -113,7 +119,7 @@ def _new_nx_field(
 
     log_with_timestamps = nexus.NXlog()
     log_with_timestamps["time"] = nexus.NXfield(
-        value=data_key_data.timestamps,
+        value=np.array(data_key_data.timestamps) - run_start_time,
         name="timestamps",
         attrs={"units": nexus.NXfield(value="s")},
     )
@@ -126,20 +132,25 @@ def _add_nx_object_data_to_group(
     group: nexus.NXgroup,
     object_data: ObjectData,
     group_schema: NxGroup,
+    run_start_time: float,
 ) -> None:
     """Write the object into a nexus group."""
     attrs = {}
     # Add the manually specified attributes.
     for nx_attribute_name, nx_attribute in group_schema.nx_attributes().items():
         attribute_value = _attribute_value(nx_attribute, object_data)
-        attrs[nx_attribute_name.removeprefix("@")] = nexus.NXfield(value=attribute_value)
+        attrs[nx_attribute_name.removeprefix(NX_ATTRIBUTE_SERIALIZED_PREFIX)] = nexus.NXfield(
+            value=attribute_value
+        )
     group.attrs.update(attrs)
 
     for nx_alias, nx_field_schema in group_schema.nx_fields().items():
         if nx_field_schema.data_key not in object_data.formatted_data_key_name_to_data:
             continue
         data_key_data = object_data.formatted_data_key_name_to_data[nx_field_schema.data_key]
-        group[nx_alias or object_name] = _new_nx_field(nx_field_schema, data_key_data, object_data)
+        group[nx_alias or sanitize_datakey_for_nexus(object_name)] = _new_nx_field(
+            nx_field_schema, data_key_data, object_data, run_start_time
+        )
 
     for (
         sub_group_name,
@@ -147,7 +158,7 @@ def _add_nx_object_data_to_group(
     ) in group_schema.sub_nx_groups().items():
         sub_group = nexus.NXgroup()
         _add_nx_object_data_to_group(
-            object_name, sub_group, object_data, group_schema=sub_group_schema
+            object_name, sub_group, object_data, sub_group_schema, run_start_time
         )
         group[sub_group_name] = sub_group
 
@@ -191,42 +202,30 @@ def add_stream_data_to_group(
 
     for object_name, object_data in stream_data.object_data.items():
         if isinstance(object_data.nx_schema, NxGroup):
-            device_group = nexus.NXgroup()
+            device_group = nexus.NXgroup(nxclass=object_data.nx_schema.nxclass.constant)
             _add_nx_object_data_to_group(
-                object_name, device_group, object_data, object_data.nx_schema
+                object_name, device_group, object_data, object_data.nx_schema, run_start_time
             )
             for (
                 nx_attribute_name,
                 nx_attribute,
             ) in object_data.nx_schema.nx_attributes().items():
-                device_group.attrs[nx_attribute_name.removeprefix("@")] = _attribute_value(
-                    nx_attribute, object_data
-                )
+                device_group.attrs[
+                    nx_attribute_name.removeprefix(NX_ATTRIBUTE_SERIALIZED_PREFIX)
+                ] = _attribute_value(nx_attribute, object_data)
 
-            # TODO: Something like this where we can validate if individual NXgroups are
-            # correct and just use NXObject if not... This is promising with nexusformat,
-            # but it doesn't currently seem capable of it, or at least I'm finding the
-            # interface to the class to be insufficient.
-            # group_validator = GroupValidator(object_data.nx_schema.nxclass.constant)
-            # group_validator.validate(devices_group, level="info")
-            #
-            # if not group_validator.valid_groups:
-            #     LOGGER.warning(
-            #         f"Created a nexus structure for {object_name} "
-            #         "but it cannot be validated against the nexusformat definitions. "
-            #         "A default NXObject will be used..."
-            #     )
-            #     device_group = nexus.NXgroup()
-            #
-            #     _add_nx_object_data_to_group(
-            #         object_name,
-            #         device_group,
-            #         object_data,
-            #         new_schema_with_missing_fields(
-            #             object_data.formatted_data_key_name_to_data, NxObject()
-            #         ),
-            #     )
-            #
+            # TODO: It would be lovely to use `nexusformat.nexus.validate.GroupValidator` here,
+            # e.g  `group_validator = GroupValidator(object_data.nx_schema.nxclass.constant)`
+            # then validate the group, if it fails, then warn and make a default group.
+            # There would need to be changes in nexusformat for this. Mainly, there's no API
+            # for receiving the errors other than just logging them, but also, taking the
+            # taking the example from
+            # `test_passing_bluesky_nexus_nx_schema_but_incorrect_nexusformat_definitions`,
+            # we get things like:
+            # 2026-08-14 11:19:29 [CRITICAL] NXValidate: NXdata: data
+            # "@signal" is not present in the group
+            # but signal is an optional argument in the schema.
+
             devices_group[object_name] = device_group
 
         elif isinstance(object_data.nx_schema, NxField):
@@ -237,11 +236,12 @@ def add_stream_data_to_group(
                     "accounted for in an event stream captured... Skipping it."
                 )
                 continue
-            devices_group[object_name] = _new_nx_field(
+            devices_group[sanitize_datakey_for_nexus(object_name)] = _new_nx_field(
                 object_data.nx_schema,
                 object_data.formatted_data_key_name_to_data[object_data.nx_schema.data_key],
                 object_data,
-                object_name,
+                run_start_time,
+                name=object_name,
             )
 
 
@@ -283,7 +283,7 @@ def create_nexus_structure(run_data: RunData) -> nexus.NXroot:
             )
             continue
         try:
-            new_stream_group = nexus.NXgroup(nxclass="NXsubentry")
+            new_stream_group = nexus.NXgroup(nxclass="NXcollection")
             add_stream_data_to_group(run_data.start_time, new_stream_group, stream_data)
         except Exception as _:
             LOGGER.warning(

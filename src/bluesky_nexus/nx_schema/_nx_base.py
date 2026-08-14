@@ -15,12 +15,14 @@ from abc import ABC
 from functools import cached_property
 from pprint import pformat
 from typing import Any, TypeVar, cast
+import re
 
 from pydantic import (
     BaseModel,
     ConfigDict,
     computed_field,
     model_serializer,
+    model_validator,
 )
 
 from ._nx_attribute import NxAttribute
@@ -28,6 +30,10 @@ from ._nx_attribute import NxAttribute
 NX_CLASS_TO_BASEMODEL: dict[str, type[NxBase]] = {}
 """Stores all the allowable nexus_class names and maps them
 to the type of nexus basemodel used to validate them."""
+
+NX_ATTRIBUTE_SERIALIZED_PREFIX = "@"
+"""If an attribute in the serialized schema contains this prefix then it's a
+NeXus attribute."""
 
 
 def _nexus_class_name_from_python_class(cls: type[NxBase]) -> str:
@@ -44,8 +50,11 @@ def _nexus_class_name_from_python_class(cls: type[NxBase]) -> str:
 T = TypeVar("T", bound="NxBase")
 
 
-def _prepend_at_key_to_attributes(name: str, value: Any) -> str:
-    return f"@{name.removeprefix('@')}" if isinstance(value, NxAttribute) else name
+def _prepend_serialized_prefix_to_nx_attributes(name: str, value: Any) -> str:
+    return f"{NX_ATTRIBUTE_SERIALIZED_PREFIX}{name}" if isinstance(value, NxAttribute) else name
+
+
+_ALPHA_NUMERIC_WITH_UNDERSCORES = re.compile(r"^[A-Za-z0-9_]+$")
 
 
 class NxBase(BaseModel, ABC):
@@ -53,12 +62,35 @@ class NxBase(BaseModel, ABC):
 
     model_config = ConfigDict(extra="allow")
 
+    @model_validator(mode="before")
+    def _dont_allow_non_alphanumeric_keys(cls, value: dict) -> dict:
+        if isinstance(value, NxBase):
+            # This passes the test by virtue of being
+            # unserialized python attributes.
+            return value
+
+        for key in value:
+            if isinstance(key, tuple):
+                raise RuntimeError(value, key)
+            # The key
+            if (
+                # If key is nothing it will be replaced by the object name
+                # in the writer.
+                key != "" and not _ALPHA_NUMERIC_WITH_UNDERSCORES.match(key)
+            ):
+                raise ValueError(
+                    f"Non-alphanumeric attribute key: {key!r}. "
+                    "Attribute names must be alphanumeric (A-Z, a-z, 0-9) "
+                    "and may include underscores."
+                )
+        return value
+
     @model_serializer
     def _use_shorthand_and_add_at_key_to_attributes(self) -> dict[str, Any]:
         """Dump the schema with short-hand."""
         shortened = {}
         for key, value in self:
-            key = _prepend_at_key_to_attributes(key, value)
+            key = _prepend_serialized_prefix_to_nx_attributes(key, value)
             match value:
                 case NxAttribute(constant=constant_value, data_key=None, hints_key=None):
                     shortened[key] = constant_value
@@ -80,7 +112,7 @@ class NxBase(BaseModel, ABC):
         then it will be used.
         """
 
-        if "@nxclass" in dictionary:
+        if f"{NX_ATTRIBUTE_SERIALIZED_PREFIX}nxclass" in dictionary:
             return NxGroup.from_dictionary(dictionary)
         else:
             return NxField.from_dictionary(dictionary)
@@ -106,7 +138,9 @@ class NxBase(BaseModel, ABC):
 
             # The key is entirely new.
             if our_value is None:
-                in_progress[_prepend_at_key_to_attributes(other_key, other_value)] = (
+                in_progress[
+                    _prepend_serialized_prefix_to_nx_attributes(other_key, other_value)
+                ] = (
                     other_value.model_dump()
                     if isinstance(other_value, NxBase | NxAttribute)
                     else other_value
@@ -117,9 +151,9 @@ class NxBase(BaseModel, ABC):
             ):
                 # The value may be different different,
                 # but similar enough that we can try to merge them.
-                in_progress[_prepend_at_key_to_attributes(other_key, other_value)] = (
-                    our_value + other_value
-                ).model_dump()
+                in_progress[
+                    _prepend_serialized_prefix_to_nx_attributes(other_key, other_value)
+                ] = (our_value + other_value).model_dump()
 
         return cast(T, type(self).from_dictionary(in_progress))
 
@@ -132,8 +166,8 @@ def add_nx_class_basemodel[T: "NxBase"](cls: type[T]) -> type[T]:
     nx_class_name = _nexus_class_name_from_python_class(cls)
     if already_present := NX_CLASS_TO_BASEMODEL.get(nx_class_name):
         raise TypeError(
-            f"{cls.__module__}.{cls.__qualname__} cannot be added as an @nxclass "
-            f"as it's already present as "
+            f"{cls.__module__}.{cls.__qualname__} cannot be added as an "
+            f"{NX_ATTRIBUTE_SERIALIZED_PREFIX}nxclass as it's already present as "
             f"{already_present.__module__}.{already_present.__qualname__}"
         )
     NX_CLASS_TO_BASEMODEL[nx_class_name] = cls
@@ -182,7 +216,7 @@ class NxGroup(NxBase):
         # Manually add the computed field.
 
         shortened = NxBase._use_shorthand_and_add_at_key_to_attributes(self)
-        shortened.update({"@nxclass": self.nxclass.constant})
+        shortened.update({f"{NX_ATTRIBUTE_SERIALIZED_PREFIX}nxclass": self.nxclass.constant})
         return shortened
 
     @classmethod
@@ -193,13 +227,15 @@ class NxGroup(NxBase):
         for key, value in dictionary.items():
             match (key, value):
                 # Attribute specified:
-                case (key, value) if isinstance(key, str) and key.startswith("@"):
+                case (key, value) if isinstance(key, str) and key.startswith(
+                    NX_ATTRIBUTE_SERIALIZED_PREFIX
+                ):
                     attribute = (
                         NxAttribute(**value)
                         if isinstance(value, dict)
                         else NxAttribute(constant=value)
                     )
-                    key = key.removeprefix("@")  # deserialized key
+                    key = key.removeprefix(NX_ATTRIBUTE_SERIALIZED_PREFIX)  # deserialized key
                     if key == "nxclass":
                         document_nx_class_name = attribute.constant
                         # Attribute is thrown away. It is used to select
@@ -229,7 +265,9 @@ class NxGroup(NxBase):
                     )
 
         if document_nx_class_name is None:
-            raise TypeError("No @nxclass attrbute specified in nx schema.")
+            raise TypeError(
+                f"No {NX_ATTRIBUTE_SERIALIZED_PREFIX}nxclass attrbute specified in nx schema."
+            )
 
         # The class is specified. It is fetched from the environment for
         # validation on instantiation
@@ -238,8 +276,8 @@ class NxGroup(NxBase):
         if document_cls is None:
             pretty_allowed_classes = pformat(set(NX_CLASS_TO_BASEMODEL))
             raise TypeError(
-                f"Requested `@nxclass: {document_nx_class_name}` but this isn't "
-                f"defined with pydantic schemas: {pretty_allowed_classes}"
+                f"Requested `{NX_ATTRIBUTE_SERIALIZED_PREFIX}nxclass: {document_nx_class_name}` "
+                f"but this isn't defined with pydantic schemas: {pretty_allowed_classes}"
             )
         if not issubclass(document_cls, cls):
             raise TypeError(
@@ -267,13 +305,13 @@ class NxField(NxBase):
         for key, value in dictionary.items():
             match (key, value):
                 # Attribute specified:
-                case (key, value) if key.startswith("@"):
+                case (key, value) if key.startswith(NX_ATTRIBUTE_SERIALIZED_PREFIX):
                     attribute = (
                         NxAttribute(**value)
                         if isinstance(value, dict)
                         else NxAttribute(constant=value)
                     )
-                    kwargs[key.removeprefix("@")] = attribute
+                    kwargs[key.removeprefix(NX_ATTRIBUTE_SERIALIZED_PREFIX)] = attribute
 
                 # This is one of the other keys in the `NxField`
                 case (key, value) if key in cls.model_fields:

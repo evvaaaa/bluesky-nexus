@@ -5,6 +5,7 @@ from ._nx_base import NX_CLASS_TO_BASEMODEL, NxBase, NxField, NxGroup, add_nx_cl
 from ._nx_classes.nx_detector import NxDetector
 from ._nx_classes.nx_object import NxObject
 from ._nx_classes.nx_positioner import NxPositioner
+from ._nx_classes.nx_sub_entry import NxSubEntry
 
 __all__ = [
     "NxAttribute",
@@ -15,5 +16,6 @@ __all__ = [
     "NxGroup",
     "NxObject",
     "NxPositioner",
+    "NxSubEntry",
     "add_nx_class_basemodel",
 ]

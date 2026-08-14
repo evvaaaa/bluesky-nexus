@@ -6,6 +6,7 @@ RunData to write to disk.
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from typing import Any, NotRequired, cast
+import re
 
 from bluesky.protocols import Descriptor
 from event_model import (
@@ -25,12 +26,20 @@ from bluesky_nexus.nx_schema import (
     NxBase,
     NxField,
     NxGroup,
-    NxObject,
+    NxSubEntry,
 )
 
 
 def _add_lists_mutably(list1: list, list2: list) -> None:
     list1 += list2
+
+
+def sanitize_datakey_for_nexus(data_key: str) -> str:
+    """Nexus doesn't allow underscores in keys.
+
+    To be safe we make sure a given datakey is alphanumeric.
+    """
+    return re.sub(r"[^A-Za-z0-9_]", "", data_key.replace("-", "_"))
 
 
 @dataclass
@@ -65,7 +74,7 @@ def new_schema_with_missing_fields(
         if schema_specified_data_keys.get(data_key_name):
             continue  # Already added manually.
 
-        raw_schema[data_key_name] = {
+        raw_schema[sanitize_datakey_for_nexus(data_key_name)] = {
             "data_key": data_key_name,
         }
 
@@ -212,9 +221,9 @@ class ObjectData:
                 hint=hint,
             )
         else:
-            nx_schema = NxObject()
+            nx_schema = NxSubEntry()
             nx_schema = new_schema_with_missing_fields(formatted_data_key_name_to_data, nx_schema)
-            LOGGER.debug(f"Creating new NxObject schema for device {object_name}.")
+            LOGGER.debug(f"Creating new NxSubEntry schema for device {object_name}.")
         return ObjectData(
             nx_schema=nx_schema,
             formatted_data_key_name_to_data=formatted_data_key_name_to_data,
