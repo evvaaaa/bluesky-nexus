@@ -10,8 +10,7 @@ import yaml
 from bluesky.protocols import HasHints
 from event_model import PerObjectHint
 
-from bluesky_nexus.nx_schema import NxBase
-from bluesky_nexus.nx_schema._nx_classes.nx_sub_entry import NxSubEntry
+from bluesky_nexus.nx_schema import NX_ATTRIBUTE_SERIALIZED_PREFIX, NxBase, NxSubEntry
 
 T = TypeVar("T")
 
@@ -62,7 +61,7 @@ def _add_nx_schema_getter_and_device_metadata_to_hints[T](device_cls: type[T]) -
         raw_schema = _schema_added[type(self)].model_dump()
 
         hints["NX_schema"] = raw_schema
-        hints["NX_class"] = raw_schema["@nxclass"]
+        hints["NX_class"] = raw_schema[f"{NX_ATTRIBUTE_SERIALIZED_PREFIX}nxclass"]
 
         return cast(PerObjectHint, hints)
 

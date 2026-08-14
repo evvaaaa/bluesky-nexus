@@ -20,9 +20,9 @@ from . import load_only_generated_nexus_file
 def test_schema_single_inheritance() -> None:
     @NexusDevice.from_dictionary(
         {
-            "@nxclass": "NXobject",
+            "$nxclass": "NXobject",
             "the_odysee": {
-                "@units": "lyrics",
+                "$units": "lyrics",
                 "data_key": "signal_made_of_bronze",
             },
         }
@@ -33,7 +33,7 @@ def test_schema_single_inheritance() -> None:
     expected_grandma_schema = {
         "the_odysee": {
             "data_key": "signal_made_of_bronze",
-            "@units": "lyrics",
+            "$units": "lyrics",
         }
     }
 
@@ -41,13 +41,13 @@ def test_schema_single_inheritance() -> None:
         Grandma("GRANDMA", name="granma").hints["NX_schema"]
         == NxBase.from_dictionary(
             {
-                "@nxclass": "NXobject",
+                "$nxclass": "NXobject",
                 **expected_grandma_schema,
             }
         ).model_dump()
     )
 
-    @NexusDevice.from_dictionary({"@nxclass": "NXobject", "beowulf": "signal_made_of_iron"})
+    @NexusDevice.from_dictionary({"$nxclass": "NXobject", "beowulf": "signal_made_of_iron"})
     class Mama(Grandma):
         signal_made_of_iron = Cpt(EpicsSignal, "IRON")
 
@@ -58,7 +58,7 @@ def test_schema_single_inheritance() -> None:
         Mama("MAMA", name="mama").hints["NX_schema"]
         == NxBase.from_dictionary(
             {
-                "@nxclass": "NXobject",
+                "$nxclass": "NXobject",
                 **expected_mama_schema,
             }
         ).model_dump()
@@ -66,10 +66,10 @@ def test_schema_single_inheritance() -> None:
 
     @NexusDevice.from_dictionary(
         {
-            "@nxclass": "NXobject",
+            "$nxclass": "NXobject",
             "pride_and_prejudice": "signal_made_of_steel",
             "the_odysee": {
-                "@nxclass": "NXobject",
+                "$nxclass": "NXobject",
                 "new_movie": "signal_made_of_bronze",
             },
         }
@@ -80,7 +80,7 @@ def test_schema_single_inheritance() -> None:
     expected_me_schema = {"pride_and_prejudice": "signal_made_of_steel"}
     expected_me_schema.update(expected_mama_schema)
     expected_me_schema["the_odysee"] = {  # type: ignore
-        "@nxclass": "NXobject",
+        "$nxclass": "NXobject",
         "new_movie": "signal_made_of_bronze",  # We can override fields from the parent
     }
 
@@ -88,19 +88,19 @@ def test_schema_single_inheritance() -> None:
         Me("ME", name="me").hints["NX_schema"]
         == NxBase.from_dictionary(
             {
-                "@nxclass": "NXobject",
+                "$nxclass": "NXobject",
                 **expected_me_schema,
             }
         ).model_dump()
     )
 
     expected_auntie_schema = {
-        "@nxclass": "NXobject",
+        "$nxclass": "NXobject",
         "beowulf": "signal_made_of_iron",
     }
 
     @NexusDevice.from_dictionary(
-        {"@nxclass": "NXobject", "beowulf": "signal_made_of_iron"}, inherit=False
+        {"$nxclass": "NXobject", "beowulf": "signal_made_of_iron"}, inherit=False
     )
     class Auntie(Grandma):
         signal_made_of_iron = Cpt(EpicsSignal, "IRON")
@@ -108,14 +108,14 @@ def test_schema_single_inheritance() -> None:
     assert Auntie("AUNTIE", name="auntie").hints["NX_schema"] == expected_auntie_schema
 
     expected_me_schema = {
-        "@nxclass": "NXobject",
+        "$nxclass": "NXobject",
         "pride_and_prejudice": "signal_made_of_steel",
     }
     expected_me_schema.update(expected_auntie_schema)
 
     @NexusDevice.from_dictionary(
         {
-            "@nxclass": "NXobject",
+            "$nxclass": "NXobject",
             "pride_and_prejudice": "signal_made_of_steel",
         }
     )
@@ -128,20 +128,20 @@ def test_schema_single_inheritance() -> None:
 def test_schema_multi_inheritance() -> None:
     @NexusDevice.from_dictionary(
         {
-            "@nxclass": "NXobject",
+            "$nxclass": "NXobject",
             "signalnm": "value11",
             "signal1n": "value11",
             "signaln1": "value11",
             "GROUP": {
-                "@nxclass": "NXobject",
+                "$nxclass": "NXobject",
                 "signalnm": "value11",
                 "signal1n": "value11",
                 "signaln1": "value11",
                 "signal": {
                     "data_key": "signal",
-                    "@attrnm": "value11",
-                    "@attr1n": "value11",
-                    "@attrn1": "value11",
+                    "$attrnm": "value11",
+                    "$attr1n": "value11",
+                    "$attrn1": "value11",
                 },
             },
         },
@@ -153,20 +153,20 @@ def test_schema_multi_inheritance() -> None:
 
     @NexusDevice.from_dictionary(
         {
-            "@nxclass": "NXobject",
+            "$nxclass": "NXobject",
             "signalnm": "value12",
             "signal1n": "value12",
             "signaln2": "value12",
             "GROUP": {
-                "@nxclass": "NXobject",
+                "$nxclass": "NXobject",
                 "signalnm": "value12",
                 "signal1n": "value12",
                 "signaln2": "value12",
                 "signal": {
                     "data_key": "signal",
-                    "@attrnm": "value12",
-                    "@attr1n": "value12",
-                    "@attrn2": "value12",
+                    "$attrnm": "value12",
+                    "$attr1n": "value12",
+                    "$attrn2": "value12",
                 },
             },
         },
@@ -178,17 +178,17 @@ def test_schema_multi_inheritance() -> None:
 
     @NexusDevice.from_dictionary(
         {
-            "@nxclass": "NXobject",
+            "$nxclass": "NXobject",
             "signaln": "value1",
             "signal1": "value1",
             "GROUP": {
-                "@nxclass": "NXobject",
+                "$nxclass": "NXobject",
                 "signaln": "value1",
                 "signal1": "value1",
                 "signal": {
                     "data_key": "signal",
-                    "@attrn": "value1",
-                    "@attr1": "value1",
+                    "$attrn": "value1",
+                    "$attr1": "value1",
                 },
             },
         },
@@ -199,20 +199,20 @@ def test_schema_multi_inheritance() -> None:
 
     @NexusDevice.from_dictionary(
         {
-            "@nxclass": "NXobject",
+            "$nxclass": "NXobject",
             "signalnm": "value21",
             "signal2n": "value21",
             "signaln1": "value21",
             "GROUP": {
-                "@nxclass": "NXobject",
+                "$nxclass": "NXobject",
                 "signalnm": "value21",
                 "signal2n": "value21",
                 "signaln1": "value21",
                 "signal": {
                     "data_key": "signal",
-                    "@attrnm": "value21",
-                    "@attr2n": "value21",
-                    "@attrn1": "value21",
+                    "$attrnm": "value21",
+                    "$attr2n": "value21",
+                    "$attrn1": "value21",
                 },
             },
         },
@@ -224,20 +224,20 @@ def test_schema_multi_inheritance() -> None:
 
     @NexusDevice.from_dictionary(
         {
-            "@nxclass": "NXobject",
+            "$nxclass": "NXobject",
             "signalnm": "value22",
             "signal2n": "value22",
             "signaln2": "value22",
             "GROUP": {
-                "@nxclass": "NXobject",
+                "$nxclass": "NXobject",
                 "signalnm": "value22",
                 "signal2n": "value22",
                 "signaln2": "value22",
                 "signal": {
                     "data_key": "signal",
-                    "@attrnm": "value22",
-                    "@attr2n": "value22",
-                    "@attrn2": "value22",
+                    "$attrnm": "value22",
+                    "$attr2n": "value22",
+                    "$attrn2": "value22",
                 },
             },
         },
@@ -249,17 +249,17 @@ def test_schema_multi_inheritance() -> None:
 
     @NexusDevice.from_dictionary(
         {
-            "@nxclass": "NXobject",
+            "$nxclass": "NXobject",
             "signaln": "value2",
             "signal2": "value2",
             "GROUP": {
-                "@nxclass": "NXobject",
+                "$nxclass": "NXobject",
                 "signaln": "value2",
                 "signal2": "value2",
                 "signal": {
                     "data_key": "signal",
-                    "@attrn": "value2",
-                    "@attr2": "value2",
+                    "$attrn": "value2",
+                    "$attr2": "value2",
                 },
             },
         },
@@ -285,18 +285,18 @@ def test_schema_multi_inheritance() -> None:
 
     # The schema follows the same behaviour with overriding...
     assert device.hints["NX_schema"] == {
-        "@nxclass": "NXobject",
+        "$nxclass": "NXobject",
         "GROUP": {
-            "@nxclass": "NXobject",
+            "$nxclass": "NXobject",
             "signal": {
-                "@attr1": "value1",
-                "@attr1n": "value11",
-                "@attr2": "value2",
-                "@attr2n": "value21",
-                "@attrn": "value1",
-                "@attrn1": "value11",
-                "@attrn2": "value12",
-                "@attrnm": "value11",
+                "$attr1": "value1",
+                "$attr1n": "value11",
+                "$attr2": "value2",
+                "$attr2n": "value21",
+                "$attrn": "value1",
+                "$attrn1": "value11",
+                "$attrn2": "value12",
+                "$attrnm": "value11",
                 "data_key": "signal",
             },
             "signal1": "value1",
@@ -324,7 +324,7 @@ def test_schema_single_inheritance_on_device(
 ) -> None:
     NexusDevice.from_dictionary(
         {
-            "@nxclass": "NXpositioner",
+            "$nxclass": "NXpositioner",
             "value": "",
             "target_value": "user_setpoint",
             "tolerance": "encoder_resolution",
@@ -344,8 +344,8 @@ def test_schema_single_inheritance_on_device(
 
     @NexusDevice.from_dictionary(
         {
-            "@nxclass": "NXpositioner",
-            "SUB_GROUP": {"@nxclass": "NXobject", "value_at_open": "open_value"},
+            "$nxclass": "NXpositioner",
+            "SUB_GROUP": {"$nxclass": "NXobject", "value_at_open": "open_value"},
         }
     )
     class ShutterWithSomeDifferingNxSchema(Shutter): ...
@@ -399,7 +399,7 @@ def test_description_accross_whole_codebase(
     # device package, I wouldn't have to add the description to any
     # other devices read.
     @NexusDevice.from_dictionary(
-        {"@nxclass": "NXgroup", "@description": {"hints_key": ["md", "description"]}}
+        {"$nxclass": "NXgroup", "$description": {"hints_key": ["md", "description"]}}
     )
     class ThisWouldBeTheRealDeviceInThePackage(Device): ...
 

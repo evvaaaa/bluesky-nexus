@@ -84,7 +84,7 @@ def test_example_schema_and_manual_schema_with_equivalence(
 
     @NexusDevice.from_dictionary(
         {
-            "@nxclass": "NXsubentry",
+            "$nxclass": "NXsubentry",
             "channel_1_value": "channel-1-value",
             "channel_2_value": "channel-2-value",
         }
@@ -126,7 +126,7 @@ def test_simple_nx_detector(
 ) -> None:
     @NexusDevice.from_dictionary(
         {
-            "@nxclass": "NXdetector",
+            "$nxclass": "NXdetector",
             "data": {"data_key": "channel-1-value"},
         }
     )
@@ -180,15 +180,17 @@ def test_nexus_writer_on_signals(
 def test_schema_client_server_differing_schema(
     RE_subscribed_over_zmq: RunEngine, tmpdir: Path
 ) -> None:
-    new_motor_schema = {"@nxclass": "NXnew", "some_data": "foo"}
+    new_motor_schema = {"$nxclass": "NXnew", "some_data": "foo"}
 
-    with pytest.raises(
-        TypeError,
-        match=("Requested `@nxclass: NXnew` but this isn't defined with pydantic schemas:"),
-    ):
+    with pytest.raises(TypeError) as excinfo:
 
         @NexusDevice.from_dictionary(new_motor_schema)
         class NewMotorWhichWillFail(SimMotor): ...
+
+    # Can't use match with literal "\$" for whatever reason...
+    assert "Requested `$nxclass: NXnew` but this isn't defined with pydantic schemas: " in str(
+        excinfo
+    )
 
     @add_nx_class_basemodel
     class NxNew(NxGroup):
@@ -205,7 +207,7 @@ def test_schema_client_server_differing_schema(
     pattern = re.compile(
         (
             r".*?Received a malformed schema in motor\. The error was:\n\s+Requested "
-            r"`@nxclass: NXnew` but this isn't defined with pydantic schemas: "
+            r"`\$nxclass: NXnew` but this isn't defined with pydantic schemas: "
             r"\{[^}]*\}\nA default schema will be used instead\."
         ),
         re.DOTALL,
@@ -226,13 +228,13 @@ def test_schema_client_server_differing_schema(
 def test_constant_attributes(RE_directly_subscribed: RunEngine, tmpdir) -> None:
     @NexusDevice.from_dictionary(
         {
-            "@nxclass": "NXsubentry",
-            "@description": "Some constant description",
+            "$nxclass": "NXsubentry",
+            "$description": "Some constant description",
             "sim_motor_with_description": {
                 "data_key": "",
-                "@units": "overriden",
-                "@long_name": "Long motor name",
-                "@non_standard_attr": 7,
+                "$units": "overriden",
+                "$long_name": "Long motor name",
+                "$non_standard_attr": 7,
             },
         }
     )
@@ -285,8 +287,8 @@ def test_constant_attributes(RE_directly_subscribed: RunEngine, tmpdir) -> None:
 def test_attributes_from_hints(RE_directly_subscribed: RunEngine, tmpdir):
     @NexusDevice.from_dictionary(
         {
-            "@nxclass": "NXsubentry",
-            "@description": {"hints_key": ["md", "description"]},
+            "$nxclass": "NXsubentry",
+            "$description": {"hints_key": ["md", "description"]},
         }
     )
     class SynAxisWithDescription(SynAxis): ...
@@ -310,10 +312,10 @@ def test_attributes_from_hints(RE_directly_subscribed: RunEngine, tmpdir):
 def test_attributes_from_data_keys(RE_directly_subscribed: RunEngine, tmpdir):
     @NexusDevice.from_dictionary(
         {
-            "@nxclass": "NXsubentry",
+            "$nxclass": "NXsubentry",
             "readback": {
                 "data_key": "readback",
-                "@units": {"data_key": "egu"},
+                "$units": {"data_key": "egu"},
             },
         }
     )

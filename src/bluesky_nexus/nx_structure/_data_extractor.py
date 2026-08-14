@@ -3,10 +3,10 @@ the nexus writer. This is collected throughout the run. The writer will then use
 RunData to write to disk.
 """
 
+import re
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from typing import Any, NotRequired, cast
-import re
 
 from bluesky.protocols import Descriptor
 from event_model import (
@@ -187,7 +187,7 @@ class ObjectData:
                 nx_schema = NxBase.from_dictionary(raw_schema)
 
                 if isinstance(nx_schema, NxGroup):
-                    # If the object's `@nxclass` is a subclass of `NxGroup`,
+                    # If the object's `$nxclass` is a subclass of `NxGroup`,
                     # instead of e.g an NxField directly, add this missing data_keys.
                     nx_schema = new_schema_with_missing_fields(
                         formatted_data_key_name_to_data, nx_schema

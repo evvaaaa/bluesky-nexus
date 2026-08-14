@@ -17,7 +17,6 @@ from ._data_extractor import (
     ObjectData,
     RunData,
     StreamData,
-    new_schema_with_missing_fields,
     sanitize_datakey_for_nexus,
 )
 

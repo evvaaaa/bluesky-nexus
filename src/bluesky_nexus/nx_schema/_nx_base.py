@@ -3,7 +3,7 @@ This module contains the base for all bluesky nexus pydantic schemas, `NxBase`.
 As well as their subclasses `NxGroup` and `NxField`.
 
 
-When `@nxclass` is specified in the schema, the correct nexus class is automatically
+When `$nxclass` is specified in the schema, the correct nexus class is automatically
 selected and initialized by `NxBase.from_dictionary`.
 This module contains a decorator for appending different instrument schema basemodels to
 a global dictionary.
@@ -11,11 +11,11 @@ a global dictionary.
 
 from __future__ import annotations
 
+import re
 from abc import ABC
 from functools import cached_property
 from pprint import pformat
 from typing import Any, TypeVar, cast
-import re
 
 from pydantic import (
     BaseModel,
@@ -31,8 +31,8 @@ NX_CLASS_TO_BASEMODEL: dict[str, type[NxBase]] = {}
 """Stores all the allowable nexus_class names and maps them
 to the type of nexus basemodel used to validate them."""
 
-NX_ATTRIBUTE_SERIALIZED_PREFIX = "@"
-"""If an attribute in the serialized schema contains this prefix then it's a
+NX_ATTRIBUTE_SERIALIZED_PREFIX = "$"
+"""If a key in the serialized schema contains this prefix then it's a
 NeXus attribute."""
 
 
@@ -107,7 +107,7 @@ class NxBase(BaseModel, ABC):
     def from_dictionary(cls, dictionary: dict[str, Any]) -> NxBase:
         """Load a dictionary into a basemodel.
 
-        If an @nxclass is specified in the schema and there exists
+        If an $nxclass is specified in the schema and there exists
         a basemodel in the python environment (added through `add_nx_class_basemodel`
         then it will be used.
         """
@@ -244,7 +244,7 @@ class NxGroup(NxBase):
                         kwargs[key] = attribute
 
                 # A subgroup or field is specified:
-                # e.g {@nxclass: NXobject, SUB_GROUP: {@nxclass: NXobject, ...}}
+                # e.g {$nxclass: NXobject, SUB_GROUP: {$nxclass: NXobject, ...}}
                 case (key, value) if isinstance(value, dict):
                     kwargs[key] = NxBase.from_dictionary(value)
 

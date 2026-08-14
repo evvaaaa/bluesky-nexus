@@ -1,7 +1,14 @@
 """Pydantic schema for validating the dictionary/yaml."""
 
 from ._nx_attribute import NxAttribute
-from ._nx_base import NX_CLASS_TO_BASEMODEL, NxBase, NxField, NxGroup, add_nx_class_basemodel
+from ._nx_base import (
+    NX_ATTRIBUTE_SERIALIZED_PREFIX,
+    NX_CLASS_TO_BASEMODEL,
+    NxBase,
+    NxField,
+    NxGroup,
+    add_nx_class_basemodel,
+)
 from ._nx_classes.nx_detector import NxDetector
 from ._nx_classes.nx_object import NxObject
 from ._nx_classes.nx_positioner import NxPositioner
@@ -18,4 +25,5 @@ __all__ = [
     "NxPositioner",
     "NxSubEntry",
     "add_nx_class_basemodel",
+    "NX_ATTRIBUTE_SERIALIZED_PREFIX",
 ]

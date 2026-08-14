@@ -29,9 +29,9 @@ from bluesky_nexus.nx_schema import (
         Path("some_schema.yaml"),
         (Path(__file__).parent.absolute() / "some_schema.yaml"),
         {
-            "@nxclass": "NXgroup",
-            "SOME_SUBGROUP": {"@nxclass": "NXsubentry", "some_data_key": "some_data_key_value"},
-            "@some_attribute": "some_attribute_value",
+            "$nxclass": "NXgroup",
+            "SOME_SUBGROUP": {"$nxclass": "NXsubentry", "some_data_key": "some_data_key_value"},
+            "$some_attribute": "some_attribute_value",
             "another_data_key": "another_data_key_value",
         },
         NxGroup(
@@ -48,9 +48,9 @@ def test_methods_of_loading_schema(argument) -> None:
     assert SomeDevice("X", name="device").hints == {
         "NX_class": "NXgroup",
         "NX_schema": {
-            "@nxclass": "NXgroup",
-            "@some_attribute": "some_attribute_value",
-            "SOME_SUBGROUP": {"@nxclass": "NXsubentry", "some_data_key": "some_data_key_value"},
+            "$nxclass": "NXgroup",
+            "$some_attribute": "some_attribute_value",
+            "SOME_SUBGROUP": {"$nxclass": "NXsubentry", "some_data_key": "some_data_key_value"},
             "another_data_key": "another_data_key_value",
         },
         "fields": [],
@@ -75,7 +75,7 @@ def test_loading_schema_from_a_non_existent_path() -> None:
     ),
 )
 def test_methods_of_declaring_data_keys(data_key_subset: dict) -> None:
-    dictionary_schema = {"@nxclass": "NXsubentry"}
+    dictionary_schema = {"$nxclass": "NXsubentry"}
     dictionary_schema.update(data_key_subset)
 
     @NexusDevice.from_dictionary(dictionary_schema)
@@ -86,7 +86,7 @@ def test_methods_of_declaring_data_keys(data_key_subset: dict) -> None:
         "NX_class": "NXsubentry",
         "NX_schema": {
             "some_alias": "signal",
-            "@nxclass": "NXsubentry",
+            "$nxclass": "NXsubentry",
         },
         "fields": [],
     }
@@ -100,9 +100,9 @@ def test_writer_behaviour_with_failing_schema_specified_in_yaml() -> None:
 
         @NexusDevice.from_dictionary(
             {
-                "@nxclass": "NXdetector",
+                "$nxclass": "NXdetector",
                 "data": {
-                    "@nxclass": "NXsubentry",
+                    "$nxclass": "NXsubentry",
                     "second_data_level_that_shouldnt_exist": {
                         "data_key": "channel-1-mode",
                     },
@@ -116,104 +116,107 @@ def test_writer_behaviour_with_failing_schema_specified_in_yaml() -> None:
 def test_attempt_with_unknown_schema_from_client() -> None:
     with pytest.raises(
         TypeError,
-        match=("Requested `@nxclass: NXbanana` but this isn't defined with pydantic schemas:"),
-    ):
+    ) as excinfo:
 
-        @NexusDevice.from_dictionary({"@nxclass": "NXbanana", "length": "length"})
+        @NexusDevice.from_dictionary({"$nxclass": "NXbanana", "length": "length"})
         class BananaMotor(SynAxis):
             pass
+
+    assert "Requested `$nxclass: NXbanana` but this isn't defined with pydantic schemas:" in str(
+        excinfo
+    )
 
 
 def test_schema_addition() -> None:
     nx_group = NxBase.from_dictionary(
         {
-            "@nxclass": "NXgroup",
-            "@nx_group_constant_attribute": {"constant": "nx_group_constant"},
+            "$nxclass": "NXgroup",
+            "$nx_group_constant_attribute": {"constant": "nx_group_constant"},
             "SUB_GROUP": {
-                "@nxclass": "NXgroup",
+                "$nxclass": "NXgroup",
                 "field1": {
                     "data_key": "nx_group_data_key1",
-                    "@attribute11": "nx_group_attribute11",
+                    "$attribute11": "nx_group_attribute11",
                 },
             },
             "field2": {
                 "data_key": "nx_group_data_key2",
-                "@attribute21": "nx_group_attribute21",
-                "@attribute22": "nx_group_attribute22",
+                "$attribute21": "nx_group_attribute21",
+                "$attribute22": "nx_group_attribute22",
             },
         }
     )
     nx_object = NxBase.from_dictionary(
         {
-            "@nxclass": "NXsubentry",
-            "@nx_group_constant_attribute": {"hints_key": "nx_object_hints_key"},
-            "@nx_object_constant_attribute": {"constant": "nx_object_constant"},
+            "$nxclass": "NXsubentry",
+            "$nx_group_constant_attribute": {"hints_key": "nx_object_hints_key"},
+            "$nx_object_constant_attribute": {"constant": "nx_object_constant"},
             "SUB_GROUP": {
-                "@nxclass": "NXsubentry",
+                "$nxclass": "NXsubentry",
                 "field1": {
                     "data_key": "nx_object_data_key1",
-                    "@attribute11": "nx_object_attribute11",
-                    "@attribute12": "nx_object_attribute12",
+                    "$attribute11": "nx_object_attribute11",
+                    "$attribute12": "nx_object_attribute12",
                 },
                 "field2": {
                     "data_key": "nx_object_data_key3",
-                    "@attribute31": "nx_object_attribute31",
+                    "$attribute31": "nx_object_attribute31",
                 },
             },
             "field2": {
                 "data_key": "nx_object_data_key2",
-                "@attribute21": "nx_object_attribute21",
-                "@attribute22": "nx_object_attribute22",
+                "$attribute21": "nx_object_attribute21",
+                "$attribute22": "nx_object_attribute22",
             },
         }
     )
 
     assert (nx_group + nx_object).model_dump() == {
-        "@nx_group_constant_attribute": "nx_group_constant",
-        "@nx_object_constant_attribute": "nx_object_constant",
-        "@nxclass": "NXgroup",
+        "$nx_group_constant_attribute": "nx_group_constant",
+        "$nx_object_constant_attribute": "nx_object_constant",
+        "$nxclass": "NXgroup",
         "SUB_GROUP": {
-            "@nxclass": "NXgroup",
+            "$nxclass": "NXgroup",
             "field1": {
-                "@attribute11": "nx_group_attribute11",
-                "@attribute12": "nx_object_attribute12",
+                "$attribute11": "nx_group_attribute11",
+                "$attribute12": "nx_object_attribute12",
                 "data_key": "nx_group_data_key1",
             },
             "field2": {
-                "@attribute31": "nx_object_attribute31",
+                "$attribute31": "nx_object_attribute31",
                 "data_key": "nx_object_data_key3",
             },
         },
         "field2": {
-            "@attribute21": "nx_group_attribute21",
-            "@attribute22": "nx_group_attribute22",
+            "$attribute21": "nx_group_attribute21",
+            "$attribute22": "nx_group_attribute22",
             "data_key": "nx_group_data_key2",
         },
     }
 
     assert (nx_object + nx_group).model_dump() == {
-        "@nx_group_constant_attribute": {
+        "$nx_group_constant_attribute": {
             "constant": None,
             "data_key": None,
             "hints_key": "nx_object_hints_key",
         },
-        "@nx_object_constant_attribute": "nx_object_constant",
-        "@nxclass": "NXsubentry",
+        "$nx_object_constant_attribute": "nx_object_constant",
+        "$nxclass": "NXsubentry",
         "SUB_GROUP": {
-            "@nxclass": "NXsubentry",
+            "$nxclass": "NXsubentry",
             "field1": {
-                "@attribute11": "nx_object_attribute11",
-                "@attribute12": "nx_object_attribute12",
+                "$attribute11": "nx_object_attribute11",
+                "$attribute12": "nx_object_attribute12",
                 "data_key": "nx_object_data_key1",
             },
             "field2": {
-                "@attribute31": "nx_object_attribute31",
+                "$attribute31": "nx_object_attribute31",
                 "data_key": "nx_object_data_key3",
             },
         },
         "field2": {
-            "@attribute21": "nx_object_attribute21",
-            "@attribute22": "nx_object_attribute22",
+            "$attribute21": "nx_object_attribute21",
+            "$attribute22": "nx_object_attribute22",
             "data_key": "nx_object_data_key2",
         },
     }
@@ -233,15 +236,15 @@ def test_serialization_deserialization() -> None:
         SUB_GROUP_NOT_REQUIRED: NxTestGroup | None = None
 
     test_nx_group_fields = {
-        "@nxclass": "NXtestgroup",
-        "@constant_attribute_shorthand": "some_constant_shorthand",
-        "@constant_attribute": {"constant": "some_constant"},
-        "@datakey_attribute": {"data_key": "some_attribute_datakey"},
-        "@hints_attribute": {"hints_key": ["some", "hints", "key"]},
+        "$nxclass": "NXtestgroup",
+        "$constant_attribute_shorthand": "some_constant_shorthand",
+        "$constant_attribute": {"constant": "some_constant"},
+        "$datakey_attribute": {"data_key": "some_attribute_datakey"},
+        "$hints_attribute": {"hints_key": ["some", "hints", "key"]},
         "field_shorthand": "some_field_datakey_shorthand",
         "field": {
             "data_key": "some_field_datakey",
-            "@some_field_attribute": "some_field_attribute",
+            "$some_field_attribute": "some_field_attribute",
         },
     }
     test_nx_group_fields.update({"SUB_GROUP_NOT_REQUIRED": test_nx_group_fields.copy()})
@@ -273,42 +276,42 @@ def test_serialization_deserialization() -> None:
         )
 
     assert nx_group_from_base.model_dump() == {
-        "@constant_attribute": "some_constant",
-        "@constant_attribute_shorthand": "some_constant_shorthand",
-        "@datakey_attribute": {
+        "$constant_attribute": "some_constant",
+        "$constant_attribute_shorthand": "some_constant_shorthand",
+        "$datakey_attribute": {
             "constant": None,
             "data_key": "some_attribute_datakey",
             "hints_key": None,
         },
-        "@hints_attribute": {
+        "$hints_attribute": {
             "constant": None,
             "data_key": None,
             "hints_key": ["some", "hints", "key"],
         },
-        "@nxclass": "NXtestgroup",
+        "$nxclass": "NXtestgroup",
         "SUB_GROUP_NOT_REQUIRED": {
-            "@constant_attribute": "some_constant",
-            "@constant_attribute_shorthand": "some_constant_shorthand",
-            "@datakey_attribute": {
+            "$constant_attribute": "some_constant",
+            "$constant_attribute_shorthand": "some_constant_shorthand",
+            "$datakey_attribute": {
                 "constant": None,
                 "data_key": "some_attribute_datakey",
                 "hints_key": None,
             },
-            "@hints_attribute": {
+            "$hints_attribute": {
                 "constant": None,
                 "data_key": None,
                 "hints_key": ["some", "hints", "key"],
             },
-            "@nxclass": "NXtestgroup",
+            "$nxclass": "NXtestgroup",
             "SUB_GROUP_NOT_REQUIRED": None,
             "field": {
-                "@some_field_attribute": "some_field_attribute",
+                "$some_field_attribute": "some_field_attribute",
                 "data_key": "some_field_datakey",
             },
             "field_shorthand": "some_field_datakey_shorthand",
         },
         "field": {
-            "@some_field_attribute": "some_field_attribute",
+            "$some_field_attribute": "some_field_attribute",
             "data_key": "some_field_datakey",
         },
         "field_shorthand": "some_field_datakey_shorthand",

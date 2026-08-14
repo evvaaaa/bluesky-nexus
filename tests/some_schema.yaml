@@ -1,6 +1,6 @@
-"@nxclass": NXgroup
+$nxclass: NXgroup
 SOME_SUBGROUP:
-  "@nxclass": NXsubentry
+  $nxclass: NXsubentry
   some_data_key: some_data_key_value
-"@some_attribute": some_attribute_value
+$some_attribute: some_attribute_value
 another_data_key: another_data_key_value
