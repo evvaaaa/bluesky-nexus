@@ -21,14 +21,19 @@ from ophyd_async.core import StandardReadableFormat as Fmt
 from ophyd_async.plan_stubs import ensure_connected
 from ophyd_async.sim import SimMotor, SimPointDetector
 
-from bluesky_nexus import NexusDevice, __version__
+from bluesky_nexus import NexusDevices, __version__
 from bluesky_nexus.nx_schema import (
     NxField,
     NxGroup,
     add_nx_class_basemodel,
 )
 
-from . import get_logs, load_only_generated_nexus_file, wait_for_nexus_file
+from . import (
+    add_device_metadata_to_hints_wrapper,
+    get_logs,
+    load_only_generated_nexus_file,
+    wait_for_nexus_file,
+)
 
 
 def test_structure(RE_directly_subscribed: RunEngine, tmpdir: Path) -> None:
@@ -84,7 +89,7 @@ def test_example_schema_and_manual_schema_with_equivalence(
 ) -> None:
     """Checks that the autofilled schema is equivalent to what we're expecting."""
 
-    @NexusDevice.from_dictionary(
+    @NexusDevices.add_device_from_dictionary(
         {
             "$nxclass": "NXsubentry",
             "channel_1_value": "channel-1-value",
@@ -126,7 +131,7 @@ def test_simple_nx_detector(
     RE_directly_subscribed: RunEngine,
     tmpdir: Path,
 ) -> None:
-    @NexusDevice.from_dictionary(
+    @NexusDevices.add_device_from_dictionary(
         {
             "$nxclass": "NXdetector",
             "data": {"data_key": "channel-1-value"},
@@ -186,7 +191,7 @@ def test_schema_client_server_differing_schema(
 
     with pytest.raises(TypeError) as excinfo:
 
-        @NexusDevice.from_dictionary(new_motor_schema)
+        @NexusDevices.add_device_from_dictionary(new_motor_schema)
         class NewMotorWhichWillFail(SimMotor): ...
 
     # Can't use match with literal "\$" for whatever reason...
@@ -199,7 +204,7 @@ def test_schema_client_server_differing_schema(
         some_data: NxField
 
     # Passes because the nexus group was added in this process.
-    @NexusDevice.from_dictionary(new_motor_schema)
+    @NexusDevices.add_device_from_dictionary(new_motor_schema)
     class NewMotor(SimMotor): ...
 
     motor = NewMotor(name="motor")
@@ -228,7 +233,7 @@ def test_schema_client_server_differing_schema(
 
 
 def test_constant_attributes(RE_directly_subscribed: RunEngine, tmpdir) -> None:
-    @NexusDevice.from_dictionary(
+    @NexusDevices.add_device_from_dictionary(
         {
             "$nxclass": "NXsubentry",
             "$description": "Some constant description",
@@ -287,10 +292,11 @@ def test_constant_attributes(RE_directly_subscribed: RunEngine, tmpdir) -> None:
 
 
 def test_attributes_from_hints(RE_directly_subscribed: RunEngine, tmpdir):
-    @NexusDevice.from_dictionary(
+    @add_device_metadata_to_hints_wrapper
+    @NexusDevices.add_device_from_dictionary(
         {
             "$nxclass": "NXsubentry",
-            "$description": {"hints_key": ["md", "description"]},
+            "$description": {"hints_key": ["metadata", "description"]},
         }
     )
     class SynAxisWithDescription(SynAxis): ...
@@ -312,7 +318,7 @@ def test_attributes_from_hints(RE_directly_subscribed: RunEngine, tmpdir):
 
 
 def test_attributes_from_data_keys(RE_directly_subscribed: RunEngine, tmpdir):
-    @NexusDevice.from_dictionary(
+    @NexusDevices.add_device_from_dictionary(
         {
             "$nxclass": "NXsubentry",
             "readback": {
@@ -351,7 +357,7 @@ def test_attributes_from_data_keys(RE_directly_subscribed: RunEngine, tmpdir):
 #     class NxData(NxGroup):
 #         data: NxObject  # A NXdata should contain a single field for `data:`
 #
-#     @NexusDevice.from_pydantic_schema(
+#     @NexusDevices.add_device_from_pydantic_schema(
 #         NxData(data=NxObject(some_data_key=NxField(data_key="user_readback")))
 #     )
 #     class SomeSimMotor(SimMotor): ...
@@ -361,7 +367,7 @@ def test_attributes_from_data_keys(RE_directly_subscribed: RunEngine, tmpdir):
 
 
 def test_nx_data_multi_dimensional(RE_directly_subscribed: RunEngine, tmpdir: Path):
-    @NexusDevice.from_schema(
+    @NexusDevices.add_device_from_schema(
         {
             "$nxclass": "NXdata",
             "$axes": ["axis1", "axis2"],

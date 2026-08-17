@@ -45,8 +45,6 @@ def _add_nx_schema_getter_and_device_metadata_to_hints[T](device_cls: type[T]) -
     @property  # type: ignore
     def new_hints(self: HasHints) -> PerObjectHint:
         hints = original.__get__(self).copy()
-        if hasattr(self, "md"):
-            hints["md"] = self.md  # type: ignore
 
         if type(self) not in _schema_added:
             # This is a subclass of the device which was wrapped,
@@ -68,23 +66,25 @@ def _add_nx_schema_getter_and_device_metadata_to_hints[T](device_cls: type[T]) -
     device_cls.hints = new_hints  # type: ignore
 
 
-class NexusDevice:
+class NexusDevices:
     """
-    Decorator for adding nexus schema to the device.
+    Static class for adding nexus schema to devices.
     This can be done `from_path` or `from_dictionary` directly.
     """
 
     @classmethod
-    def from_schema(cls, nx_schema: str | Path | dict | NxBase) -> Callable[[type[T]], type[T]]:
+    def add_device_from_schema(
+        cls, nx_schema: str | Path | dict | NxBase
+    ) -> Callable[[type[T]], type[T]]:
         if isinstance(nx_schema, str | Path):
-            return cls.from_path(Path(nx_schema))
+            return cls.add_device_from_path(Path(nx_schema))
         if isinstance(nx_schema, dict):
-            return cls.from_dictionary(nx_schema)
+            return cls.add_device_from_dictionary(nx_schema)
         if isinstance(nx_schema, NxBase):
-            return cls.from_pydantic_schema(nx_schema)
+            return cls.add_device_from_pydantic_schema(nx_schema)
 
     @classmethod
-    def from_pydantic_schema(
+    def add_device_from_pydantic_schema(
         cls, nx_schema: NxBase, inherit: bool = True
     ) -> Callable[[type[T]], type[T]]:
         def decorator(device_cls: type[T]) -> type[T]:
@@ -109,7 +109,7 @@ class NexusDevice:
         return decorator
 
     @classmethod
-    def from_dictionary(
+    def add_device_from_dictionary(
         cls, nx_schema: dict, inherit: bool = True
     ) -> Callable[[type[T]], type[T]]:
         """Load the chosen nx_schema dictionary into the hints of the decorated device.
@@ -118,10 +118,10 @@ class NexusDevice:
         """
 
         deserialized = NxBase.from_dictionary(nx_schema)
-        return cls.from_pydantic_schema(deserialized, inherit=inherit)
+        return cls.add_device_from_pydantic_schema(deserialized, inherit=inherit)
 
     @classmethod
-    def from_path(
+    def add_device_from_path(
         cls, nx_schema: str | Path, inherit: bool = True
     ) -> Callable[[type[T]], type[T]]:
         """Load the chosen nx_schema from a given path either absolute across the files system, or
@@ -132,7 +132,8 @@ class NexusDevice:
 
         this_file = Path(__file__).resolve()
         frame = inspect.currentframe()
-        assert frame
+        if not frame:
+            raise ValueError(f"Cannot parse {nx_schema} either relative nor absolute.")
         caller_file = None
         # skip current frame and walk back
         frame = frame.f_back
@@ -154,4 +155,4 @@ class NexusDevice:
             raise ValueError(f"Path `{path.absolute()}` does not exist.")
         with path.open("r") as f:
             loaded_dictionary = yaml.safe_load(f)
-        return cls.from_dictionary(loaded_dictionary, inherit=inherit)
+        return cls.add_device_from_dictionary(loaded_dictionary, inherit=inherit)

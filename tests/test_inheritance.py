@@ -11,14 +11,14 @@ from ophyd_async.epics.core import epics_signal_r
 from ophyd_async.epics.motor import Motor
 from ophyd_async.plan_stubs import ensure_connected
 
-from bluesky_nexus import NexusDevice
+from bluesky_nexus import NexusDevices
 from bluesky_nexus.nx_schema import NxBase, NxGroup, add_nx_class_basemodel
 
-from . import load_only_generated_nexus_file
+from . import add_device_metadata_to_hints_wrapper, load_only_generated_nexus_file
 
 
 def test_schema_single_inheritance() -> None:
-    @NexusDevice.from_dictionary(
+    @NexusDevices.add_device_from_dictionary(
         {
             "$nxclass": "NXobject",
             "the_odysee": {
@@ -47,7 +47,9 @@ def test_schema_single_inheritance() -> None:
         ).model_dump()
     )
 
-    @NexusDevice.from_dictionary({"$nxclass": "NXobject", "beowulf": "signal_made_of_iron"})
+    @NexusDevices.add_device_from_dictionary(
+        {"$nxclass": "NXobject", "beowulf": "signal_made_of_iron"}
+    )
     class Mama(Grandma):
         signal_made_of_iron = Cpt(EpicsSignal, "IRON")
 
@@ -64,7 +66,7 @@ def test_schema_single_inheritance() -> None:
         ).model_dump()
     )
 
-    @NexusDevice.from_dictionary(
+    @NexusDevices.add_device_from_dictionary(
         {
             "$nxclass": "NXobject",
             "pride_and_prejudice": "signal_made_of_steel",
@@ -99,7 +101,7 @@ def test_schema_single_inheritance() -> None:
         "beowulf": "signal_made_of_iron",
     }
 
-    @NexusDevice.from_dictionary(
+    @NexusDevices.add_device_from_dictionary(
         {"$nxclass": "NXobject", "beowulf": "signal_made_of_iron"}, inherit=False
     )
     class Auntie(Grandma):
@@ -113,7 +115,7 @@ def test_schema_single_inheritance() -> None:
     }
     expected_me_schema.update(expected_auntie_schema)
 
-    @NexusDevice.from_dictionary(
+    @NexusDevices.add_device_from_dictionary(
         {
             "$nxclass": "NXobject",
             "pride_and_prejudice": "signal_made_of_steel",
@@ -126,7 +128,7 @@ def test_schema_single_inheritance() -> None:
 
 
 def test_schema_multi_inheritance() -> None:
-    @NexusDevice.from_dictionary(
+    @NexusDevices.add_device_from_dictionary(
         {
             "$nxclass": "NXobject",
             "signalnm": "value11",
@@ -151,7 +153,7 @@ def test_schema_multi_inheritance() -> None:
         device_1_n_int = 11
         device_n_1_int = 11
 
-    @NexusDevice.from_dictionary(
+    @NexusDevices.add_device_from_dictionary(
         {
             "$nxclass": "NXobject",
             "signalnm": "value12",
@@ -176,7 +178,7 @@ def test_schema_multi_inheritance() -> None:
         device_1_n_int = 12
         device_n_2_int = 12
 
-    @NexusDevice.from_dictionary(
+    @NexusDevices.add_device_from_dictionary(
         {
             "$nxclass": "NXobject",
             "signaln": "value1",
@@ -197,7 +199,7 @@ def test_schema_multi_inheritance() -> None:
         device_n_int = 1
         device_1_int = 1
 
-    @NexusDevice.from_dictionary(
+    @NexusDevices.add_device_from_dictionary(
         {
             "$nxclass": "NXobject",
             "signalnm": "value21",
@@ -222,7 +224,7 @@ def test_schema_multi_inheritance() -> None:
         device_2_n_int = 21
         device_n_1_int = 21
 
-    @NexusDevice.from_dictionary(
+    @NexusDevices.add_device_from_dictionary(
         {
             "$nxclass": "NXobject",
             "signalnm": "value22",
@@ -247,7 +249,7 @@ def test_schema_multi_inheritance() -> None:
         device_2_n_int = 22
         device_n_2_int = 22
 
-    @NexusDevice.from_dictionary(
+    @NexusDevices.add_device_from_dictionary(
         {
             "$nxclass": "NXobject",
             "signaln": "value2",
@@ -322,7 +324,7 @@ def test_schema_multi_inheritance() -> None:
 def test_schema_single_inheritance_on_device(
     RE_directly_subscribed: RunEngine, tmpdir: Path
 ) -> None:
-    NexusDevice.from_dictionary(
+    NexusDevices.add_device_from_dictionary(
         {
             "$nxclass": "NXpositioner",
             "value": "",
@@ -342,7 +344,7 @@ def test_schema_single_inheritance_on_device(
                 self.open_value = epics_signal_r(float, f"{prefix}:OPEN_VAL")
                 self.close_value = epics_signal_r(float, f"{prefix}:CLOSE_VAL")
 
-    @NexusDevice.from_dictionary(
+    @NexusDevices.add_device_from_dictionary(
         {
             "$nxclass": "NXpositioner",
             "SUB_GROUP": {"$nxclass": "NXsubentry", "value_at_open": "open_value"},
@@ -390,19 +392,19 @@ def test_schema_single_inheritance_on_device(
     assert list(loaded["shutter_differing"]["SUB_GROUP"]) == ["value_at_open"]
 
 
-def test_description_accross_whole_codebase(
+def test_description_accross_whole_codebase_from_hints_on_instantiation(
     RE_directly_subscribed: RuntimeError, tmpdir: Path
 ) -> None:
-    # Makeing a new class only to avoid persistence problems in pytest
-    # (monkeypatch is annoying here). This test demonstrates that if I
-    # were to have added description to device in a centralized
-    # device package, I wouldn't have to add the description to any
-    # other devices read.
-    @NexusDevice.from_dictionary(
-        {"$nxclass": "NXgroup", "$description": {"hints_key": ["md", "description"]}}
+    # This test mimicks what we do with device instantiation map
+    # at HZB. There metadata is added to the device instance.
+
+    @add_device_metadata_to_hints_wrapper
+    @NexusDevices.add_device_from_dictionary(
+        {"$nxclass": "NXgroup", "$description": {"hints_key": ["metadata", "description"]}}
     )
     class ThisWouldBeTheRealDeviceInThePackage(Device): ...
 
+    @add_device_metadata_to_hints_wrapper
     class SynAxisWouldUseTheAbove(ThisWouldBeTheRealDeviceInThePackage, SynAxis): ...
 
     description = (

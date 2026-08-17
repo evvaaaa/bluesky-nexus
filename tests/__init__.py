@@ -41,3 +41,17 @@ def get_logs(directory: Path) -> Path:
     if not potential.exists():
         raise ValueError("Log directory not found")
     return potential
+
+
+def add_device_metadata_to_hints_wrapper(cls):
+    """Minimal version of what bessyii device map does."""
+    original_hints_getter = cls.hints.fget
+
+    @property
+    def new_hints(self):
+        original = original_hints_getter(self)
+        original.update({"metadata": getattr(self, "md", {})})
+        return original
+
+    cls.hints = new_hints
+    return cls

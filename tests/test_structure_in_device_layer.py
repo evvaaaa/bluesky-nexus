@@ -12,7 +12,7 @@ from ophyd_async.core import StandardReadable, soft_signal_r_and_setter
 from ophyd_async.sim import SimPointDetector
 from pydantic import ValidationError
 
-from bluesky_nexus import NexusDevice
+from bluesky_nexus import NexusDevices
 from bluesky_nexus.nx_schema import (
     NxAttribute,
     NxBase,
@@ -43,7 +43,7 @@ from bluesky_nexus.nx_schema import (
     ),
 )
 def test_methods_of_loading_schema(argument) -> None:
-    @NexusDevice.from_schema(argument)
+    @NexusDevices.add_device_from_schema(argument)
     class SomeDevice(Device): ...
 
     assert SomeDevice("X", name="device").hints == {
@@ -63,7 +63,7 @@ def test_loading_schema_from_a_non_existent_path() -> None:
         ValueError, match=r"Path `/.*/tests/some_sub_package/my_schema.yaml` does not exist\."
     ):  # Becomes absolute, includin root.
 
-        @NexusDevice.from_path("some_sub_package/my_schema.yaml")
+        @NexusDevices.add_device_from_path("some_sub_package/my_schema.yaml")
         class SomeDevice(Device): ...
 
 
@@ -79,7 +79,7 @@ def test_methods_of_declaring_data_keys(data_key_subset: dict) -> None:
     dictionary_schema = {"$nxclass": "NXsubentry"}
     dictionary_schema.update(data_key_subset)
 
-    @NexusDevice.from_dictionary(dictionary_schema)
+    @NexusDevices.add_device_from_dictionary(dictionary_schema)
     class SomeDevice(Device):
         signal = Cpt(EpicsSignal, "SIGNAL")
 
@@ -99,7 +99,7 @@ def test_writer_behaviour_with_failing_schema_specified_in_yaml() -> None:
         match=("Input should be a valid dictionary or instance of NxField"),
     ):
 
-        @NexusDevice.from_dictionary(
+        @NexusDevices.add_device_from_dictionary(
             {
                 "$nxclass": "NXdetector",
                 "data": {
@@ -119,7 +119,7 @@ def test_attempt_with_unknown_schema_from_client() -> None:
         TypeError,
     ) as excinfo:
 
-        @NexusDevice.from_dictionary({"$nxclass": "NXbanana", "length": "length"})
+        @NexusDevices.add_device_from_dictionary({"$nxclass": "NXbanana", "length": "length"})
         class BananaMotor(SynAxis):
             pass
 
@@ -321,7 +321,7 @@ def test_serialization_deserialization() -> None:
 
 
 def test_acceptable_nx_data_specification():
-    @NexusDevice.from_schema(
+    @NexusDevices.add_device_from_schema(
         {
             "$nxclass": "NXdata",
             "$signal": "some_signal_name",
@@ -406,7 +406,7 @@ def test_nx_data_incorrect_specification(
 ):
     with pytest.raises(exception_cls) as excinfo:
 
-        @NexusDevice.from_schema(specification)
+        @NexusDevices.add_device_from_schema(specification)
         class SomeDetector(StandardReadable):
             def __init__(self, name: str = "") -> None:
                 super().__init__(name)
