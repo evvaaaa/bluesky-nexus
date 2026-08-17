@@ -174,7 +174,7 @@ def test_nexus_writer_on_signals(
         "some_signal",
     ]
     assert list(loaded["another_signal"]["value"]) == [0, 0, 0]
-    assert loaded["another_signal"].attrs == {}
+    assert loaded["another_signal"].attrs == {"axes": "timestamps", "signal": "value"}
     assert list(loaded["motor"]) == ["acceleration_time", "motor", "velocity"]
     assert loaded["motor"].attrs == {"nxclass": "NXsubentry"}
 

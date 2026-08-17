@@ -130,10 +130,8 @@ def _new_nx_field(
     if "units" not in attrs and data_key_data.units:
         attrs["units"] = data_key_data.units
 
-    data_field = nexus.NXfield(value=data_key_data.data, name=name, attrs=attrs)
-
     if field_type is NewFieldType.VALUE_ONLY:
-        return data_field
+        return nexus.NXfield(value=data_key_data.data, name=name, attrs=attrs)
 
     timestamps_field = nexus.NXfield(
         value=np.array(data_key_data.timestamps) - run_start_time,
@@ -144,14 +142,14 @@ def _new_nx_field(
     if field_type is NewFieldType.TIMESTAMPS_ONLY:
         return timestamps_field
 
-    new_group = (
-        nexus.NXlog()
-        if field_type is NewFieldType.NX_LOG_WITH_TIMESTAMPS
-        else nexus.NXdata(signal="value", axes=["time"])
-    )
+    data_field = nexus.NXfield(value=data_key_data.data, name="value", attrs=attrs)
+    if field_type is NewFieldType.NX_LOG_WITH_TIMESTAMPS:
+        new_group = nexus.NXlog()
+        new_group["time"] = timestamps_field
+        new_group["value"] = data_field
+    else:
+        new_group = nexus.NXdata(signal=data_field, axes=(timestamps_field,))
 
-    new_group["time"] = timestamps_field
-    new_group["value"] = data_field
     return new_group
 
 
@@ -289,7 +287,7 @@ def add_stream_data_to_group(
                 object_data.formatted_data_key_name_to_data[object_data.nx_schema.data_key],
                 object_data,
                 run_start_time,
-                NewFieldType.NX_LOG_WITH_TIMESTAMPS,
+                NewFieldType.NX_DATA_WITH_TIMESTAMPS,
                 name=object_name,
             )
 
