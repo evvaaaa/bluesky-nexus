@@ -1,0 +1,12 @@
+# Changes here will be overwritten by Copier
+_commit: v1.0.0
+_src_path: ../bessyii_python_template
+author_email: eva.lott@helmholtz-berlin.de
+author_name: Eva Lott
+create_docs: true
+project_description: A package for generating a standard NeXus structure for bluesky
+    plans.
+project_name: bluesky-nexus
+project_slug: bluesky_nexus
+python_version: '3.12'
+repo_url: ''
