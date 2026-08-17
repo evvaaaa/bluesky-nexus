@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import time
 from collections.abc import Iterable
+from enum import Enum
 from importlib.metadata import version
 from typing import Any, cast
 
@@ -9,8 +10,13 @@ import numpy as np
 from nexusformat import nexus
 
 from bluesky_nexus.logger import LOGGER
-from bluesky_nexus.nx_schema import NxAttribute, NxField, NxGroup
-from bluesky_nexus.nx_schema._nx_base import NX_ATTRIBUTE_SERIALIZED_PREFIX
+from bluesky_nexus.nx_schema import (
+    NX_ATTRIBUTE_SERIALIZED_PREFIX,
+    NxAttribute,
+    NxData,
+    NxField,
+    NxGroup,
+)
 
 from ._data_extractor import (
     DataKeyData,
@@ -91,13 +97,20 @@ def _attribute_value(attribute: NxAttribute, object_data: ObjectData) -> Any:
     return attribute.constant
 
 
+class NewFieldType(Enum):
+    NX_LOG_WITH_TIMESTAMPS = "NX_LOG_WITH_TIMESTAMPS"
+    VALUE_ONLY = "VALUE_ONLY"
+    TIMESTAMPS_ONLY = "TIMESTAMPS_ONLY"
+
+
 def _new_nx_field(
     nx_field_schema: NxField,
     data_key_data: DataKeyData,
     object_data: ObjectData,
     run_start_time: float,
+    field_type: NewFieldType,
     name: str = "unknown",
-) -> nexus.NXlog:
+) -> nexus.NXlog | nexus.NXfield:
     """Util method for adding new nx field. name is not required
     if the field is directly added to a parent,
     e.g group["field_name"] =...
@@ -116,25 +129,45 @@ def _new_nx_field(
     if "units" not in attrs and data_key_data.units:
         attrs["units"] = data_key_data.units
 
-    log_with_timestamps = nexus.NXlog()
-    log_with_timestamps["time"] = nexus.NXfield(
+    data_field = nexus.NXfield(value=data_key_data.data, name=name, attrs=attrs)
+
+    if field_type is NewFieldType.VALUE_ONLY:
+        return data_field
+
+    timestamps_field = nexus.NXfield(
         value=np.array(data_key_data.timestamps) - run_start_time,
         name="timestamps",
         attrs={"units": nexus.NXfield(value="s")},
     )
-    log_with_timestamps["value"] = nexus.NXfield(value=data_key_data.data, name=name, attrs=attrs)
-    return log_with_timestamps
+
+    if field_type is NewFieldType.NX_LOG_WITH_TIMESTAMPS:
+        log_with_timestamps = nexus.NXlog()
+        log_with_timestamps["time"] = timestamps_field
+        log_with_timestamps["value"] = data_field
+        return log_with_timestamps
+
+    elif field_type is NewFieldType.TIMESTAMPS_ONLY:
+        return timestamps_field
 
 
-def _add_nx_object_data_to_group(
+def _new_nx_group(
     object_name: str,
-    group: nexus.NXgroup,
     object_data: ObjectData,
     group_schema: NxGroup,
     run_start_time: float,
-) -> None:
+) -> nexus.NXgroup:
     """Write the object into a nexus group."""
     attrs = {}
+
+    # Use the nexusformat class directly if it exists.
+    group_initializer = getattr(
+        nexus,
+        group_schema.nxclass.constant,
+        lambda: nexus.NXgroup(nxclass=group_schema.nxclass.constant),
+    )
+
+    group = group_initializer()
+
     # Add the manually specified attributes.
     for nx_attribute_name, nx_attribute in group_schema.nx_attributes().items():
         attribute_value = _attribute_value(nx_attribute, object_data)
@@ -146,20 +179,31 @@ def _add_nx_object_data_to_group(
     for nx_alias, nx_field_schema in group_schema.nx_fields().items():
         if nx_field_schema.data_key not in object_data.formatted_data_key_name_to_data:
             continue
+
+        # Contrary to what the documentation says, both nexpy, and silx dont accept only
+        # nxlog "value" when it counts, e.g plotting an XNdata.
+        dont_use_nx_log = isinstance(
+            group_schema, NxData
+        ) and nx_alias in group_schema.axes.constant + [group_schema.signal.constant]
+
         data_key_data = object_data.formatted_data_key_name_to_data[nx_field_schema.data_key]
         group[nx_alias or sanitize_datakey_for_nexus(object_name)] = _new_nx_field(
-            nx_field_schema, data_key_data, object_data, run_start_time
+            nx_field_schema,
+            data_key_data,
+            object_data,
+            run_start_time,
+            NewFieldType.VALUE_ONLY if dont_use_nx_log else NewFieldType.NX_LOG_WITH_TIMESTAMPS,
         )
 
     for (
         sub_group_name,
         sub_group_schema,
     ) in group_schema.sub_nx_groups().items():
-        sub_group = nexus.NXgroup()
-        _add_nx_object_data_to_group(
-            object_name, sub_group, object_data, sub_group_schema, run_start_time
+        group[sub_group_name] = _new_nx_group(
+            object_name, object_data, sub_group_schema, run_start_time
         )
-        group[sub_group_name] = sub_group
+
+    return group
 
 
 def add_stream_data_to_group(
@@ -201,10 +245,10 @@ def add_stream_data_to_group(
 
     for object_name, object_data in stream_data.object_data.items():
         if isinstance(object_data.nx_schema, NxGroup):
-            device_group = nexus.NXgroup(nxclass=object_data.nx_schema.nxclass.constant)
-            _add_nx_object_data_to_group(
-                object_name, device_group, object_data, object_data.nx_schema, run_start_time
+            device_group = _new_nx_group(
+                object_name, object_data, object_data.nx_schema, run_start_time
             )
+
             for (
                 nx_attribute_name,
                 nx_attribute,
@@ -240,6 +284,7 @@ def add_stream_data_to_group(
                 object_data.formatted_data_key_name_to_data[object_data.nx_schema.data_key],
                 object_data,
                 run_start_time,
+                NewFieldType.NX_LOG_WITH_TIMESTAMPS,
                 name=object_name,
             )
 

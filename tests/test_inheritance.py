@@ -345,7 +345,7 @@ def test_schema_single_inheritance_on_device(
     @NexusDevice.from_dictionary(
         {
             "$nxclass": "NXpositioner",
-            "SUB_GROUP": {"$nxclass": "NXobject", "value_at_open": "open_value"},
+            "SUB_GROUP": {"$nxclass": "NXsubentry", "value_at_open": "open_value"},
         }
     )
     class ShutterWithSomeDifferingNxSchema(Shutter): ...

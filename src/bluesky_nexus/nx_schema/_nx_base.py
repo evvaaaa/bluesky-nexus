@@ -63,6 +63,7 @@ class NxBase(BaseModel, ABC):
     model_config = ConfigDict(extra="allow")
 
     @model_validator(mode="before")
+    @classmethod
     def _dont_allow_non_alphanumeric_keys(cls, value: dict) -> dict:
         if isinstance(value, NxBase):
             # This passes the test by virtue of being
@@ -99,7 +100,10 @@ class NxBase(BaseModel, ABC):
                     # to nxclass.
                     shortened[key] = data_key
                 case _:
-                    shortened[key] = value
+                    if isinstance(value, NxGroup):
+                        shortened[key] = value
+                    else:
+                        shortened[key] = value
 
         return shortened
 
@@ -115,7 +119,7 @@ class NxBase(BaseModel, ABC):
         if f"{NX_ATTRIBUTE_SERIALIZED_PREFIX}nxclass" in dictionary:
             return NxGroup.from_dictionary(dictionary)
         else:
-            return NxField.from_dictionary(dictionary)
+            return NxField(**dictionary)
 
     def nx_attributes(self) -> dict[str, NxAttribute]:
         """Gives a dict of the nx attributes defined on this object."""
@@ -224,34 +228,48 @@ class NxGroup(NxBase):
         kwargs: dict[str, Any] = {}
         document_nx_class_name: str | None = None
 
+        # Fields and attributes may need to be initialized through
+        # the basemodel class to support subclasses of NxField/NxAttribute
+        # on the basemodel. These are fished out the schema and initialized
+        # once we have the nxclass type.
+        attributes_to_initialize = {}
+        fields_to_initialize = {}
+
         for key, value in dictionary.items():
             match (key, value):
                 # Attribute specified:
                 case (key, value) if isinstance(key, str) and key.startswith(
                     NX_ATTRIBUTE_SERIALIZED_PREFIX
                 ):
-                    attribute = (
-                        NxAttribute(**value)
-                        if isinstance(value, dict)
-                        else NxAttribute(constant=value)
-                    )
                     key = key.removeprefix(NX_ATTRIBUTE_SERIALIZED_PREFIX)  # deserialized key
                     if key == "nxclass":
-                        document_nx_class_name = attribute.constant
                         # Attribute is thrown away. It is used to select
                         # the correct class where it is a computed property.
+                        document_nx_class_name = (
+                            value.get("constant") if isinstance(value, dict) else value
+                        )
                     else:
-                        kwargs[key] = attribute
+                        # Attribute is stored as a dict. If the field is in the basemodel
+                        # it will be initialized from the dict later to support subclasses
+                        # Of NxAttribute defined on the NxGroup.
+                        attributes_to_initialize[key] = (
+                            value if isinstance(value, dict) else {"constant": value}
+                        )
 
-                # A subgroup or field is specified:
+                # A subgroup is specified:
                 # e.g {$nxclass: NXobject, SUB_GROUP: {$nxclass: NXobject, ...}}
+                case (key, value) if isinstance(value, dict) and "$nxclass" in value:
+                    kwargs[key] = NxGroup.from_dictionary(value)
+
+                # A field is specified:
+                # e.g {some_alias: {data_key: some_data_key, $long_name: "Longish name"}}
                 case (key, value) if isinstance(value, dict):
-                    kwargs[key] = NxBase.from_dictionary(value)
+                    fields_to_initialize[key] = value
 
                 # A mapping of alias to data_key:
                 # e.g {some_alias: some_data_key}
                 case (key, value) if isinstance(key, str) and isinstance(value, str):
-                    kwargs[key] = NxField(data_key=value)
+                    fields_to_initialize[key] = {"data_key": value}
 
                 # No value provided, this field/subgroup was probably specified in
                 # the schema but not provided.
@@ -272,20 +290,40 @@ class NxGroup(NxBase):
         # The class is specified. It is fetched from the environment for
         # validation on instantiation
         #
-        document_cls = NX_CLASS_TO_BASEMODEL.get(document_nx_class_name)
-        if document_cls is None:
+        nx_cls = NX_CLASS_TO_BASEMODEL.get(document_nx_class_name)
+        if nx_cls is None:
             pretty_allowed_classes = pformat(set(NX_CLASS_TO_BASEMODEL))
             raise TypeError(
                 f"Requested `{NX_ATTRIBUTE_SERIALIZED_PREFIX}nxclass: {document_nx_class_name}` "
                 f"but this isn't defined with pydantic schemas: {pretty_allowed_classes}"
             )
-        if not issubclass(document_cls, cls):
+        if not issubclass(nx_cls, cls):
             raise TypeError(
-                f"Found the specified NXclass {document_cls}, but it cannot be "
+                f"Found the specified NXclass {nx_cls}, but it cannot be "
                 f"initialized from `{cls.__name__}.from_dictionary` as it isn't a subclass "
                 "of it."
             )
-        return cast(T, document_cls(**kwargs))
+
+        for key, value in fields_to_initialize.items():
+            if key in nx_cls.model_fields:
+                # Use the raw dictionary. This means
+                # that pydantic can infer the possible subclass of
+                # NxField from the `nx_cls` and make a new instance
+                # of that type.
+                kwargs[key] = value
+            else:
+                # This field isn't specified in the basemodel schema. Just add it
+                # as a default NxField.
+                kwargs[key] = NxField(**value)
+
+        for key, value in attributes_to_initialize.items():
+            # Same logic as the above but with NxAttributes.
+            if key in nx_cls.model_fields:
+                kwargs[key] = value
+            else:
+                kwargs[key] = NxAttribute(**value)
+
+        return cast(T, nx_cls(**kwargs))
 
 
 class NxField(NxBase):
@@ -299,28 +337,31 @@ class NxField(NxBase):
     """The bluesky data_key. The '<name>' in this string will be swapped with the
     object name."""
 
+    @model_validator(mode="before")
     @classmethod
-    def from_dictionary(cls: type[T], dictionary: dict) -> T:
-        kwargs = {}
-        for key, value in dictionary.items():
-            match (key, value):
-                # Attribute specified:
-                case (key, value) if key.startswith(NX_ATTRIBUTE_SERIALIZED_PREFIX):
-                    attribute = (
-                        NxAttribute(**value)
-                        if isinstance(value, dict)
-                        else NxAttribute(constant=value)
-                    )
-                    kwargs[key.removeprefix(NX_ATTRIBUTE_SERIALIZED_PREFIX)] = attribute
+    def _coerce_attribute(cls, values: Any) -> Any:
+        """Coerces attribute when they're deserialized.
 
-                # This is one of the other keys in the `NxField`
-                case (key, value) if key in cls.model_fields:
-                    kwargs[key] = value
+        Allows for subclasses to validate against members which may be subclasses of
+        NxAttribute/NxField"""
 
-                case (key, value):
-                    pretty_key_value = pformat({key: value})
-                    raise TypeError(
-                        f"Malformed key, value pair found in nx schema:\n{pretty_key_value}"
-                    )
+        if not isinstance(values, dict):
+            return values
 
-        return cls(**kwargs)
+        coerced_attributes: dict[str, NxField | NxAttribute | dict] = {}
+        for key, value in values.items():
+            if key.startswith(NX_ATTRIBUTE_SERIALIZED_PREFIX):
+                key = key.removeprefix(NX_ATTRIBUTE_SERIALIZED_PREFIX)
+                value = value if isinstance(value, dict) else {"constant": value}
+                if key in cls.model_fields:
+                    # Allow the model to validate against possible subclasses of
+                    # NxAttribute.
+                    coerced_attributes[key] = value
+                else:
+                    # The nx attribute isn't specified in schema. Add it.
+                    coerced_attributes[key] = NxAttribute(**value)
+
+            else:
+                coerced_attributes[key] = value
+
+        return coerced_attributes
