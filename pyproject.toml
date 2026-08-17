@@ -84,7 +84,6 @@ test = [
   "ophyd-async[sim, ca]",
   "pytest",
   "pre-commit",
-  "pytest-html",
   "pyepics",
 
 

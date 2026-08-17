@@ -101,6 +101,7 @@ class NewFieldType(Enum):
     NX_LOG_WITH_TIMESTAMPS = "NX_LOG_WITH_TIMESTAMPS"
     VALUE_ONLY = "VALUE_ONLY"
     TIMESTAMPS_ONLY = "TIMESTAMPS_ONLY"
+    NX_DATA_WITH_TIMESTAMPS = "NX_DATA_WITH_TIMESTAMPS"
 
 
 def _new_nx_field(
@@ -110,7 +111,7 @@ def _new_nx_field(
     run_start_time: float,
     field_type: NewFieldType,
     name: str = "unknown",
-) -> nexus.NXlog | nexus.NXfield:
+) -> nexus.NXlog | nexus.NXfield | nexus.NXdata:
     """Util method for adding new nx field. name is not required
     if the field is directly added to a parent,
     e.g group["field_name"] =...
@@ -140,14 +141,18 @@ def _new_nx_field(
         attrs={"units": nexus.NXfield(value="s")},
     )
 
-    if field_type is NewFieldType.NX_LOG_WITH_TIMESTAMPS:
-        log_with_timestamps = nexus.NXlog()
-        log_with_timestamps["time"] = timestamps_field
-        log_with_timestamps["value"] = data_field
-        return log_with_timestamps
-
-    elif field_type is NewFieldType.TIMESTAMPS_ONLY:
+    if field_type is NewFieldType.TIMESTAMPS_ONLY:
         return timestamps_field
+
+    new_group = (
+        nexus.NXlog()
+        if field_type is NewFieldType.NX_LOG_WITH_TIMESTAMPS
+        else nexus.NXdata(signal="value", axes=["time"])
+    )
+
+    new_group["time"] = timestamps_field
+    new_group["value"] = data_field
+    return new_group
 
 
 def _new_nx_group(
@@ -180,19 +185,17 @@ def _new_nx_group(
         if nx_field_schema.data_key not in object_data.formatted_data_key_name_to_data:
             continue
 
-        # Contrary to what the documentation says, both nexpy, and silx dont accept only
-        # nxlog "value" when it counts, e.g plotting an XNdata.
-        dont_use_nx_log = isinstance(
-            group_schema, NxData
-        ) and nx_alias in group_schema.axes.constant + [group_schema.signal.constant]
+        # Contrary to what the documentation would imply, both nexpy, and silx dont accept only
+        # nxlog "value" when it counts, e.g plotting an NXdata.
+        write_value_option = NewFieldType.NX_LOG_WITH_TIMESTAMPS
+        if isinstance(group_schema, NxData) and nx_alias in group_schema.axes.constant + [
+            group_schema.signal.constant
+        ]:
+            write_value_option = NewFieldType.VALUE_ONLY
 
         data_key_data = object_data.formatted_data_key_name_to_data[nx_field_schema.data_key]
         group[nx_alias or sanitize_datakey_for_nexus(object_name)] = _new_nx_field(
-            nx_field_schema,
-            data_key_data,
-            object_data,
-            run_start_time,
-            NewFieldType.VALUE_ONLY if dont_use_nx_log else NewFieldType.NX_LOG_WITH_TIMESTAMPS,
+            nx_field_schema, data_key_data, object_data, run_start_time, write_value_option
         )
 
     for (
@@ -268,7 +271,9 @@ def add_stream_data_to_group(
             # 2026-08-14 11:19:29 [CRITICAL] NXValidate: NXdata: data
             # "@signal" is not present in the group
             # but signal is an optional argument in the schema.
-
+            # Futhermore, there isn't an exact correspondance between the nxdl and
+            # what we'd want in a basemodel. Some fields are defined with assumed
+            # logic on the writer side.
             devices_group[object_name] = device_group
 
         elif isinstance(object_data.nx_schema, NxField):
