@@ -67,26 +67,35 @@ def _add_nx_schema_getter_and_device_metadata_to_hints[T](device_cls: type[T]) -
 
 
 class NexusDevices:
-    """
-    Static class for adding nexus schema to devices.
-    This can be done `from_path` or `from_dictionary` directly.
-    """
+    """Static class for adding nexus schema to devices."""
 
     @classmethod
     def add_device_from_schema(
-        cls, nx_schema: str | Path | dict | NxBase
+        cls, nx_schema: str | Path | dict | NxBase, inherit: bool = True
     ) -> Callable[[type[T]], type[T]]:
+        """Adds device schema to the wrapped `HasHints` class.
+
+        Schema can be in any of the accepted formats - a path to yaml, a dict,
+        or a basemodel directly.
+
+        If `inherit` is `False` then don't attempt to add schema from parent classes.
+        """
         if isinstance(nx_schema, str | Path):
-            return cls.add_device_from_path(Path(nx_schema))
+            return cls.add_device_from_path(Path(nx_schema), inherit=inherit)
         if isinstance(nx_schema, dict):
-            return cls.add_device_from_dictionary(nx_schema)
+            return cls.add_device_from_dictionary(nx_schema, inherit=inherit)
         if isinstance(nx_schema, NxBase):
-            return cls.add_device_from_pydantic_schema(nx_schema)
+            return cls.add_device_from_pydantic_schema(nx_schema, inherit=inherit)
 
     @classmethod
     def add_device_from_pydantic_schema(
         cls, nx_schema: NxBase, inherit: bool = True
     ) -> Callable[[type[T]], type[T]]:
+        """Adds the `NxBase` schema to the wrapped `HasHints` class.
+
+        If `inherit` is `False` then don't attempt to add schema from parent classes.
+        """
+
         def decorator(device_cls: type[T]) -> type[T]:
             if not isinstance(device_cls, HasHints):
                 raise TypeError(
@@ -112,9 +121,11 @@ class NexusDevices:
     def add_device_from_dictionary(
         cls, nx_schema: dict, inherit: bool = True
     ) -> Callable[[type[T]], type[T]]:
-        """Load the chosen nx_schema dictionary into the hints of the decorated device.
+        """Load the chosen `nx_schema` dictionary into the hints of the decorated device.
 
-        If `inherit` then parent device schema will be included.
+        Schema is validated against the pydantic basemodels when loaded.
+
+        If `inherit` is `False` then don't attempt to add schema from parent classes.
         """
 
         deserialized = NxBase.from_dictionary(nx_schema)
@@ -127,7 +138,9 @@ class NexusDevices:
         """Load the chosen nx_schema from a given path either absolute across the files system, or
         relative to the device definition/where this wrapper is called from.
 
-        If `inherit` then parent device schema will be included.
+        Schema is validated against the pydantic basemodels when loaded.
+
+        If `inherit` is `False` then don't attempt to add schema from parent classes.
         """
 
         this_file = Path(__file__).resolve()

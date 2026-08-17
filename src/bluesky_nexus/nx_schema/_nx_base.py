@@ -1,5 +1,5 @@
 """
-This module contains the base for all bluesky nexus pydantic schemas, `NxBase`.
+This module contains the base for all bluesky nexus pydantic schemas - `NxBase`.
 As well as their subclasses `NxGroup` and `NxField`.
 
 
@@ -37,6 +37,10 @@ NeXus attribute."""
 
 
 def _nexus_class_name_from_python_class(cls: type[NxBase]) -> str:
+    """Gives the correct nexus format base class name from a pydantic basemodel name,
+    e.g "NxData" -> "NXdata".
+    """
+
     python_name = cls.__name__
 
     if not python_name.startswith("Nx"):
@@ -55,10 +59,17 @@ def _prepend_serialized_prefix_to_nx_attributes(name: str, value: Any) -> str:
 
 
 _ALPHA_NUMERIC_WITH_UNDERSCORES = re.compile(r"^[A-Za-z0-9_]+$")
+"""Regex for verifying that keys are only alphanumeric with underscores."""
 
 
 class NxBase(BaseModel, ABC):
-    """The initial base class of any nx schema in the device to nexus mapping."""
+    """The initial base class of any nx schema in the device to nexus mapping.
+
+    Bluesky nexus schema fields can be either `NxField`, or a `NxGroup` (or a subclass of it).
+
+    These are all both subclasses of `NxBase`. `NxBase` enforces common logic, and provides a
+    deserialization method `NxBase.from_dict` which can be used for either.
+    """
 
     model_config = ConfigDict(extra="allow")
 
@@ -75,7 +86,7 @@ class NxBase(BaseModel, ABC):
                 raise RuntimeError(value, key)
             # The key
             if (
-                # If key is nothing it will be replaced by the object name
+                # If key is "" it will be replaced by the object name
                 # in the writer.
                 key != "" and not _ALPHA_NUMERIC_WITH_UNDERSCORES.match(key)
             ):
@@ -88,7 +99,11 @@ class NxBase(BaseModel, ABC):
 
     @model_serializer
     def _use_shorthand_and_add_at_key_to_attributes(self) -> dict[str, Any]:
-        """Dump the schema with short-hand."""
+        """Dump the schema with short-hand.
+
+        `foo: NxAttribute(constant="bar")` -> $foo: "bar"`
+        `foo: NxField(data_key="bar")` -> foo: "bar"`
+        """
         shortened = {}
         for key, value in self:
             key = _prepend_serialized_prefix_to_nx_attributes(key, value)
@@ -97,7 +112,7 @@ class NxBase(BaseModel, ABC):
                     shortened[key] = constant_value
                 case NxField(data_key=data_key) if dict(value).keys() == {"data_key"}:
                     # Shorten a datakey if there arent' additional attributes
-                    # to nxclass.
+                    # to the NxField.
                     shortened[key] = data_key
                 case _:
                     if isinstance(value, NxGroup):
@@ -111,7 +126,7 @@ class NxBase(BaseModel, ABC):
     def from_dictionary(cls, dictionary: dict[str, Any]) -> NxBase:
         """Load a dictionary into a basemodel.
 
-        If an $nxclass is specified in the schema and there exists
+        If an `$nxclass` is specified in the schema and there exists
         a basemodel in the python environment (added through `add_nx_class_basemodel`
         then it will be used.
         """
@@ -130,7 +145,7 @@ class NxBase(BaseModel, ABC):
         Add one group to another, treating the left group
         with priority in the case of conflicts.
 
-        This is used in heirarchy.
+        This is used in heirarchy of schema.
         """
         in_progress = self.model_dump()
 
@@ -164,7 +179,7 @@ class NxBase(BaseModel, ABC):
 
 def add_nx_class_basemodel[T: "NxBase"](cls: type[T]) -> type[T]:
     """
-    Use to wrap a subclass of `NxGroup` so that it can be loaded
+    Used to wrap a subclass of `NxGroup` so that it can be loaded
     from the literal in any static schema.
     """
     nx_class_name = _nexus_class_name_from_python_class(cls)
@@ -201,8 +216,11 @@ class NxGroup(NxBase):
     @cached_property
     def nxclass(self) -> NxAttribute:
         """
-        A computed proprty for getting the nexus base class
+        A computed property for getting the nexus base class
         attribute from the python class name.
+
+        This field is serialized and dumped and then used for type
+        discrimination in deserialization.
         """
         return NxAttribute(
             constant=_nexus_class_name_from_python_class(self.__class__),
@@ -217,14 +235,16 @@ class NxGroup(NxBase):
     @model_serializer
     def _use_shorthand_and_add_at_key_to_attributes(self) -> dict[str, Any]:
         """Dump the schema with short-hand."""
-        # Manually add the computed field.
 
         shortened = NxBase._use_shorthand_and_add_at_key_to_attributes(self)
+        # Manually add the computed field. Pydantic doesn't seem to support `computed_field`
+        # with deserialized without manually adding it.
         shortened.update({f"{NX_ATTRIBUTE_SERIALIZED_PREFIX}nxclass": self.nxclass.constant})
         return shortened
 
     @classmethod
     def from_dictionary(cls: type[T], dictionary: dict) -> T:
+        """Load the serialized `NXgroup` or subclass of `NXgroup`."""
         kwargs: dict[str, Any] = {}
         document_nx_class_name: str | None = None
 
@@ -271,8 +291,8 @@ class NxGroup(NxBase):
                 case (key, value) if isinstance(key, str) and isinstance(value, str):
                     fields_to_initialize[key] = {"data_key": value}
 
-                # No value provided, this field/subgroup was probably specified in
-                # the schema but not provided.
+                # No value provided, this field/subgroup is optional in the schema
+                # and not provided.
                 case (key, None):
                     continue
 
@@ -289,7 +309,6 @@ class NxGroup(NxBase):
 
         # The class is specified. It is fetched from the environment for
         # validation on instantiation
-        #
         nx_cls = NX_CLASS_TO_BASEMODEL.get(document_nx_class_name)
         if nx_cls is None:
             pretty_allowed_classes = pformat(set(NX_CLASS_TO_BASEMODEL))
@@ -334,8 +353,10 @@ class NxField(NxBase):
     """
 
     data_key: str
-    """The bluesky data_key. The '<name>' in this string will be swapped with the
-    object name."""
+    """The bluesky data key name, but stripped of the preceeding object name, and
+    first separator "-" or "_". If the data key name is equal to the object name
+    as is the case with `ophyd.PvPositioner`s, then this will be an empty string.
+    """
 
     @model_validator(mode="before")
     @classmethod
@@ -362,6 +383,7 @@ class NxField(NxBase):
                     coerced_attributes[key] = NxAttribute(**value)
 
             else:
+                # It's defined in the model.
                 coerced_attributes[key] = value
 
         return coerced_attributes

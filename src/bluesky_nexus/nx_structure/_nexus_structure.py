@@ -293,6 +293,8 @@ def add_stream_data_to_group(
 
 
 def create_nexus_structure(run_data: RunData) -> nexus.NXroot:
+    """Create a nexus structure (`NXroot`) from the data
+    in a bluesky plan."""
     start_time = time.perf_counter()
     root = nexus.NXroot()
     entry = nexus.NXentry()

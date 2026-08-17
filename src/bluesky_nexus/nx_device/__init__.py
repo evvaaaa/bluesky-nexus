@@ -1,5 +1,5 @@
 """
-nx_device: contains the logic for specifying nexus classes from the
+Contains the logic for specifying nexus classes from the
 bluesky device layer.
 """
 

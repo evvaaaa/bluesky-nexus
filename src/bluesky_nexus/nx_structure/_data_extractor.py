@@ -1,7 +1,5 @@
 """Contains a classes which represent all the necessary data required by
-the nexus writer. This is collected throughout the run. The writer will then use the
-RunData to write to disk.
-"""
+the `create_nexus_structure` . This is collected throughout the run."""
 
 import re
 from collections.abc import Callable, Iterable
@@ -63,6 +61,9 @@ def new_schema_with_missing_fields(
     data_key_data: dict[str, DataKeyData],
     nx_schema: NxGroup,
 ) -> NxGroup:
+    """Takes a nexus schema and data keys for an object. If the data key
+    isn't present in the schema then try adding them and validating again.
+    """
     nx_alias_to_nx_field = nx_schema.all_nx_fields()
     schema_specified_data_keys = {
         nx_field.data_key: nx_field for nx_field in nx_alias_to_nx_field.values()
@@ -85,6 +86,9 @@ def _separator_from_data_keys(
     object_name: str,
     data_key_names: Iterable[str],
 ) -> str | None:
+    """For a given `object_name` and datakeys in that object, attempt to find
+    the name separator in those datakeys."""
+
     # Add units specified in the schema if not provided through the descriptor.
     separator: str | None = None
     for data_key_name in data_key_names:
@@ -101,6 +105,8 @@ def _separator_from_data_keys(
 def _data_key_to_nx_formatted_data_key(
     data_key_name: str, object_name: str, separator: str | None
 ) -> str:
+    """Takes a given data key name and give back how it would be specified
+    in the nexus schema."""
     if data_key_name == object_name:
         return ""
     return data_key_name.removeprefix(object_name).removeprefix(separator or "")
@@ -132,6 +138,8 @@ class ObjectData:
         read_data_keys: dict[str, DataKey],
         configuration: Configuration,
     ) -> "ObjectData":
+        """Parse object information from the descriptor into pertinant information about
+        an object."""
         configuration_data_keys: dict[str, DataKey] = configuration.get("data_keys", {})
         # Check for common elements in configuration and read data keys.
         # In practice the user won't do this, but it's allowed in event-model.

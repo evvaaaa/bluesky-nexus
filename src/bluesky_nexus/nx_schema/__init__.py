@@ -1,4 +1,4 @@
-"""Pydantic schema for validating the dictionary/yaml."""
+"""Pydantic schema for defining connections between `HasHints` devices and nexus classes."""
 
 from ._nx_attribute import NxAttribute
 from ._nx_base import (

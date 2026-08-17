@@ -91,6 +91,8 @@ The project includes three optional dependency groups:
 - **`dev`**: Development tools (ruff, mypy, bandit, pre-commit)
 - **`test`**: Testing tools (pytest, pytest-cov, coverage)
 - **`docs`**: Documentation tools (sphinx, sphinx-rtd-theme, myst-parser)
+- **`zmq`**: For installing zmq requirements to allow the package to be ran as a zmq callback service.
+- **`kafka`**: For installing zmq requirements to allow the package to be ran as a bluesky-kafka callback service.
 
 Install specific groups as needed:
 

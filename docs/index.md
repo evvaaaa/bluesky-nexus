@@ -2,7 +2,11 @@
 
 Welcome to the documentation for **bluesky-nexus**!
 
-A package for generating a standard NeXus structure for bluesky plans.
+`bluesky_nexus` is a package for generating a standard NeXus structure for bluesky plans.
+
+## Design Philosophy
+
+- 
 
 ## Features
 
@@ -29,11 +33,10 @@ This project leverages modern Python tooling:
 ## Contents
 
 ```{toctree}
-:maxdepth: 2
+:maxdepth: 3
 :caption: User Guide
 
-installation
-usage
+user_guide/index
 ```
 
 ```{toctree}
@@ -47,25 +50,3 @@ api/modules
 :maxdepth: 1
 :caption: Development
 ```
-
-## Quick Start
-
-### Installation
-
-```bash
-pip install bluesky_nexus
-```
-
-### Basic Usage
-
-```python
-from bluesky_nexus import main
-
-# Your code here
-```
-
-## Indices and tables
-
-* {ref}`genindex`
-* {ref}`modindex`
-* {ref}`search`

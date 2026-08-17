@@ -8,7 +8,7 @@ The CLI writes NeXus files from Bluesky documents using one of two backends:
 Both backends share the same logging system and accept environment variables
 as fallbacks for most options.
 
-See "bluesky_nexus --help", "bluesky_nexus . kafka --help, and "bluesky_nexus . zmq --help"
+See "bluesky_nexus --help", "bluesky_nexus kafka --help, and "bluesky_nexus zmq --help"
 for more information on the arguments in specific modes...
 
 ===============================================================================
@@ -68,12 +68,6 @@ def build_parser() -> argparse.ArgumentParser:
         help="Console log level.",
     )
 
-    parser.add_argument(
-        "root_output_directory",
-        type=Path,
-        help="Root directory for NeXus files.",
-    )
-
     # -----------------------------------------------------------------------
     # SUBPARSERS: zmq and kafka
     # -----------------------------------------------------------------------
@@ -86,10 +80,17 @@ def build_parser() -> argparse.ArgumentParser:
     # -----------------------------
     # ZMQ subcommand
     # -----------------------------
+
     zmq_parser = subparsers.add_parser(
         "zmq",
         help="Start a Bluesky ZMQ RemoteDispatcher.",
         description="Start a Bluesky RemoteDispatcher using ZeroMQ.",
+    )
+
+    zmq_parser.add_argument(
+        "root_output_directory",
+        type=Path,
+        help="Root directory for NeXus files.",
     )
 
     zmq_parser.add_argument(
@@ -132,7 +133,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="Start a Bluesky Kafka RemoteDispatcher.",
         description="Start a Bluesky RemoteDispatcher using Kafka.",
     )
-
+    kafka_parser.add_argument(
+        "root_output_directory",
+        type=Path,
+        help="Root directory for NeXus files.",
+    )
     kafka_parser.add_argument(
         "kafka_brokers",
         type=str,
