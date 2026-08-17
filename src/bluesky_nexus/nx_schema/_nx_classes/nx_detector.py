@@ -1,10 +1,11 @@
 """Contains the definition for NXdetector."""
 
-from .._nx_base import NxField, NxGroup, add_nx_class_basemodel
+from .._nx_base import NxField, add_nx_class_basemodel
+from .nx_component import NxComponent
 
 
 @add_nx_class_basemodel
-class NxDetector(NxGroup):
+class NxDetector(NxComponent):
     """Represents a NeXus NXdetector."""
 
     data: NxField
