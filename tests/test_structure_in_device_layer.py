@@ -284,7 +284,8 @@ def test_serialization_deserialization() -> None:
                 "hints_key": ["some", "hints", "key"],
             },
             "$nxclass": "NXtestgroup",
-            "SUB_GROUP_NOT_REQUIRED": None,
+            # This has not been included.
+            # "SUB_GROUP_NOT_REQUIRED": None,
             "field": {
                 "$some_field_attribute": "some_field_attribute",
                 "data_key": "some_field_datakey",

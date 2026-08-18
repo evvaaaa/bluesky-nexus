@@ -94,6 +94,8 @@ class NxGroup(NxBase, ABC):
                     # Shorten a datakey if there arent' additional attributes
                     # to the NxField.
                     shortened[key] = data_key
+                case None:
+                    continue  # None is only ever used as the default for an optional key.
                 case _:
                     if isinstance(value, NxGroup):
                         shortened[key] = value

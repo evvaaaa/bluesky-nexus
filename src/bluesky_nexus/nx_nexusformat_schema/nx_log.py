@@ -9,10 +9,12 @@ from bluesky_nexus.nx_schema import (
 from .nx_object import NxObject
 
 
-class NxLogTimeField(NxField):
+class NxTimeField(NxField):
     start: NxAttribute | None = None
     """Times in this log field are given relative to this start attribute."""
 
+
+class NxLogTimeField(NxTimeField):
     scaling_factor: NxAttribute | None = None
     """Applied to the time values in order to arrive at the units specified in the units attribute.
     of this field. This allows for arbitrary time units such as ticks of some hardware clock."""

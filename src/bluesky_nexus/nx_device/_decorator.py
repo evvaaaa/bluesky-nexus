@@ -65,7 +65,7 @@ def _add_nx_schema_getter_and_device_metadata_to_hints[T](device_cls: type[T]) -
                 )
             _schema_added[type(self)] = new_schema
         if (schema := _schema_added[type(self)]) is not None:
-            raw_schema = schema.model_dump()
+            raw_schema = schema.model_dump(exclude_unset=True, exclude_none=True)
 
             hints["NX_schema"] = raw_schema
             hints["NX_class"] = raw_schema[f"{NX_ATTRIBUTE_SERIALIZED_PREFIX}nxclass"]

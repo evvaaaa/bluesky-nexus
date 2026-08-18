@@ -418,12 +418,7 @@ def test_description_across_whole_codebase_from_hints_on_instantiation(
 
     assert device1.hints["NX_schema"] == {
         "$nxclass": "NXcomponent",
-        "applied": None,
-        "depends_on": None,
         "description": {"hints_key": ["metadata", "description"]},
-        "inputs": None,
-        "name": None,
-        "outputs": None,
     }
 
     description2 = (
@@ -435,15 +430,8 @@ def test_description_across_whole_codebase_from_hints_on_instantiation(
     device2.md = {"description": description2}
 
     assert device2.hints["NX_schema"] == {
-        "applied": None,
-        "name": None,
         "description": {"hints_key": ["metadata", "description"]},
-        "inputs": None,
-        "outputs": None,
-        "depends_on": None,
         "data": "acceleration",
-        "time_of_flight": None,
-        "raw_time_of_flight": None,
         "$nxclass": "NXdetector",
         "$some_attribute": 1,
     }
