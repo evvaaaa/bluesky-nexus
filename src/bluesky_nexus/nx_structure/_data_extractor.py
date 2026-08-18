@@ -20,11 +20,10 @@ from event_model import (
 from event_model.documents.event_descriptor import Dtype, DtypeNumpy, DtypeNumpyItem
 
 from bluesky_nexus.logger import LOGGER
+from bluesky_nexus.nx_nexusformat_schema import NxSubEntry
 from bluesky_nexus.nx_schema import (
-    NxBase,
     NxField,
     NxGroup,
-    NxSubEntry,
 )
 
 
@@ -119,7 +118,7 @@ class _PerObjectHintMaybeWithNxClass(PerObjectHint):
 
 @dataclass
 class ObjectData:
-    nx_schema: NxBase
+    nx_schema: NxGroup | NxField
     """The nexus schema for this object."""
     data_key_name_to_data: dict[str, DataKeyData]
     """A dictionary of data key name to data key/configuration key information."""
@@ -192,7 +191,7 @@ class ObjectData:
             # If a device passes validation on `NxGroup` it can be added
             try:
                 # Perform an initial validation on the provided schema.
-                nx_schema = NxBase.from_dictionary(raw_schema)
+                nx_schema = NxGroup.from_dictionary(raw_schema)
 
                 if isinstance(nx_schema, NxGroup):
                     # If the object's `$nxclass` is a subclass of `NxGroup`,

@@ -1,6 +1,7 @@
 """Contains the definition for NXcrystal."""
 
-from .._nx_base import NxField, add_nx_class_basemodel
+from bluesky_nexus.nx_schema import NxField, add_nx_class_basemodel
+
 from .nx_component import NxComponent
 from .nx_data import NxData
 from .nx_log import NxLog

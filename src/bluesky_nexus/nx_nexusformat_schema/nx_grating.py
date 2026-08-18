@@ -1,6 +1,10 @@
 """Contains the definition for NXgrating."""
 
-from .._nx_base import NxField, add_nx_class_basemodel
+from bluesky_nexus.nx_schema import (
+    NxField,
+    add_nx_class_basemodel,
+)
+
 from .nx_component import NxComponent
 from .nx_data import NxData
 
@@ -32,9 +36,6 @@ class NxGrating(NxComponent):
 
     interior_atmosphere: NxField | None = None
     """Any of these values: vacuum | helium | argon
-
-    TODO: once again it doesn't make sense for this to come from a
-    datakey. I think we should allow constant NXfields.
 
     There's also not really a decent case to be made for why this wouldn't
     be an attribute in the nxdl.

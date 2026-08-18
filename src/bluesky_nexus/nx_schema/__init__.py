@@ -1,56 +1,25 @@
-"""Pydantic schema for defining connections between `HasHints` devices and
-nexusformat base classes:
+"""Contains the bluesky nexus schema model.
+
+It's assumed any bluesky device corresponds to a subclass of `NxGroup`, containing `NxAttribute`s,
+`NxField`s (which in run can contain attributes), and sub `NxGroup`.
+
+For an example implementation of defined schema representing a set of nxdl, see
+`bluesky_nexus/nx_nexusformat_schema`, which are schema defined for nexusformat's nxdl:
+
 https://manual.nexusformat.org/classes/base_classes/complete-structure.html
 
-Throughout all classes, deprecated fields have been left abscent.
-
-These should eventually be stored seperate and in their own package.
+and the default used by this package.
 """
 
-from ._nx_attribute import NxAttribute
-from ._nx_base import (
-    NX_ATTRIBUTE_SERIALIZED_PREFIX,
-    NX_CLASS_TO_BASEMODEL,
-    NxBase,
-    NxField,
-    NxGroup,
-    add_nx_class_basemodel,
-)
-from .nx_classes.nx_aperture import NxAperture
-from .nx_classes.nx_component import NxComponent
-from .nx_classes.nx_crystal import NxCrystal
-from .nx_classes.nx_data import NxData
-from .nx_classes.nx_detector import NxDetector
-from .nx_classes.nx_grating import NxGrating
-from .nx_classes.nx_log import NxLog
-from .nx_classes.nx_monochromator import NxMonochromator
-from .nx_classes.nx_note import NxNote
-from .nx_classes.nx_object import NxObject
-from .nx_classes.nx_off_geometry import NxOff_Geometry
-from .nx_classes.nx_positioner import NxPositioner
-from .nx_classes.nx_sub_entry import NxSubEntry
-from .nx_classes.nx_velocity_selector import NxVelocity_Selector
+from ._nx_attribute import NX_ATTRIBUTE_SERIALIZED_PREFIX, NxAttribute, NxConstantAttribute
+from ._nx_field import NxField
+from ._nx_group import NxGroup, add_nx_class_basemodel
 
 __all__ = [
+    "NX_ATTRIBUTE_SERIALIZED_PREFIX",
     "NxAttribute",
-    "NxAperture",
-    "NxComponent",
-    "NxCrystal",
-    "NxGrating",
-    "NxLog",
-    "NxVelocity_Selector",
-    "NxMonochromator",
-    "NxNote",
-    "NxOff_Geometry",
-    "NxBase",
-    "NX_CLASS_TO_BASEMODEL",
-    "NxDetector",
+    "NxConstantAttribute",
     "NxField",
     "NxGroup",
-    "NxObject",
-    "NxPositioner",
-    "NxSubEntry",
-    "NxData",
     "add_nx_class_basemodel",
-    "NX_ATTRIBUTE_SERIALIZED_PREFIX",
 ]

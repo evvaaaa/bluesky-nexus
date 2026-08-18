@@ -1,63 +1,35 @@
-from __future__ import annotations
+"""Contains the basemodel for `NxAttribute`.
 
-from pprint import pformat
+An NxAttribute is a leaf in the bluesky nexus schema which acts as a piece of
+metadata in the NxBase it's contained in.
+"""
+
 from typing import Any, TypeVar
 
-from pydantic import (
-    BaseModel,
-    model_validator,
-)
+from ._nx_base_leaf import NxBaseLeaf
 
 T = TypeVar("T", bound=Any)
 
 
-class NxAttribute(BaseModel):
-    """An attribute which can be attribted to any field or group.
+def prepend_serialized_prefix_to_nx_attributes(name: str, value: Any) -> str:
+    """Adds the serialized prefix to a given name if the value is an `NxAttribute`."""
+    return f"{NX_ATTRIBUTE_SERIALIZED_PREFIX}{name}" if isinstance(value, NxAttribute) else name
 
-    An attribute can come from one of three sources.
-    * A constant specified in the schema, e.g `constant: "eV"`.
-    * A key of the hints of a device, e.g `hints_key: ["md", "description"].
-    * A bluesky data_key, e.g `"data_key: some_data_key_on_the_object"
+
+NX_ATTRIBUTE_SERIALIZED_PREFIX = "$"
+"""If a key in the serialized schema contains this prefix then it's a
+NeXus attribute."""
+
+
+class NxAttribute(NxBaseLeaf):
+    """An attribute which can be defined on any `NxField` or `NxGroup`
+
+    When an `NxBase` is serialized it's `NxAttribute` keys are prepended with "$".
     """
-
-    data_key: str | None = None
-    hints_key: list[str] | str | None = None
-    constant: Any = None
-
-    @model_validator(mode="before")
-    @classmethod
-    def _check_one_of_the_methods_is_defined(
-        cls, values: dict | NxAttribute
-    ) -> dict | NxAttribute:
-        """Ensure nx_alias defaults to data_key when not provided."""
-        if isinstance(values, dict):
-            data_key = values.get("data_key")
-            hints_key = values.get("hints_key")
-            constant = values.get("constant")
-        else:
-            data_key = values.data_key
-            hints_key = values.hints_key
-            constant = values.constant
-
-        provided_count = len([v for v in (data_key, hints_key, constant) if v is not None])
-        if provided_count != 1:
-            pretty_key_value = pformat(
-                {
-                    "data_key": data_key,
-                    "hints_key": hints_key,
-                    "constant": constant,
-                }
-            )
-            raise TypeError(
-                f"Malformed attribute found in nx schema. "
-                "One method of obtaining the attribte value should be provided:\n"
-                f"{pretty_key_value}"
-            )
-        return values
 
 
 class NxConstantAttribute[T: Any](NxAttribute):
-    """An attribute which has to be constant valued."""
+    """An NxAttribute which has to be constant valued."""
 
     constant: T
     hints_key: None = None

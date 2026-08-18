@@ -296,7 +296,7 @@ def test_attributes_from_hints(RE_directly_subscribed: RunEngine, tmpdir):
     @NexusDevices.add_device_from_dictionary(
         {
             "$nxclass": "NXsubentry",
-            "$description": {"hints_key": ["metadata", "description"]},
+            "description": {"hints_key": ["metadata", "description"]},
         }
     )
     class SynAxisWithDescription(SynAxis): ...
@@ -312,9 +312,20 @@ def test_attributes_from_hints(RE_directly_subscribed: RunEngine, tmpdir):
         "syn_axis_missing_metadata",
         "syn_axis_with_description",
     ]
-    assert list(loaded["syn_axis_missing_metadata"].attrs) == ["nxclass"]
-    assert list(loaded["syn_axis_with_description"].attrs) == ["description", "nxclass"]
-    assert loaded["syn_axis_with_description"].attrs["description"] == "Some description..."
+    assert set(loaded["syn_axis_missing_metadata"]) == {
+        "acceleration",
+        "setpoint",
+        "syn_axis_missing_metadata",
+        "velocity",
+    }
+    assert list(loaded["syn_axis_with_description"]) == [
+        "acceleration",
+        "description",
+        "setpoint",
+        "syn_axis_with_description",
+        "velocity",
+    ]
+    assert loaded["syn_axis_with_description"]["description"] == "Some description..."
 
 
 def test_attributes_from_data_keys(RE_directly_subscribed: RunEngine, tmpdir):

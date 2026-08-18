@@ -4,7 +4,11 @@ from typing import Self
 
 from pydantic import model_validator
 
-from .._nx_base import NxField, add_nx_class_basemodel
+from bluesky_nexus.nx_schema import (
+    NxField,
+    add_nx_class_basemodel,
+)
+
 from .nx_object import NxObject
 
 

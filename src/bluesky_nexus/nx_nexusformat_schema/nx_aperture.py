@@ -1,6 +1,7 @@
 """Contains the definition for NXaperture."""
 
-from .._nx_base import NxField, add_nx_class_basemodel
+from bluesky_nexus.nx_schema import NxField, add_nx_class_basemodel
+
 from .nx_component import NxComponent
 
 
@@ -23,12 +24,7 @@ class NxAperture(NxComponent):
     """Description of aperture."""
 
     shape: NxField | None = None
-    """Shape of the aperture.
-
-    TODO: I'm now considering if we allow constant NxField values as well.
-    There's no situation where this would be specified as a datakey exactly,
-    but it's also not an attribute.
-    """
+    """Shape of the aperture."""
 
     size: NxField | None = None
     """The relevant dimension for the aperture, i.e. slit width, pinhole and iris diameter."""

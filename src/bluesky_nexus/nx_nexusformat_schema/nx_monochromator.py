@@ -1,6 +1,10 @@
 """Contains the definition for NXmonochromator."""
 
-from .._nx_base import NxField, add_nx_class_basemodel
+from bluesky_nexus.nx_schema import (
+    NxField,
+    add_nx_class_basemodel,
+)
+
 from .nx_aperture import NxAperture
 from .nx_component import NxComponent
 from .nx_data import NxData

@@ -1,6 +1,9 @@
 """Contains the definition for NXsubentry."""
 
-from .._nx_base import add_nx_class_basemodel
+from bluesky_nexus.nx_schema import (
+    add_nx_class_basemodel,
+)
+
 from .nx_object import NxObject
 
 

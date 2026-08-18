@@ -1,6 +1,7 @@
 """Contains the definition for NXcomponent."""
 
-from .._nx_base import NxField, add_nx_class_basemodel
+from bluesky_nexus.nx_schema import NxField, add_nx_class_basemodel
+
 from .nx_object import NxObject
 
 
@@ -29,7 +30,6 @@ class NxComponent(NxObject):
     """Instance or list of instances of NXcomponent (or base classes extending NXcomponent)
     or NXbeam that act as input(s) to this component.
     Each input should point to the path of the group acting as input.
-    TODO: Another good place we might want constant NxField.
     """
 
     outputs: NxField | None = None

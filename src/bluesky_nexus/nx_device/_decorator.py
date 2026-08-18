@@ -10,18 +10,21 @@ import yaml
 from bluesky.protocols import HasHints
 from event_model import PerObjectHint
 
-from bluesky_nexus.nx_schema import NX_ATTRIBUTE_SERIALIZED_PREFIX, NxBase, NxSubEntry
+from bluesky_nexus.logger import LOGGER
+from bluesky_nexus.nx_schema import NX_ATTRIBUTE_SERIALIZED_PREFIX, NxGroup
 
 T = TypeVar("T")
 
 
-_schema_added: weakref.WeakKeyDictionary[type[HasHints], NxBase] = weakref.WeakKeyDictionary()
+_schema_added: weakref.WeakKeyDictionary[type[HasHints], NxGroup | None] = (
+    weakref.WeakKeyDictionary()
+)
 _inheritance_structure: weakref.WeakKeyDictionary[type[HasHints], bool] = (
     weakref.WeakKeyDictionary()
 )
 
 
-def _sum_parent_schema[T](cls: type[T], schema: NxBase | None = None) -> NxBase | None:
+def _sum_parent_schema[T](cls: type[T], schema: NxGroup | None = None) -> NxGroup | None:
     for direct_parent in cls.__bases__:
         if _inheritance_structure.get(direct_parent) is not False:
             maybe_parent_schema = _sum_parent_schema(direct_parent, schema=schema)
@@ -54,12 +57,18 @@ def _add_nx_schema_getter_and_device_metadata_to_hints[T](device_cls: type[T]) -
             # hints are called on any of the instances of the class.
             new_schema = _sum_parent_schema(type(self))
 
-            _schema_added[type(self)] = new_schema or NxSubEntry()
+            if new_schema is None:
+                LOGGER.warning(
+                    "Failed to retrieve the parent schema of a device which "
+                    "wasn't directly decorated, but has a parent which was decorated."
+                    "This should be impossible. Continuing on without schema."
+                )
+            _schema_added[type(self)] = new_schema
+        if (schema := _schema_added[type(self)]) is not None:
+            raw_schema = schema.model_dump()
 
-        raw_schema = _schema_added[type(self)].model_dump()
-
-        hints["NX_schema"] = raw_schema
-        hints["NX_class"] = raw_schema[f"{NX_ATTRIBUTE_SERIALIZED_PREFIX}nxclass"]
+            hints["NX_schema"] = raw_schema
+            hints["NX_class"] = raw_schema[f"{NX_ATTRIBUTE_SERIALIZED_PREFIX}nxclass"]
 
         return cast(PerObjectHint, hints)
 
@@ -71,7 +80,7 @@ class NexusDevices:
 
     @classmethod
     def add_device_from_schema(
-        cls, nx_schema: str | Path | dict | NxBase, inherit: bool = True
+        cls, nx_schema: str | Path | dict | NxGroup, inherit: bool = True
     ) -> Callable[[type[T]], type[T]]:
         """Adds device schema to the wrapped `HasHints` class.
 
@@ -84,14 +93,14 @@ class NexusDevices:
             return cls.add_device_from_path(Path(nx_schema), inherit=inherit)
         if isinstance(nx_schema, dict):
             return cls.add_device_from_dictionary(nx_schema, inherit=inherit)
-        if isinstance(nx_schema, NxBase):
+        if isinstance(nx_schema, NxGroup):
             return cls.add_device_from_pydantic_schema(nx_schema, inherit=inherit)
 
     @classmethod
     def add_device_from_pydantic_schema(
-        cls, nx_schema: NxBase, inherit: bool = True
+        cls, nx_schema: NxGroup, inherit: bool = True
     ) -> Callable[[type[T]], type[T]]:
-        """Adds the `NxBase` schema to the wrapped `HasHints` class.
+        """Adds the `NxGroup` schema to the wrapped `HasHints` class.
 
         If `inherit` is `False` then don't attempt to add schema from parent classes.
         """
@@ -128,7 +137,7 @@ class NexusDevices:
         If `inherit` is `False` then don't attempt to add schema from parent classes.
         """
 
-        deserialized = NxBase.from_dictionary(nx_schema)
+        deserialized = NxGroup.from_dictionary(nx_schema)
         return cls.add_device_from_pydantic_schema(deserialized, inherit=inherit)
 
     @classmethod

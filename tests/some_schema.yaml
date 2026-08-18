@@ -1,4 +1,4 @@
-$nxclass: NXgroup
+$nxclass: NXsubentry
 SOME_SUBGROUP:
   $nxclass: NXsubentry
   some_data_key: some_data_key_value
