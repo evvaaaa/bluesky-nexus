@@ -25,9 +25,9 @@ from bluesky_nexus.nx_schema import (
 @pytest.mark.parametrize(
     ("argument"),
     (
-        "some_schema.yaml",
-        Path("some_schema.yaml"),
-        (Path(__file__).parent.absolute() / "some_schema.yaml"),
+        "test_devices/simple_from_yaml_schema.yaml",
+        Path("test_devices") / "simple_from_yaml_schema.yaml",
+        (Path(__file__).parent.absolute() / "test_devices" / "simple_from_yaml_schema.yaml"),
         {
             "$nxclass": "NXsubentry",
             "SOME_SUBGROUP": {"$nxclass": "NXsubentry", "some_data_key": "some_data_key_value"},

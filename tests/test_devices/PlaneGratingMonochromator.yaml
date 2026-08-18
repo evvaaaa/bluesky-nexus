@@ -1,0 +1,8 @@
+# First we define the attributes of the monochromator itself
+
+$nxclass: NXmonochromator
+energy: energy-user_readback
+
+exit_slit:
+  $nxclass: NXaperture
+  size: exit_slit-user_readback
