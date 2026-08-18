@@ -383,7 +383,6 @@ class NxField(NxBase):
                     coerced_attributes[key] = NxAttribute(**value)
 
             else:
-                # It's defined in the model.
                 coerced_attributes[key] = value
 
         return coerced_attributes

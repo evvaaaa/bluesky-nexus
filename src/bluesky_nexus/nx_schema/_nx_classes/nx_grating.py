@@ -9,8 +9,8 @@ from .nx_data import NxData
 class NxGrating(NxComponent):
     """Represents a NeXus NXgrating.
 
-    Additional NXoff_geometry, NXtransformations are to be expected
-    in NXgrating classes.
+    Additional `NXoff_geometry`, `NXtransformations` are to be expected
+    in `NXgrating` classes.
     """
 
     angles: NxField | None = None
