@@ -257,7 +257,11 @@ class StreamData:
         # When we pull data out of events all the data_keys will be flat.
         # We'll parse e.g "some-device" first (earlier in this list) before we parse
         # e.g "some-dev".
-        for object_name, data_key_names in descriptor.get("object_keys", {}).items():
+
+        for object_name, data_key_names in sorted(
+            descriptor.get("object_keys", {}).items(),
+            reverse=True,
+        ):
             data_keys = {k: v for k, v in descriptor["data_keys"].items() if k in data_key_names}
             configuration = descriptor.get("configuration", {}).get(object_name, {})
             hint = descriptor.get("hints", {}).get(object_name, {})

@@ -116,6 +116,7 @@ def _new_nx_field_from_data_key_data(
     if the field is directly added to a parent,
     e.g group["field_name"] =...
     """
+
     attrs = {}
     # Add the manually specified attributes.
     for nx_attribute_name, nx_attribute in nx_field_schema.nx_attributes().items():
@@ -134,7 +135,10 @@ def _new_nx_field_from_data_key_data(
         return nexus.NXfield(value=data_key_data.data, name=name, attrs=attrs)
 
     timestamps_field = nexus.NXfield(
-        value=np.array(data_key_data.timestamps) - run_start_time,
+        # Maximum because somehow with very fast test scans,
+        # the run start time is a little over the read times on the
+        # signals.
+        value=np.maximum(np.array(data_key_data.timestamps) - run_start_time, 0),
         name="timestamps",
         attrs={"units": nexus.NXfield(value="s")},
     )
@@ -199,6 +203,7 @@ def _new_nx_group(
             write_value_option = NewFieldType.VALUE_ONLY
 
         data_key_data = object_data.formatted_data_key_name_to_data[nx_field_schema.data_key]
+
         group[nx_alias or sanitize_datakey_for_nexus(object_name)] = (
             _new_nx_field_from_data_key_data(
                 nx_field_schema, data_key_data, object_data, run_start_time, write_value_option
@@ -234,7 +239,10 @@ def add_stream_data_to_group(
     # Add stream times, e.g event timestamps.
     stream_info_group["time"] = nexus.NXdata(
         signal=nexus.NXfield(
-            value=np.array(stream_data.times) - run_start_time,
+            # Maximum because somehow with very fast test scans,
+            # the run start time is a little over the read times on the
+            # signals.
+            value=np.maximum(np.array(stream_data.times) - run_start_time, 0),
             name="time",
             attrs={"units": nexus.NXfield(value="S")},
         ),
