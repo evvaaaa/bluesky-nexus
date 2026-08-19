@@ -13,12 +13,7 @@ raw-options = { version_scheme = "release-branch-semver" }
 packages = ["src/bluesky_nexus"]
 
 [tool.hatch.build.targets.sdist]
-exclude = [
-  "/.venv",
-  "/.uv-cache",
-  "/.git",
-  "/.github",
-]
+exclude = ["/.venv", "/.uv-cache", "/.git", "/.github"]
 
 [project]
 name = "bluesky-nexus"
@@ -29,7 +24,7 @@ license = { text = "MIT" }
 keywords = ["bluesky", "nexus", "hdf5", "data-science", "pydantic"]
 authors = [
   { name = "Daniel Tomecki", email = "daniel.tomecki@helmholtz-berlin.de" },
-  { name = "Eva Lott", email = "eva.lott@helmholtz-berlin.de" }
+  { name = "Eva Lott", email = "eva.lott@helmholtz-berlin.de" },
 ]
 requires-python = ">=3.12"
 dependencies = [
@@ -42,11 +37,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-zmq = [
-  "pyzmq",
-  "uvicorn",
-  "fastapi",
-]
+zmq = ["pyzmq", "uvicorn", "fastapi"]
 
 kafka = ["bluesky-kafka"]
 
@@ -59,7 +50,7 @@ dev = [
   "pytest-asyncio",
   "pytest-html",
   "pytest-cov",
-  "pytest-timeout" ,
+  "pytest-timeout",
   "coverage",
   "py",
 ]
@@ -98,22 +89,28 @@ test = [
 line-length = 99
 indent-width = 4
 target-version = "py312" # Specify python version
-exclude = ["tests/functional/", "tests/input", "tests/**/data/", "doc/"]
-fix = true  # Enable auto-fixing (equivalent to --fix in pre-commit)
+exclude = [
+  "tests/functional/",
+  "tests/input",
+  "tests/**/data/",
+  "doc/",
+  "docs/",
+]
+fix = true # Enable auto-fixing (equivalent to --fix in pre-commit)
 
 [tool.ruff.lint]
 select = [
-    "B",       # flake8-bugbear - https://docs.astral.sh/ruff/rules/#flake8-bugbear-b
-    "C4",      # flake8-comprehensions - https://docs.astral.sh/ruff/rules/#flake8-comprehensions-c4
-    "E",       # pycodestyle errors - https://docs.astral.sh/ruff/rules/#error-e
-    "F",       # pyflakes rules - https://docs.astral.sh/ruff/rules/#pyflakes-f
-    "W",       # pycodestyle warnings - https://docs.astral.sh/ruff/rules/#warning-w
-    "I",       # isort - https://docs.astral.sh/ruff/rules/#isort-i
-    "UP",      # pyupgrade - https://docs.astral.sh/ruff/rules/#pyupgrade-up
+  "B",  # flake8-bugbear - https://docs.astral.sh/ruff/rules/#flake8-bugbear-b
+  "C4", # flake8-comprehensions - https://docs.astral.sh/ruff/rules/#flake8-comprehensions-c4
+  "E",  # pycodestyle errors - https://docs.astral.sh/ruff/rules/#error-e
+  "F",  # pyflakes rules - https://docs.astral.sh/ruff/rules/#pyflakes-f
+  "W",  # pycodestyle warnings - https://docs.astral.sh/ruff/rules/#warning-w
+  "I",  # isort - https://docs.astral.sh/ruff/rules/#isort-i
+  "UP", # pyupgrade - https://docs.astral.sh/ruff/rules/#pyupgrade-up
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**/*.py" = ["S101"]  # Allow assert statements in tests
+"tests/**/*.py" = ["S101"] # Allow assert statements in tests
 
 [tool.ruff.format]
 quote-style = "double"
@@ -147,9 +144,9 @@ skips = ["**/test_*.py", "**/tests/*"]
 [tool.coverage.run]
 data_file = ".reports/coverage/.coverage"
 omit = [
-    "tests/*",
-    "src/bluesky_nexus/__main__.py",
-    "src/bluesky_nexus/logger.py",
+  "tests/*",
+  "src/bluesky_nexus/__main__.py",
+  "src/bluesky_nexus/logger.py",
 ]
 
 [tool.coverage.paths]
@@ -166,14 +163,14 @@ python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 addopts = [
-    "-vv",
-    "--tb=native",
-    "--strict-markers",
-    "--log-level=INFO",
-    "--log-cli-level=INFO",
-    "--log-cli-format=%(asctime)s [%(levelname)8s] %(name)s: %(message)s",
-    "--log-cli-date-format=%Y-%m-%d %H:%M:%S",
-    "--capture=no"
+  "-vv",
+  "--tb=native",
+  "--strict-markers",
+  "--log-level=INFO",
+  "--log-cli-level=INFO",
+  "--log-cli-format=%(asctime)s [%(levelname)8s] %(name)s: %(message)s",
+  "--log-cli-date-format=%Y-%m-%d %H:%M:%S",
+  "--capture=no",
 ]
 log_auto_indent = true
 log_cli = true
