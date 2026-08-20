@@ -33,10 +33,22 @@ This project leverages modern Python tooling:
 ## Contents
 
 ```{toctree}
-:maxdepth: 3
-:caption: User Guide
+:caption: installation
+:maxdepth: 1
 
-user_guide/index
+installation
+```
+
+```{toctree}
+:caption: Explanation of Nexus Structure 
+
+nexus_structure
+```
+
+```{toctree}
+:caption: Examples of Defining Schema on Devices
+
+schema_definition_examples
 ```
 
 ```{toctree}
@@ -46,7 +58,3 @@ user_guide/index
 api/modules
 ```
 
-```{toctree}
-:maxdepth: 1
-:caption: Development
-```

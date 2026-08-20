@@ -128,7 +128,7 @@ class NxGroup(NxBase, ABC):
         return attributes
 
     def sub_nx_groups(self) -> dict[str, NxGroup]:
-        """Return all `NxGroup`instances in the group."""
+        """Return all `NxGroup` instances in the group."""
         return {k: v for k, v in self if isinstance(v, NxGroup)}
 
     def all_nx_fields(self) -> dict[str, NxField]:
