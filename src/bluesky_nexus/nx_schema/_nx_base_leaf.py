@@ -41,16 +41,10 @@ class NxBaseLeaf(BaseModel, ABC):
 
         provided_count = len([v for v in (data_key, hints_key, constant) if v is not None])
         if provided_count != 1:
-            pretty_key_value = pformat(
-                {
-                    "data_key": data_key,
-                    "hints_key": hints_key,
-                    "constant": constant,
-                }
-            )
+            pretty_key_value = pformat(values)
             raise TypeError(
                 f"Malformed attribute/field found in nx schema. "
-                "One method of obtaining the attribte value should be provided:\n"
+                "One method of obtaining the attribute value should be provided:\n"
                 f"{pretty_key_value}\n"
             )
         return values

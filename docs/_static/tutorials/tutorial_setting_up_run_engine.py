@@ -15,7 +15,7 @@ class NewCallbackWhichPrintsTheNexusStructure(BlueskyNexusCallback):
 RE = RunEngine()
 
 # Will print the nexus structure generated for each bluesky plan.
-# RE.subscribe(NewCallbackWhichPrintsTheNexusStructure())
+RE.subscribe(NewCallbackWhichPrintsTheNexusStructure())
 
 # Will output a hdf5 file for each bluesky plan.
 RE.subscribe(NexusHdfWriterCallback(Path(".")))

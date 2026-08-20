@@ -131,9 +131,6 @@ def _new_nx_field_from_data_key_data(
     if "units" not in attrs and data_key_data.units:
         attrs["units"] = data_key_data.units
 
-    if field_type is NewFieldType.VALUE_ONLY:
-        return nexus.NXfield(value=data_key_data.data, name=name, attrs=attrs)
-
     timestamps_field = nexus.NXfield(
         # Maximum because somehow with very fast test scans,
         # the run start time is a little over the read times on the
@@ -144,13 +141,21 @@ def _new_nx_field_from_data_key_data(
     )
 
     if field_type is NewFieldType.TIMESTAMPS_ONLY:
+        timestamps_field.attrs.update(attrs)
         return timestamps_field
 
+    # NXlog and NXdata are numerical so if the value is a string we give it
+    # without timestamps.
+    if field_type is NewFieldType.VALUE_ONLY or data_key_data.dtype == "string":
+        return nexus.NXfield(value=data_key_data.data, name=name, attrs=attrs)
+
+    # It needs a name "value" for NXlog and NXdata.
     data_field = nexus.NXfield(value=data_key_data.data, name="value", attrs=attrs)
+
     if field_type is NewFieldType.NX_LOG_WITH_TIMESTAMPS:
         new_group = nexus.NXlog()
         new_group["time"] = timestamps_field
-        new_group["value"] = data_field
+        new_group["value"] = nexus.NXfield(value=data_key_data.data, name="value", attrs=attrs)
     else:
         new_group = nexus.NXdata(signal=data_field, axes=(timestamps_field,))
 
@@ -167,13 +172,12 @@ def _new_nx_group(
     attrs = {}
 
     # Use the nexusformat class directly if it exists.
-    group_initializer = getattr(
-        nexus,
-        group_schema.nxclass.constant,
-        lambda: nexus.NXgroup(nxclass=group_schema.nxclass.constant),
-    )
+    group_initializer = getattr(nexus, group_schema.nxclass.constant, nexus.NXgroup)
 
     group = group_initializer()
+    # nexusformat is wieeerd. If you explicitely make an `nexus.NXsomedevice`
+    # then it doesn't seem to make the attribute correctly.
+    group.attrs["nxclass"] = nexus.NXfield(group_schema.nxclass.constant)
 
     # Add the manually specified attributes.
     for nx_attribute_name, nx_attribute in group_schema.nx_attributes().items():
@@ -289,7 +293,7 @@ def add_stream_data_to_group(
             # Futhermore, there isn't an exact correspondance between the nxdl and
             # what we'd want in a basemodel. Some fields are defined with assumed
             # logic on the writer side.
-            devices_group[object_name] = device_group
+            devices_group[sanitize_datakey_for_nexus(object_name)] = device_group
 
         elif isinstance(object_data.nx_schema, NxField):
             # It has a single nx_field, no group...

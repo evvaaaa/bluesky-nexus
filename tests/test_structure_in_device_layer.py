@@ -97,7 +97,7 @@ def test_writer_behaviour_failing_to_match_schema() -> None:
         TypeError,
         match=(
             "Malformed attribute/field found in nx schema. One method of obtaining "
-            "the attribte value should be provided:"
+            "the attribute value should be provided:"
         ),
     ):
 
@@ -397,3 +397,89 @@ def test_nx_data_incorrect_specification(
                     self.signal, _ = soft_signal_r_and_setter(int)
 
     assert exception_text in str(excinfo)
+
+
+def test_nx_transformations():
+    # Allowed
+    NexusDevices.add_device_from_dictionary({"$nxclass": "NXtransformations"})
+
+    NexusDevices.add_device_from_dictionary(
+        {"$nxclass": "NXtransformations", "$some_attribute": "Some Attr"}
+    )
+
+    NexusDevices.add_device_from_dictionary(
+        {
+            "$nxclass": "NXtransformations",
+            "some_field": {"data_key": "some_data_key", "$vector": (1, 0, 0)},
+        }
+    )
+
+    NexusDevices.add_device_from_dictionary(
+        {
+            "$nxclass": "NXtransformations",
+            "some_field": {"data_key": "some_data_key", "$vector": (1, 0, 0)},
+            "some_field_end": "some_data_key",
+        }
+    )
+
+    with pytest.raises(
+        ValidationError,
+        match=("1 validation error for NxTransformations\nvector\n  Field required"),
+    ):
+        NexusDevices.add_device_from_dictionary(
+            {"$nxclass": "NXtransformations", "some_field": "some_data_key"}
+        )
+
+    with pytest.raises(
+        ValidationError,
+        match=(
+            "1 validation error for NxTransformations\nvector.constant\n  "
+            "Input should be a valid tuple"
+        ),
+    ):
+        NexusDevices.add_device_from_dictionary(
+            {
+                "$nxclass": "NXtransformations",
+                "some_field": {"data_key": "some_data_key", "$vector": 1},
+            }
+        )
+    with pytest.raises(
+        ValidationError,
+        match=(
+            "2 validation errors for NxTransformations\nvector.constant.1\n  "
+            "Input should be 0, 1 or -1"
+        ),
+    ):
+        NexusDevices.add_device_from_dictionary(
+            {
+                "$nxclass": "NXtransformations",
+                "some_field": {"data_key": "some_data_key", "$vector": (1, 2)},
+            }
+        )
+    with pytest.raises(
+        ValidationError,
+        match=("1 validation error for NxTransformations\nvector.constant.2\n  Field required"),
+    ):
+        NexusDevices.add_device_from_dictionary(
+            {
+                "$nxclass": "NXtransformations",
+                "some_field": {"data_key": "some_data_key", "$vector": (1, -1)},
+            }
+        )
+    with pytest.raises(
+        TypeError,
+        match=(
+            "Field another_field_end is referencing an AXISNAME another_field which "
+            "was not provided in the schema"
+        ),
+    ):
+        NexusDevices.add_device_from_dictionary(
+            {
+                "$nxclass": "NXtransformations",
+                "some_field": {
+                    "data_key": "some_data_key",
+                    "$vector": (1, 0, 0),
+                },
+                "another_field_end": "another_data_key",
+            }
+        )

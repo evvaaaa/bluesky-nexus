@@ -64,6 +64,7 @@ def new_schema_with_missing_fields(
     isn't present in the schema then try adding them and validating again.
     """
     nx_alias_to_nx_field = nx_schema.all_nx_fields()
+
     schema_specified_data_keys = {
         nx_field.data_key: nx_field for nx_field in nx_alias_to_nx_field.values()
     }
