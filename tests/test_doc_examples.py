@@ -70,6 +70,8 @@ def test_example_mono_1(tmpdir: Path, globals_with_runengine: dict[str, Any]):
     pgm = loaded["entry"]["primary"]["devices"]["pgm"]
     assert pgm.nxclass == "NXsubentry"
     assert list(pgm) == [
+        "alpha",
+        "beta",
         "cff",
         "diff_order",
         "energy_readback",
@@ -88,6 +90,7 @@ def test_example_mono_1(tmpdir: Path, globals_with_runengine: dict[str, Any]):
         "phi_value",
         "psi_enabled",
         "psi_value",
+        "theta",
     ]
 
     assert str(pgm["harmonic"]["value"]) == "3rd Harmonic"
@@ -145,6 +148,12 @@ def test_example_mono_2(tmpdir: Path, globals_with_runengine: dict[str, Any]):
         "mirror",
         "transformations",
     ]
+    assert pgm["transformations"].nxclass == "NXtransformations"
+    assert list(pgm["transformations"]) == ["alpha", "beta", "theta"]
+    assert pgm["transformations"]["theta"]["value"].attrs["depends_on"] == "."
+    assert pgm["transformations"]["theta"]["value"].attrs["long_name"] == "Grating Rotation Angle"
+    assert pgm["transformations"]["theta"]["value"].attrs["units"] == "deg"
+    assert pgm["transformations"]["theta"]["value"].attrs["vector"] == [0, 0, 1]
 
 
 def test_example_keithley_1():

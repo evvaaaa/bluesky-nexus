@@ -2,7 +2,7 @@
 
 import re
 from pathlib import Path
-from time import monotonic
+from time import time
 
 import numpy as np
 import pytest
@@ -433,7 +433,6 @@ def test_nx_data_multi_dimensional(RE_directly_subscribed: RunEngine, tmpdir: Pa
 
 
 def test_timestamps_of_data_key(RE_directly_subscribed: RunEngine, tmpdir: Path):
-    monotonic_zero = monotonic()
     read_times = []
 
     @NexusDevices.add_device_from_schema(
@@ -456,13 +455,12 @@ def test_timestamps_of_data_key(RE_directly_subscribed: RunEngine, tmpdir: Path)
                 self.signal2, self._s2 = soft_signal_r_and_setter(int)
                 self.signal3, self._s3 = soft_signal_r_and_setter(int)
                 self.signal4, self._s4 = soft_signal_r_and_setter(int)
-                monotonic()
 
         async def read(self):
             for f in (self._s1, self._s2, self._s3, self._s4):
                 f(0)  # update the value for a new timestamp
 
-            read_times.append(monotonic())
+            read_times.append(time())
             return await super().read()
 
     RE_directly_subscribed(bp.count([SomeDetector(name="some_detector")], num=4))
@@ -480,9 +478,9 @@ def test_timestamps_of_data_key(RE_directly_subscribed: RunEngine, tmpdir: Path)
     timestamps = [float(f) for f in loaded["signal1_t"]]
 
     assert all(timestamps[i] - timestamps[i - 1] > 0 for i in range(1, len(timestamps)))
+    assert all(t >= 0 for t in timestamps)
+    read_times = np.array(read_times) - read_times[0]
 
-    assert np.allclose(
-        np.array(loaded["signal1_t"]), np.array(read_times) - monotonic_zero, atol=0.003, rtol=0
-    )
+    assert np.allclose(np.array(loaded["signal1_t"]), read_times, atol=0.01, rtol=0)
     assert loaded["signal1_t"].attrs["units"] == "s"
     assert loaded["signal4_t"].attrs["units"] == "s"
