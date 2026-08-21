@@ -20,8 +20,10 @@ from pprint import pformat
 from typing import Any, TypeVar, cast
 
 from pydantic import (
+    ValidatorFunctionWrapHandler,
     computed_field,
     model_serializer,
+    model_validator,
 )
 
 from ._nx_attribute import (
@@ -69,6 +71,36 @@ def _nexus_class_name_from_python_class(cls: type[NxGroup]) -> str:
         )
 
     return f"NX{python_name.removeprefix('Nx').lower()}"
+
+
+def _nx_class_from_serialized_subgroup[T: "NxGroup"](subgroup: dict, cls: type[T]) -> type[T]:
+    """Fetch the pydantic model type from the serialized dictionary with ``"$nxclass"``."""
+    if (document_nx_class_name := subgroup.get("$nxclass")) is None:
+        raise TypeError(
+            f"No {NX_ATTRIBUTE_SERIALIZED_PREFIX}nxclass attrbute specified in schema."
+        )
+
+    nx_cls = NX_CLASS_TO_BASEMODEL.get(document_nx_class_name)
+    if nx_cls is None:
+        pretty_allowed_classes = pformat(set(NX_CLASS_TO_BASEMODEL))
+        raise TypeError(
+            f"Requested `{NX_ATTRIBUTE_SERIALIZED_PREFIX}nxclass: {document_nx_class_name}` "
+            f"but this isn't defined with pydantic schemas: {pretty_allowed_classes}"
+        )
+
+    # The class is specified. It is fetched from the environment for
+    # validation on instantiation.
+
+    if not issubclass(nx_cls, cls):
+        # NxSomeGroup.from_dictionary can only initialize subgroups of NxSomeGroup
+        # e.g you can NxGroup.from_dictionary to get an NxObject,
+        # but you can't NxMonochromator.from_dictionary to get an NxObject
+        raise TypeError(
+            f"Found the specified NXclass {nx_cls}, but it cannot be "
+            f"initialized from `{cls.__name__}.from_dictionary` as it isn't a subclass "
+            "of it."
+        )
+    return nx_cls
 
 
 class NxGroup(NxBase, ABC):
@@ -134,6 +166,33 @@ class NxGroup(NxBase, ABC):
             constant=_nexus_class_name_from_python_class(self.__class__),
         )
 
+    @classmethod
+    def _drop_nxclass(cls, values: T) -> T:
+        """This drops the nxclass from the values if it is a dict.
+
+        This is performed after the group class has already been determined
+        by the serialized "$nxclass" descriminator, but before the other
+        elements have been validated against that class.
+
+        This is called from the ``pre_validation`` model validator so that
+        subclasses can't create validators which run before it (easily).
+        """
+        if isinstance(values, dict):
+            values.pop("$nxclass", None)
+            values.pop("nxclass", None)
+        return values
+
+    @model_validator(mode="wrap")
+    @classmethod
+    def pre_validation(cls, values: Any, handler: ValidatorFunctionWrapHandler) -> Any:
+        """Remove nxclass field (serialized or otherwise) from values passed into
+        `NxGroup`s, and then call the other validators, some of which are possibly
+        defined in subclasses."""
+        values = cls._drop_nxclass(values)
+        values = cls._deserialize_from_shorthand_with_nxclass_descriminator(values)
+        validated = handler(values)
+        return validated
+
     def nx_attributes(self) -> dict[str, NxAttribute]:
         """Gives a dict of the nx attributes defined on this group."""
         attributes = NxBase.nx_attributes(self)
@@ -157,10 +216,18 @@ class NxGroup(NxBase, ABC):
         return {k: v for k, v in self if isinstance(v, NxField)}
 
     @classmethod
-    def from_dictionary(cls: type[T], dictionary: dict) -> T:
-        """Load the serialized `NXgroup` or subclass of `NXgroup`."""
+    def _deserialize_from_shorthand_with_nxclass_descriminator(cls, values: Any) -> Any:
+        """Deserialize the model from shorthand if it is a serialized dictionary.
+        Use the "$nxclass" attribute from the serialized subgroups to find the correct class
+        to initialize with.
+
+        This is called from the ``pre_validation`` model validator so that
+        subclasses can't create validators which run before it (easily).
+        """
+
         kwargs: dict[str, Any] = {}
-        document_nx_class_name: str | None = None
+        if not isinstance(values, dict):
+            return values
 
         # Fields and attributes may need to be initialized through
         # the basemodel class to support subclasses of NxField/NxAttribute
@@ -169,31 +236,26 @@ class NxGroup(NxBase, ABC):
         attributes_to_initialize = {}
         fields_to_initialize = {}
 
-        for key, value in dictionary.items():
+        for key, value in values.items():
             match (key, value):
-                # Attribute specified:
+                case (key, value) if isinstance(value, NxBase | NxBaseLeaf):
+                    kwargs[key] = value  # No deserialization necessary.
                 case (key, value) if isinstance(key, str) and key.startswith(
                     NX_ATTRIBUTE_SERIALIZED_PREFIX
                 ):
                     key = key.removeprefix(NX_ATTRIBUTE_SERIALIZED_PREFIX)  # deserialized key
-                    if key == "nxclass":
-                        # Attribute is thrown away. It is used to select
-                        # the correct class where it is a computed property.
-                        document_nx_class_name = (
-                            value.get("constant") if isinstance(value, dict) else value
-                        )
-                    else:
-                        # Attribute is stored as a dict. If the field is in the basemodel
-                        # it will be initialized from the dict later to support subclasses
-                        # Of NxAttribute defined on the NxGroup.
-                        attributes_to_initialize[key] = (
-                            value if isinstance(value, dict) else {"constant": value}
-                        )
+                    # Attribute is stored as a dict. If the field is in the basemodel
+                    # it will be initialized from the dict later to support subclasses
+                    # Of NxAttribute defined on the NxGroup.
+                    attributes_to_initialize[key] = (
+                        value if isinstance(value, dict) else {"constant": value}
+                    )
 
                 # A subgroup is specified:
                 # e.g {$nxclass: NXobject, SUB_GROUP: {$nxclass: NXobject, ...}}
                 case (key, value) if isinstance(value, dict) and "$nxclass" in value:
-                    kwargs[key] = NxGroup.from_dictionary(value)
+                    subgroup_cls = _nx_class_from_serialized_subgroup(value, NxGroup)
+                    kwargs[key] = subgroup_cls(**value)
 
                 # A field is specified:
                 # e.g {some_alias: {data_key: some_data_key, $long_name: "Longish name"}}
@@ -216,32 +278,8 @@ class NxGroup(NxBase, ABC):
                         f"Malformed key, value pair found in nx schema:\n{pretty_key_value}"
                     )
 
-        if document_nx_class_name is None:
-            raise TypeError(
-                f"No {NX_ATTRIBUTE_SERIALIZED_PREFIX}nxclass attrbute specified in nx schema."
-            )
-
-        # The class is specified. It is fetched from the environment for
-        # validation on instantiation.
-        nx_cls = NX_CLASS_TO_BASEMODEL.get(document_nx_class_name)
-        if nx_cls is None:
-            pretty_allowed_classes = pformat(set(NX_CLASS_TO_BASEMODEL))
-            raise TypeError(
-                f"Requested `{NX_ATTRIBUTE_SERIALIZED_PREFIX}nxclass: {document_nx_class_name}` "
-                f"but this isn't defined with pydantic schemas: {pretty_allowed_classes}"
-            )
-        if not issubclass(nx_cls, cls):
-            # NxSomeGroup.from_dictionary can only initialize subgroups of NxSomeGroup
-            # e.g you can NxGroup.from_dictionary to get an NxObject,
-            # but you can't NxMonochromator.from_dictionary to get an NxObject
-            raise TypeError(
-                f"Found the specified NXclass {nx_cls}, but it cannot be "
-                f"initialized from `{cls.__name__}.from_dictionary` as it isn't a subclass "
-                "of it."
-            )
-
         for key, value in fields_to_initialize.items():
-            if key in nx_cls.model_fields:
+            if key in cls.model_fields:
                 # Use the raw dictionary. This means
                 # that pydantic can infer the possible subclass of
                 # NxField from the `nx_cls` and make a new instance
@@ -254,12 +292,23 @@ class NxGroup(NxBase, ABC):
 
         for key, value in attributes_to_initialize.items():
             # Same logic as the above but with NxAttributes.
-            if key in nx_cls.model_fields:
+            if key in cls.model_fields:
                 kwargs[key] = value
             else:
                 kwargs[key] = NxAttribute(**value)
 
-        return cast(T, nx_cls(**kwargs))
+        return kwargs
+
+    @classmethod
+    def from_dictionary(cls: type[T], dictionary: dict) -> T:
+        """Load the serialized `NXgroup` or subclass of `NXgroup` and initialize with it.
+
+        The "$nxclass" field has to be a subclass of the class calling this method, e.g
+        ``NxObject.from_dictionary`` can produce an ``NxData``, but
+        ``NxData.from_dictionary`` can not produce an ``NxMonochromator``."""
+
+        document_nx_class = _nx_class_from_serialized_subgroup(dictionary, cls)
+        return document_nx_class(**dictionary)
 
     def __add__(self: T, other: NxGroup) -> T:
         """
