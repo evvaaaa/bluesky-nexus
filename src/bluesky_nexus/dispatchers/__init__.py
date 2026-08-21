@@ -1,4 +1,4 @@
-"""Contains dispatchers for running the callback with a hdf writer."""
+"""Contains dispatchers for running the hdf5 writer callback over zmq and kafka."""
 
 from .kafka_dispatcher import run_kafka_dispatcher
 from .zmq_dispatcher import run_zmq_dispatcher

@@ -24,7 +24,7 @@ from ophyd_async.plan_stubs import ensure_connected
 from ophyd_async.sim import SimMotor, SimPointDetector
 
 from bluesky_nexus import NexusDevices, __version__
-from bluesky_nexus.nx_schema import (
+from bluesky_nexus.base_schema import (
     NxField,
     NxGroup,
     add_nx_class_basemodel,

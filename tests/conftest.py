@@ -11,10 +11,10 @@ from bluesky import RunEngine
 from bluesky.callbacks.zmq import Proxy, Publisher
 
 from bluesky_nexus import NexusHdfWriterCallback
+from bluesky_nexus.base_schema._nx_group import NX_CLASS_TO_BASEMODEL
 from bluesky_nexus.dispatchers import run_zmq_dispatcher
 from bluesky_nexus.logger import setup_logging
-from bluesky_nexus.nx_device._decorator import _inheritance_structure, _schema_added
-from bluesky_nexus.nx_schema._nx_group import NX_CLASS_TO_BASEMODEL
+from bluesky_nexus.nexus_devices._decorator import _inheritance_structure, _schema_added
 
 
 @pytest.fixture()
@@ -35,15 +35,15 @@ def ensure_fresh_mutable_global_caches(monkeypatch) -> None:
     classes don't modify the environment.
     """
     monkeypatch.setattr(
-        "bluesky_nexus.nx_device._decorator._schema_added",
+        "bluesky_nexus.nexus_devices._decorator._schema_added",
         _schema_added.copy(),
     )
     monkeypatch.setattr(
-        "bluesky_nexus.nx_device._decorator._inheritance_structure",
+        "bluesky_nexus.nexus_devices._decorator._inheritance_structure",
         _inheritance_structure.copy(),
     )
     monkeypatch.setattr(
-        "bluesky_nexus.nx_schema._nx_group.NX_CLASS_TO_BASEMODEL",
+        "bluesky_nexus.base_schema._nx_group.NX_CLASS_TO_BASEMODEL",
         NX_CLASS_TO_BASEMODEL.copy(),
     )
 

@@ -1,6 +1,6 @@
 """ZeroMQ-based RemoteDispatcher service for Bluesky NeXus writing.
 
-This module implements the ZeroMQ backend for the ``bluesky_nexus`` service.
+This module implements the ZeroMQ backend for the ``bluesky_nexus.NexusHdfWriterCallback`` service.
 It consumes Bluesky documents from a ZeroMQ publisher and forwards them to
 :class:`NexusWriter`, which produces NeXus-compatible HDF5 files.
 """
@@ -31,7 +31,7 @@ def run_zmq_dispatcher(root_output_directory: Path, zmq_ip: str, zmq_port: int) 
     except Exception as exception:
         raise RuntimeError(
             "Could not import the zmq `RemoteDispatcher` from bluesky. "
-            "Did you install `bluesky-nexus-callback[zmq]`?"
+            "Did you install `bluesky-nexus[zmq]`?"
         ) from exception
 
     writer = NexusHdfWriterCallback(root_output_directory)
