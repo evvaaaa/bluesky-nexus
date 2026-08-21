@@ -19,9 +19,11 @@ class NxBaseLeaf(BaseModel, ABC):
         * A constant specified in the schema, e.g `constant: "eV"`.
         * A key of the hints of a device, e.g `hints_key: ["md", "description"].
         * A bluesky data_key, e.g `"data_key: some_data_key_on_the_object"
+        * The timestamps of a bluesky datakey.
     """
 
     data_key: str | None = None
+    timestamps_of_datakey: str | None = None
     hints_key: list[str] | str | None = None
     constant: Any = None
 
@@ -34,12 +36,16 @@ class NxBaseLeaf(BaseModel, ABC):
             data_key = values.get("data_key")
             hints_key = values.get("hints_key")
             constant = values.get("constant")
+            data_key_timestamps = values.get("timestamps_of_datakey")
         else:
             data_key = getattr(values, "data_key", None)
             hints_key = getattr(values, "hints_key", None)
             constant = getattr(values, "constant", None)
+            data_key_timestamps = getattr(values, "data_key", None)
 
-        provided_count = len([v for v in (data_key, hints_key, constant) if v is not None])
+        provided_count = len(
+            [v for v in (data_key, hints_key, constant, data_key_timestamps) if v is not None]
+        )
         if provided_count != 1:
             pretty_key_value = pformat(values)
             raise TypeError(

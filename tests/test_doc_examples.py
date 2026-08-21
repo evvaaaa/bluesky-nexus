@@ -1,4 +1,4 @@
-"""Tests that if you ran the tutorials now you would get the same as the tutorials claim.
+"""Tests that if you ran the examples now you would get the same as the tutorials claim.
 
 Good for keeping docs up to date with changes.
 """
@@ -14,8 +14,8 @@ import bluesky_nexus
 
 from . import load_only_generated_nexus_file
 
-TUTORIAL_FILES_DIRECTORY = (
-    Path(bluesky_nexus.__file__).parent.parent.parent / "docs" / "_static" / "tutorials"
+EXAMPLE_FILES_DIRECTORY = (
+    Path(bluesky_nexus.__file__).parent.parent.parent / "docs" / "_static" / "examples"
 )
 
 
@@ -28,16 +28,16 @@ def change_local_directory_to_tmpdir(tmpdir: Path, monkeypatch: pytest.MonkeyPat
 @pytest.fixture(scope="function")
 def globals_with_runengine() -> dict[str, Any]:
     return run_path(
-        f"{TUTORIAL_FILES_DIRECTORY}/tutorial_setting_up_run_engine.py",
+        f"{EXAMPLE_FILES_DIRECTORY}/example_setting_up_run_engine.py",
         run_name="__main__",
     )
 
 
-def test_tutorial_simple_device_count(
+def test_example_simple_device_count(
     tmpdir: Path, capsys: pytest.CaptureFixture, globals_with_runengine: dict[str, Any]
 ):
     run_path(
-        f"{TUTORIAL_FILES_DIRECTORY}/tutorial_simple_device_count.py",
+        f"{EXAMPLE_FILES_DIRECTORY}/example_simple_device_count.py",
         run_name="__main__",
         init_globals=globals_with_runengine,
     )
@@ -51,14 +51,14 @@ def test_tutorial_simple_device_count(
     assert list(loaded["entry"]["primary"]["devices"]) == ["syn_axis"]
 
 
-def test_tutorial_mono_1(tmpdir: Path, globals_with_runengine: dict[str, Any]):
+def test_example_mono_1(tmpdir: Path, globals_with_runengine: dict[str, Any]):
     globals = run_path(
-        f"{TUTORIAL_FILES_DIRECTORY}/tutorial_mono_1_devices.py",
+        f"{EXAMPLE_FILES_DIRECTORY}/example_mono_1_devices.py",
         run_name="__main__",
         init_globals=globals_with_runengine,
     )
     globals = run_path(
-        f"{TUTORIAL_FILES_DIRECTORY}/tutorial_mono_plan.py",
+        f"{EXAMPLE_FILES_DIRECTORY}/example_mono_plan.py",
         run_name="__main__",
         init_globals=globals,
     )
@@ -105,19 +105,19 @@ def test_tutorial_mono_1(tmpdir: Path, globals_with_runengine: dict[str, Any]):
     ]
 
 
-def test_tutorial_mono_2(tmpdir: Path, globals_with_runengine: dict[str, Any]):
+def test_example_mono_2(tmpdir: Path, globals_with_runengine: dict[str, Any]):
     globals = run_path(
-        f"{TUTORIAL_FILES_DIRECTORY}/tutorial_mono_1_devices.py",
+        f"{EXAMPLE_FILES_DIRECTORY}/example_mono_1_devices.py",
         run_name="__main__",
         init_globals=globals_with_runengine,
     )
     globals = run_path(
-        f"{TUTORIAL_FILES_DIRECTORY}/tutorial_mono_2_devices.py",
+        f"{EXAMPLE_FILES_DIRECTORY}/example_mono_2_devices.py",
         run_name="__main__",
         init_globals=globals,
     )
     globals = run_path(
-        f"{TUTORIAL_FILES_DIRECTORY}/tutorial_mono_plan.py",
+        f"{EXAMPLE_FILES_DIRECTORY}/example_mono_plan.py",
         run_name="__main__",
         init_globals=globals,
     )
@@ -145,3 +145,22 @@ def test_tutorial_mono_2(tmpdir: Path, globals_with_runengine: dict[str, Any]):
         "mirror",
         "transformations",
     ]
+
+
+def test_example_keithley_1():
+    run_path(
+        f"{EXAMPLE_FILES_DIRECTORY}/example_keithley_1_device.py",
+        run_name="__main__",
+    )
+
+
+def test_keithley_nexus_structure():
+    globals = run_path(
+        f"{EXAMPLE_FILES_DIRECTORY}/example_keithley_1_device.py",
+        run_name="__main__",
+    )
+    globals = run_path(
+        f"{EXAMPLE_FILES_DIRECTORY}/example_keithley_2_device.py",
+        run_name="__main__",
+        init_globals=globals,
+    )

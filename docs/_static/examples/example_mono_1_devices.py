@@ -1,5 +1,8 @@
+
 from ophyd.signal import DEFAULT_TIMEOUT
 from ophyd_async.core import (
+    DEFAULT_TIMEOUT,
+    AsyncStatus,
     DeviceMock,
     StandardReadable,
     StrictEnum,
@@ -7,13 +10,8 @@ from ophyd_async.core import (
     set_mock_value,
     soft_signal_r_and_setter,
     soft_signal_rw,
-    DEFAULT_TIMEOUT,
 )
-from ophyd_async.core import (
-    StandardReadableFormat as Fmt,
-    AsyncStatus
-)
-import asyncio
+from ophyd_async.core import StandardReadableFormat as Fmt
 
 
 class ExitSlitBranch(StrictEnum):
