@@ -1,31 +1,25 @@
-"""Pydantic schema for defining connections between `HasHints` devices and nexus classes."""
+"""Contains the bluesky nexus schema model.
 
-from ._nx_attribute import NxAttribute
-from ._nx_base import (
-    NX_ATTRIBUTE_SERIALIZED_PREFIX,
-    NX_CLASS_TO_BASEMODEL,
-    NxBase,
-    NxField,
-    NxGroup,
-    add_nx_class_basemodel,
-)
-from ._nx_classes.nx_data import NxData
-from ._nx_classes.nx_detector import NxDetector
-from ._nx_classes.nx_object import NxObject
-from ._nx_classes.nx_positioner import NxPositioner
-from ._nx_classes.nx_sub_entry import NxSubEntry
+It's assumed any bluesky device corresponds to a subclass of `NxGroup`, containing `NxAttribute`s,
+`NxField`s (which in run can contain attributes), and sub `NxGroup`.
+
+For an example implementation of defined schema representing a set of nxdl, see
+`bluesky_nexus/nx_nexusformat_schema`, which are schema defined for nexusformat's nxdl:
+
+https://manual.nexusformat.org/classes/base_classes/complete-structure.html
+
+and the default used by this package.
+"""
+
+from ._nx_attribute import NX_ATTRIBUTE_SERIALIZED_PREFIX, NxAttribute, NxConstantAttribute
+from ._nx_field import NxField
+from ._nx_group import NxGroup, add_nx_class_basemodel
 
 __all__ = [
+    "NX_ATTRIBUTE_SERIALIZED_PREFIX",
     "NxAttribute",
-    "NxBase",
-    "NX_CLASS_TO_BASEMODEL",
-    "NxDetector",
+    "NxConstantAttribute",
     "NxField",
     "NxGroup",
-    "NxObject",
-    "NxPositioner",
-    "NxSubEntry",
-    "NxData",
     "add_nx_class_basemodel",
-    "NX_ATTRIBUTE_SERIALIZED_PREFIX",
 ]

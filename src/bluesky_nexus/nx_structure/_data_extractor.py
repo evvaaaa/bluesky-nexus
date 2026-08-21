@@ -20,11 +20,10 @@ from event_model import (
 from event_model.documents.event_descriptor import Dtype, DtypeNumpy, DtypeNumpyItem
 
 from bluesky_nexus.logger import LOGGER
+from bluesky_nexus.nx_nexusformat_schema import NxSubEntry
 from bluesky_nexus.nx_schema import (
-    NxBase,
     NxField,
     NxGroup,
-    NxSubEntry,
 )
 
 
@@ -65,6 +64,7 @@ def new_schema_with_missing_fields(
     isn't present in the schema then try adding them and validating again.
     """
     nx_alias_to_nx_field = nx_schema.all_nx_fields()
+
     schema_specified_data_keys = {
         nx_field.data_key: nx_field for nx_field in nx_alias_to_nx_field.values()
     }
@@ -119,7 +119,7 @@ class _PerObjectHintMaybeWithNxClass(PerObjectHint):
 
 @dataclass
 class ObjectData:
-    nx_schema: NxBase
+    nx_schema: NxGroup | NxField
     """The nexus schema for this object."""
     data_key_name_to_data: dict[str, DataKeyData]
     """A dictionary of data key name to data key/configuration key information."""
@@ -192,7 +192,7 @@ class ObjectData:
             # If a device passes validation on `NxGroup` it can be added
             try:
                 # Perform an initial validation on the provided schema.
-                nx_schema = NxBase.from_dictionary(raw_schema)
+                nx_schema = NxGroup.from_dictionary(raw_schema)
 
                 if isinstance(nx_schema, NxGroup):
                     # If the object's `$nxclass` is a subclass of `NxGroup`,
@@ -244,6 +244,7 @@ class ObjectData:
 @dataclass
 class StreamData:
     descriptor: EventDescriptor
+    stream_start_time: float
     object_data: dict[str, ObjectData] = field(default_factory=dict)
     """A dictionary of object_key to data stored throughout the experiment."""
 
@@ -258,7 +259,11 @@ class StreamData:
         # When we pull data out of events all the data_keys will be flat.
         # We'll parse e.g "some-device" first (earlier in this list) before we parse
         # e.g "some-dev".
-        for object_name, data_key_names in descriptor.get("object_keys", {}).items():
+
+        for object_name, data_key_names in sorted(
+            descriptor.get("object_keys", {}).items(),
+            reverse=True,
+        ):
             data_keys = {k: v for k, v in descriptor["data_keys"].items() if k in data_key_names}
             configuration = descriptor.get("configuration", {}).get(object_name, {})
             hint = descriptor.get("hints", {}).get(object_name, {})
@@ -269,7 +274,11 @@ class StreamData:
                 configuration,
             )
 
-        return StreamData(descriptor, object_data=dict(sorted(object_data.items(), reverse=True)))
+        return StreamData(
+            descriptor,
+            descriptor["time"],
+            object_data=dict(sorted(object_data.items(), reverse=True)),
+        )
 
     def reconfigure(self, descriptor: Descriptor) -> None:
         """
@@ -296,9 +305,6 @@ class StreamData:
     def _extract_event_or_event_page(
         self, document: Event | EventPage, operation: Callable[[list, Any], None]
     ) -> None:
-        event_data = document.get("data", {})
-        event_timestamps = document.get("timestamps", {})
-
         operation(self.sequence_numbers, document["seq_num"])
 
         operation(self.times, document["time"])

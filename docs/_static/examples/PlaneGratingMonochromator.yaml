@@ -1,0 +1,54 @@
+$nxclass: NXmonochromator
+
+# This datakey would be added anyway, but I want to conform to the
+# name in NXmonochromator.
+energy: energy-readback
+
+exit_slit:
+  # NXaperture
+  $nxclass: NXaperture
+  size: exit_slit-value
+  selected_branch: exit_slit-selected_branch
+
+# I want to give this a fuller name.
+diffraction_order: diff_order
+
+# This group isn't explicitely part of NXmonochromator,
+# but it's the nicest place to store information about our
+# filters.
+filters:
+  $nxclass: NXfilter
+  psi_enabled: psi-enabled
+  phi_enabled: phi-enabled
+  orientation:
+    $nxclass: NXtransformations
+    # Since `depends_on` has not been specified, all NXtransformations
+    # are using the deafault coordinate system:
+    # https://manual.nexusformat.org/design.html#the-nexus-coordinate-system
+    # The filters rotate in +X to block the beam.
+    psi: {data_key: psi-value, $vector: [1, 0, 0], $transformation_type: rotation}
+    phi: {data_key: phi-value, $vector: [1, 0, 0], $transformation_type: rotation}
+
+mirror:
+  $nxclass: NXtransformations
+  # The mirror which goes along the Z axis to block the beam.
+  mirror2: {data_key: mirror2_translation, $vector: [0, 0, 1], $transformation_type: translation}
+  
+# We store the cff, but we replace the units "l/mm" with "1/mm"
+# as it's what NeXus prefers.
+constant_fixed_focus: {data_key: cff, $units: "1/mm"}
+
+# GRATING group in the monochromator.
+grating:
+  $nxclass: NXgrating
+  # These fields aren't explicitely defined in NXgrating,
+  # but we don't have the PVs for the more full information
+  # there.
+  line_density_selection: grating-selection
+  line_density: grating-value
+
+transformations:
+  $nxclass: NXtransformations
+  alpha: {data_key: alpha, $transformation_type: rotation, $vector: [1, 0, 0], $long_name: "Angle of Incidence"}
+  beta: {data_key: beta, $transformation_type: rotation, $vector: [1, 0, 0], $long_name: "Angle of Diffraction"}
+  theta: {data_key: theta, $transformation_type: rotation, $vector: [0, 0, 1], $long_name: "Grating Rotation Angle"}

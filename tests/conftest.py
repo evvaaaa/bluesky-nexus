@@ -14,7 +14,7 @@ from bluesky_nexus import NexusHdfWriterCallback
 from bluesky_nexus.dispatchers import run_zmq_dispatcher
 from bluesky_nexus.logger import setup_logging
 from bluesky_nexus.nx_device._decorator import _inheritance_structure, _schema_added
-from bluesky_nexus.nx_schema import NX_CLASS_TO_BASEMODEL
+from bluesky_nexus.nx_schema._nx_group import NX_CLASS_TO_BASEMODEL
 
 
 @pytest.fixture()
@@ -43,7 +43,7 @@ def ensure_fresh_mutable_global_caches(monkeypatch) -> None:
         _inheritance_structure.copy(),
     )
     monkeypatch.setattr(
-        "bluesky_nexus.nx_schema._nx_base.NX_CLASS_TO_BASEMODEL",
+        "bluesky_nexus.nx_schema._nx_group.NX_CLASS_TO_BASEMODEL",
         NX_CLASS_TO_BASEMODEL.copy(),
     )
 

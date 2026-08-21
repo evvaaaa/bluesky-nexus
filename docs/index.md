@@ -2,11 +2,10 @@
 
 Welcome to the documentation for **bluesky-nexus**!
 
-`bluesky_nexus` is a package for generating a standard NeXus structure for bluesky plans.
-
-## Design Philosophy
-
-- 
+```{include} ../README.md
+:start-after: <!--- docs index include start -->
+:end-before: <!--- docs index include end -->
+```
 
 ## Features
 
@@ -33,10 +32,24 @@ This project leverages modern Python tooling:
 ## Contents
 
 ```{toctree}
-:maxdepth: 3
-:caption: User Guide
+:caption: Installation
+:maxdepth: 1
 
-user_guide/index
+installation
+```
+
+```{toctree}
+:caption: Nexus Structure 
+
+nexus_structure
+using_the_nexus_structure
+```
+
+
+```{toctree}
+:caption: Device Nexus Structure
+
+device_nexus_structure/index
 ```
 
 ```{toctree}
@@ -47,6 +60,15 @@ api/modules
 ```
 
 ```{toctree}
-:maxdepth: 1
-:caption: Development
+:maxdepth: 2
+:caption: Contributing
+
+CONTRIBUTING
+```
+
+```{toctree}
+:maxdepth: 2
+:caption: Changelog
+
+CHANGELOG
 ```

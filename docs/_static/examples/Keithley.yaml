@@ -1,0 +1,14 @@
+$nxclass: "NXdetector"
+
+trigger_delay_time_set: "trigger_delay"
+time_of_flight: "integration_time"
+raw_time_of_flight: "number_power_line_cycles"
+serial_number: "model"
+
+data: ""
+stop_time: {timestamps_of_data_key: ""}
+
+type: {constant: "Electrometer"}
+description: {"constant": "Keithley electrometer"}
+layout: {"constant": "point"}
+acquisition_mode: {"constant": "triggered"}

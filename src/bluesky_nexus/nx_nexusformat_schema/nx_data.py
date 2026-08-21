@@ -4,12 +4,18 @@ from typing import Self
 
 from pydantic import model_validator
 
-from .._nx_attribute import NxAttribute, NxConstantAttribute
-from .._nx_base import NxField, NxGroup, add_nx_class_basemodel
+from bluesky_nexus.nx_schema import (
+    NxAttribute,
+    NxConstantAttribute,
+    NxField,
+    add_nx_class_basemodel,
+)
+
+from .nx_object import NxObject
 
 
 @add_nx_class_basemodel
-class NxData(NxGroup):
+class NxData(NxObject):
     """Represents a NeXus NXdata.
 
     For the implementation in bluesky nexus, signal and axes

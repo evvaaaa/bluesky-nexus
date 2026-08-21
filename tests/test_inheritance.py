@@ -12,7 +12,7 @@ from ophyd_async.epics.motor import Motor
 from ophyd_async.plan_stubs import ensure_connected
 
 from bluesky_nexus import NexusDevices
-from bluesky_nexus.nx_schema import NxBase, NxGroup, add_nx_class_basemodel
+from bluesky_nexus.nx_schema import NxGroup, add_nx_class_basemodel
 
 from . import add_device_metadata_to_hints_wrapper, load_only_generated_nexus_file
 
@@ -39,7 +39,7 @@ def test_schema_single_inheritance() -> None:
 
     assert (
         Grandma("GRANDMA", name="granma").hints["NX_schema"]
-        == NxBase.from_dictionary(
+        == NxGroup.from_dictionary(
             {
                 "$nxclass": "NXobject",
                 **expected_grandma_schema,
@@ -58,7 +58,7 @@ def test_schema_single_inheritance() -> None:
 
     assert (
         Mama("MAMA", name="mama").hints["NX_schema"]
-        == NxBase.from_dictionary(
+        == NxGroup.from_dictionary(
             {
                 "$nxclass": "NXobject",
                 **expected_mama_schema,
@@ -88,7 +88,7 @@ def test_schema_single_inheritance() -> None:
 
     assert (
         Me("ME", name="me").hints["NX_schema"]
-        == NxBase.from_dictionary(
+        == NxGroup.from_dictionary(
             {
                 "$nxclass": "NXobject",
                 **expected_me_schema,
@@ -285,19 +285,16 @@ def test_schema_multi_inheritance() -> None:
     assert device.device_n_1_int == 11
     assert device.device_n_2_int == 12
 
-    # The schema follows the same behaviour with overriding...
+    # The schema follows the same behaviour with overriding,
+    # apart from with attributes. It won't simply add attributes
+    # to a signal which could differ.
     assert device.hints["NX_schema"] == {
         "$nxclass": "NXobject",
         "GROUP": {
             "$nxclass": "NXobject",
             "signal": {
-                "$attr1": "value1",
                 "$attr1n": "value11",
-                "$attr2": "value2",
-                "$attr2n": "value21",
-                "$attrn": "value1",
                 "$attrn1": "value11",
-                "$attrn2": "value12",
                 "$attrnm": "value11",
                 "data_key": "signal",
             },
@@ -392,7 +389,7 @@ def test_schema_single_inheritance_on_device(
     assert list(loaded["shutter_differing"]["SUB_GROUP"]) == ["value_at_open"]
 
 
-def test_description_accross_whole_codebase_from_hints_on_instantiation(
+def test_description_across_whole_codebase_from_hints_on_instantiation(
     RE_directly_subscribed: RuntimeError, tmpdir: Path
 ) -> None:
     # This test mimicks what we do with device instantiation map
@@ -400,26 +397,54 @@ def test_description_accross_whole_codebase_from_hints_on_instantiation(
 
     @add_device_metadata_to_hints_wrapper
     @NexusDevices.add_device_from_dictionary(
-        {"$nxclass": "NXgroup", "$description": {"hints_key": ["metadata", "description"]}}
+        {"$nxclass": "NXcomponent", "description": {"hints_key": ["metadata", "description"]}}
     )
     class ThisWouldBeTheRealDeviceInThePackage(Device): ...
 
-    @add_device_metadata_to_hints_wrapper
     class SynAxisWouldUseTheAbove(ThisWouldBeTheRealDeviceInThePackage, SynAxis): ...
 
-    description = (
+    @NexusDevices.add_device_from_dictionary(
+        {"$nxclass": "NXdetector", "$some_attribute": 1, "data": "acceleration"}
+    )
+    class SubclassPlusDescription(SynAxisWouldUseTheAbove): ...
+
+    description1 = (
         "This description was added from the patch to ophyd device. "
         "We can have it in all devices accross the codebase for free."
     )
 
-    device = SynAxisWouldUseTheAbove(name="device")  # type: ignore
-    device.md = {"description": description}
+    device1 = SynAxisWouldUseTheAbove(name="device1")  # type: ignore
+    device1.md = {"description": description1}
 
-    RE_directly_subscribed(bp.count([device], num=3))  # type: ignore
+    assert device1.hints["NX_schema"] == {
+        "$nxclass": "NXcomponent",
+        "description": {"hints_key": ["metadata", "description"]},
+    }
 
-    loaded = load_only_generated_nexus_file(tmpdir)["entry"]["primary"]["devices"]["device"]
-    assert list(loaded.attrs) == ["description", "nxclass"]
-    assert loaded.attrs["description"] == description
+    description2 = (
+        "This is an NXdata which is a type of NXcomponent, therefor"
+        "this description is in the nexus structure."
+    )
+
+    device2 = SubclassPlusDescription(name="device2")  # type: ignore
+    device2.md = {"description": description2}
+
+    assert device2.hints["NX_schema"] == {
+        "description": {"hints_key": ["metadata", "description"]},
+        "data": "acceleration",
+        "$nxclass": "NXdetector",
+        "$some_attribute": 1,
+    }
+
+    RE_directly_subscribed(bp.count([device1, device2], num=3))  # type: ignore
+
+    loaded = load_only_generated_nexus_file(tmpdir)["entry"]["primary"]["devices"]["device1"]
+    assert list(loaded) == ["acceleration", "description", "device1", "setpoint", "velocity"]
+    assert loaded["description"] == description1
+
+    loaded = load_only_generated_nexus_file(tmpdir)["entry"]["primary"]["devices"]["device2"]
+    assert list(loaded) == ["data", "description", "device2", "setpoint", "velocity"]
+    assert loaded["description"] == description2
 
 
 def test_deserialization_heirarchy() -> None:
@@ -438,19 +463,27 @@ def test_deserialization_heirarchy() -> None:
             NxGroup3,
         ),
         (
-            NxBase,
-            NxGroup,
-        ),
-        (
-            NxGroup,
-            NxGroup1,
-        ),
-        (
-            NxGroup,
-            NxGroup3,
+            NxGroup2,
+            NxGroup2,
         ),
         (
             NxGroup2,
+            NxGroup3,
+        ),
+        (
+            NxGroup1,
+            NxGroup1,
+        ),
+        (
+            NxGroup1,
+            NxGroup3,
+        ),
+        (
+            NxGroup1,
+            NxGroup2,
+        ),
+        (
+            NxGroup1,
             NxGroup3,
         ),
     ):
@@ -469,7 +502,6 @@ def test_deserialization_heirarchy() -> None:
             NxGroup2,
             NxGroup1,
         ),
-        (NxGroup3, NxGroup),
     ):
         with pytest.raises(
             TypeError,

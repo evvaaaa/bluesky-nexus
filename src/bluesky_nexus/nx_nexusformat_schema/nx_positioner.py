@@ -1,10 +1,15 @@
 """Contains the definition for NXpositioner."""
 
-from .._nx_base import NxField, NxGroup, add_nx_class_basemodel
+from bluesky_nexus.nx_schema import (
+    NxField,
+    add_nx_class_basemodel,
+)
+
+from .nx_component import NxComponent
 
 
 @add_nx_class_basemodel
-class NxPositioner(NxGroup):
+class NxPositioner(NxComponent):
     """Represents a NeXus NXpositioner."""
 
     value: NxField | None = None
