@@ -244,6 +244,7 @@ class ObjectData:
 @dataclass
 class StreamData:
     descriptor: EventDescriptor
+    stream_start_time: float
     object_data: dict[str, ObjectData] = field(default_factory=dict)
     """A dictionary of object_key to data stored throughout the experiment."""
 
@@ -273,7 +274,11 @@ class StreamData:
                 configuration,
             )
 
-        return StreamData(descriptor, object_data=dict(sorted(object_data.items(), reverse=True)))
+        return StreamData(
+            descriptor,
+            descriptor["time"],
+            object_data=dict(sorted(object_data.items(), reverse=True)),
+        )
 
     def reconfigure(self, descriptor: Descriptor) -> None:
         """
@@ -300,9 +305,6 @@ class StreamData:
     def _extract_event_or_event_page(
         self, document: Event | EventPage, operation: Callable[[list, Any], None]
     ) -> None:
-        event_data = document.get("data", {})
-        event_timestamps = document.get("timestamps", {})
-
         operation(self.sequence_numbers, document["seq_num"])
 
         operation(self.times, document["time"])

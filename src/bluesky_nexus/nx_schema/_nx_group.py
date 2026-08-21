@@ -86,11 +86,16 @@ class NxGroup(NxBase, ABC):
         for key, value in self:
             key = prepend_serialized_prefix_to_nx_attributes(key, value)
             match value:
-                case NxAttribute(constant=constant_value, data_key=None, hints_key=None):
-                    shortened[key] = constant_value
-                case NxField(data_key=data_key, constant=None, hints_key=None) if (
-                    value.nx_attributes() == {}
+                case NxAttribute(
+                    constant=constant_value,
+                    data_key=None,
+                    hints_key=None,
+                    timestamps_of_data_key=None,
                 ):
+                    shortened[key] = constant_value
+                case NxField(
+                    data_key=data_key, constant=None, hints_key=None, timestamps_of_data_key=None
+                ) if value.nx_attributes() == {}:
                     # Shorten a datakey if there arent' additional attributes
                     # to the NxField.
                     shortened[key] = data_key

@@ -34,3 +34,4 @@ class NxConstantAttribute[T: Any](NxAttribute):
     constant: T
     hints_key: None = None
     data_key: None = None
+    timestamps_of_data_key: None = None

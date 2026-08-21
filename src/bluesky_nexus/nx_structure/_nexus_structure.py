@@ -108,8 +108,8 @@ def _new_nx_field_from_data_key_data(
     nx_field_schema: NxField,
     data_key_data: DataKeyData,
     object_data: ObjectData,
-    run_start_time: float,
     field_type: NewFieldType,
+    run_start_time: float,
     name: str = "unknown",
 ) -> nexus.NXlog | nexus.NXfield | nexus.NXdata:
     """Util method for adding new nx field. name is not required
@@ -127,15 +127,8 @@ def _new_nx_field_from_data_key_data(
             value=attribute_value
         )
 
-    # Add the units from bluesky if not specified in the schema.
-    if "units" not in attrs and data_key_data.units:
-        attrs["units"] = data_key_data.units
-
     timestamps_field = nexus.NXfield(
-        # Maximum because somehow with very fast test scans,
-        # the run start time is a little over the read times on the
-        # signals.
-        value=np.maximum(np.array(data_key_data.timestamps) - run_start_time, 0),
+        value=np.array(data_key_data.timestamps) - run_start_time,
         name="timestamps",
         attrs={"units": nexus.NXfield(value="s")},
     )
@@ -144,9 +137,13 @@ def _new_nx_field_from_data_key_data(
         timestamps_field.attrs.update(attrs)
         return timestamps_field
 
+    # Add the units from bluesky if not specified in the schema.
+    if "units" not in attrs and data_key_data.units:
+        attrs["units"] = data_key_data.units
+
     # NXlog and NXdata are numerical so if the value is a string we give it
     # without timestamps.
-    if field_type is NewFieldType.VALUE_ONLY or data_key_data.dtype == "string":
+    if field_type is NewFieldType.VALUE_ONLY:
         return nexus.NXfield(value=data_key_data.data, name=name, attrs=attrs)
 
     # It needs a name "value" for NXlog and NXdata.
@@ -194,23 +191,38 @@ def _new_nx_group(
             )
             continue  # Datakey is from hints/constant.
 
-        if nx_field_schema.data_key not in object_data.formatted_data_key_name_to_data:
-            continue  # Datakey in schema did not come in this stream.
+        if nx_field_schema.timestamps_of_data_key is not None:
+            # The schema specifies that this nexus field should come
+            # from a data keys timestamps.
+            write_value_option = NewFieldType.TIMESTAMPS_ONLY
+            data_key_name = nx_field_schema.timestamps_of_data_key
+        else:
+            write_value_option = NewFieldType.NX_LOG_WITH_TIMESTAMPS
+            data_key_name = cast(str, nx_field_schema.data_key)
 
-        # Contrary to what the documentation would imply, both nexpy, and silx dont accept only
-        # nxlog "value" when it counts, e.g plotting an NXdata.
-        write_value_option = NewFieldType.NX_LOG_WITH_TIMESTAMPS
+        if data_key_name not in object_data.formatted_data_key_name_to_data:
+            # Datakey in schema did not come in this stream.
+            continue
 
-        if isinstance(group_schema, NxData) and nx_alias in group_schema.axes.constant + [
-            group_schema.signal.constant
-        ]:
+        data_key_data = object_data.formatted_data_key_name_to_data[data_key_name]
+
+        # Contrary to what the documentation would imply, both nexpy,
+        # and silx dont accept only nxlog "value" when it counts,
+        # e.g plotting an NXdata.
+        if (
+            write_value_option is not NewFieldType.TIMESTAMPS_ONLY
+            and isinstance(group_schema, NxData)
+            and nx_alias in group_schema.axes.constant + [group_schema.signal.constant]
+        ):
             write_value_option = NewFieldType.VALUE_ONLY
 
-        data_key_data = object_data.formatted_data_key_name_to_data[nx_field_schema.data_key]
+        # NxLog is only applicable for numerical datatypes.
+        if data_key_data.dtype == "string":
+            write_value_option = NewFieldType.VALUE_ONLY
 
         group[nx_alias or sanitize_datakey_for_nexus(object_name)] = (
             _new_nx_field_from_data_key_data(
-                nx_field_schema, data_key_data, object_data, run_start_time, write_value_option
+                nx_field_schema, data_key_data, object_data, write_value_option, run_start_time
             )
         )
 
@@ -226,7 +238,7 @@ def _new_nx_group(
 
 
 def add_stream_data_to_group(
-    run_start_time: float, stream_group: nexus.NXgroup, stream_data: StreamData
+    stream_group: nexus.NXgroup, stream_data: StreamData, run_start_time: float
 ) -> None:
     """Take a given stream's parsed `StreamData` and write it to the nexus group."""
     stream_group.attrs["description"] = " A group of devices all read together."
@@ -246,7 +258,7 @@ def add_stream_data_to_group(
             # Maximum because somehow with very fast test scans,
             # the run start time is a little over the read times on the
             # signals.
-            value=np.maximum(np.array(stream_data.times) - run_start_time, 0),
+            value=np.array(stream_data.times),
             name="time",
             attrs={"units": nexus.NXfield(value="S")},
         ),
@@ -308,8 +320,8 @@ def add_stream_data_to_group(
                     object_data.nx_schema,
                     object_data.formatted_data_key_name_to_data[object_data.nx_schema.data_key],
                     object_data,
-                    run_start_time,
                     NewFieldType.NX_DATA_WITH_TIMESTAMPS,
+                    run_start_time,
                     name=object_name,
                 )
             )
@@ -356,7 +368,7 @@ def create_nexus_structure(run_data: RunData) -> nexus.NXroot:
             continue
         try:
             new_stream_group = nexus.NXgroup(nxclass="NXcollection")
-            add_stream_data_to_group(run_data.start_time, new_stream_group, stream_data)
+            add_stream_data_to_group(new_stream_group, stream_data, run_data.run_start["time"])
         except Exception as _:
             LOGGER.warning(
                 f"Failed to write stream {stream_name}, will try with the others...",

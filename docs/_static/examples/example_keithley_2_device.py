@@ -17,9 +17,9 @@ assert keithley.hints == {
         'layout': {'constant': 'point'},
         'raw_time_of_flight': 'number_power_line_cycles',
         'serial_number': 'model',
+        'stop_time': {'start': None, 'timestamps_of_data_key': ''},
         'time_of_flight': 'integration_time',
         'trigger_delay_time_set': 'trigger_delay',
         'type': {'constant': 'Electrometer'}
     },
-    'fields': ['my-keithely_readback']
-}
+ 'fields': ['my-keithely_readback']}

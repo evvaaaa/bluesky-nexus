@@ -2,7 +2,9 @@
 
 import re
 from pathlib import Path
+from time import monotonic
 
+import numpy as np
 import pytest
 from bluesky import RunEngine
 from bluesky import plans as bp
@@ -179,9 +181,12 @@ def test_nexus_writer_on_signals(
         "some_signal",
     ]
     assert list(loaded["another_signal"]["value"]) == [0, 0, 0]
-    assert loaded["another_signal"].attrs == {"axes": "timestamps", "signal": "value"}
+    assert {k: str(v) for k, v in loaded["another_signal"].attrs.items()} == {
+        "axes": "timestamps",
+        "signal": "value",
+    }
     assert list(loaded["motor"]) == ["acceleration_time", "motor", "velocity"]
-    assert loaded["motor"].attrs == {"nxclass": "NXsubentry"}
+    assert {k: str(v) for k, v in loaded["motor"].attrs.items()} == {"nxclass": "NXsubentry"}
 
 
 def test_schema_client_server_differing_schema(
@@ -425,3 +430,59 @@ def test_nx_data_multi_dimensional(RE_directly_subscribed: RunEngine, tmpdir: Pa
     assert loaded["some_detector"].attrs["nxclass"] == "NXdata"
     assert loaded["some_detector"].attrs["signal"] == "data"
     assert loaded["some_detector"].attrs["axes"] == ["axis1", "axis2"]
+
+
+def test_timestamps_of_data_key(RE_directly_subscribed: RunEngine, tmpdir: Path):
+    monotonic_zero = monotonic()
+    read_times = []
+
+    @NexusDevices.add_device_from_schema(
+        {
+            "$nxclass": "NXdata",
+            "$axes": ["signal1_t"],
+            "$signal": "signal1",
+            "signal1": "signal1",
+            "signal1_t": {"timestamps_of_data_key": "signal1"},
+            "signal2": "signal1",
+            "signal4_t": {"timestamps_of_data_key": "signal4"},
+        },
+        inherit=False,
+    )
+    class SomeDetector(StandardReadable):
+        def __init__(self, name: str = "") -> None:
+            super().__init__(name)
+            with self.add_children_as_readables():
+                self.signal1, self._s1 = soft_signal_r_and_setter(int)
+                self.signal2, self._s2 = soft_signal_r_and_setter(int)
+                self.signal3, self._s3 = soft_signal_r_and_setter(int)
+                self.signal4, self._s4 = soft_signal_r_and_setter(int)
+                monotonic()
+
+        async def read(self):
+            for f in (self._s1, self._s2, self._s3, self._s4):
+                f(0)  # update the value for a new timestamp
+
+            read_times.append(monotonic())
+            return await super().read()
+
+    RE_directly_subscribed(bp.count([SomeDetector(name="some_detector")], num=4))
+    loaded = load_only_generated_nexus_file(tmpdir)["entry"]["primary"]["devices"]["some_detector"]
+    assert list(loaded) == [
+        "signal1",
+        "signal1_t",
+        "signal2",
+        "signal3",
+        "signal4",
+        "signal4_t",
+    ]
+
+    assert len(loaded["signal1_t"]) == 4
+    timestamps = [float(f) for f in loaded["signal1_t"]]
+
+    assert all(timestamps[i] - timestamps[i - 1] > 0 for i in range(1, len(timestamps)))
+
+    assert np.allclose(
+        np.array(loaded["signal1_t"]), np.array(read_times) - monotonic_zero, atol=0.003, rtol=0
+    )
+    assert loaded["signal1_t"].attrs["units"] == "s"
+    assert loaded["signal4_t"].attrs["units"] == "s"

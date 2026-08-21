@@ -21,7 +21,7 @@ To define some, I'm going to create a new file `Keithely.yaml` in the same direc
 * `$nxclass` is a NeXus attribute which has to come from a constant. It's presence in a level of the schema indicates whether that level is a NeXus group. `bluesky_nexus` provides some light validation against this field using the [defined basemodels](#bluesky_nexus.nx_nexusformat_schema). If you supply an incorrect type, or a required item is missing in the supplied schema, then an error will be raised by the decorator.
 * The first four definitions simply map the data keys in the device (minus the name of the instance) to their name in the nexus schema. Since all data keys are added to the structure, it wouldn't be strictly necessary to map these if the data key name were already equal to the name in the nexus structure... This isn't always possible.
 * `data` is mapping to the `readback` data key. `readback` is given the same name as the device itself as a datakey, an so the name we use with it "" is.
-* {`timestamps_of_datakey`: ""} will give 
+* {`timestamps_of_data_key`: ""} will give 
 * The last four are constant fields for all keithley. If any subclass of this Keithley wanted to override them, then they could in their own schema.
 
 ```{include} ../_static/examples/example_keithely_2_device.py

@@ -23,7 +23,7 @@ class NxBaseLeaf(BaseModel, ABC):
     """
 
     data_key: str | None = None
-    timestamps_of_datakey: str | None = None
+    timestamps_of_data_key: str | None = None
     hints_key: list[str] | str | None = None
     constant: Any = None
 
@@ -36,12 +36,12 @@ class NxBaseLeaf(BaseModel, ABC):
             data_key = values.get("data_key")
             hints_key = values.get("hints_key")
             constant = values.get("constant")
-            data_key_timestamps = values.get("timestamps_of_datakey")
+            data_key_timestamps = values.get("timestamps_of_data_key")
         else:
             data_key = getattr(values, "data_key", None)
             hints_key = getattr(values, "hints_key", None)
             constant = getattr(values, "constant", None)
-            data_key_timestamps = getattr(values, "data_key", None)
+            data_key_timestamps = getattr(values, "timestamps_of_data_key", None)
 
         provided_count = len(
             [v for v in (data_key, hints_key, constant, data_key_timestamps) if v is not None]
