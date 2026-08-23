@@ -12,6 +12,9 @@ from fastapi import FastAPI
 
 from bluesky_nexus.logger import LOGGER
 
+# TODO: Move health check out of this package and into a new package in
+# bessyii/bluesky/callbacks which subclasses `bluesky_nexus.NexusHdfWriterCallback`.
+
 
 class HealthManager:
     """Monitor ZMQ health and expose a `/health` endpoint.

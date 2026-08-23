@@ -13,13 +13,13 @@ from ophyd_async.sim import SimPointDetector
 from pydantic import ValidationError
 
 from bluesky_nexus import NexusDevices
-from bluesky_nexus.nx_nexusformat_schema import NxSubEntry
-from bluesky_nexus.nx_schema import (
+from bluesky_nexus.base_schema import (
     NxAttribute,
     NxField,
     NxGroup,
     add_nx_class_basemodel,
 )
+from bluesky_nexus.nexusformat_schema import NxSubEntry
 
 
 @pytest.mark.parametrize(

@@ -1,4 +1,4 @@
-"""Command-line interface for the ``bluesky_nexus`` writer service.
+"""Command-line interface for the ``bluesky_nexus`` hdf writer service.
 
 The CLI writes NeXus files from Bluesky documents using one of two backends:
 
@@ -33,6 +33,7 @@ from bluesky_nexus.logger import LOGGER, setup_logging
 
 from .dispatchers.health import HealthManager
 
+# TODO: Remove health.
 DEFAULT_HEALTH_HOST = "127.0.0.1"
 DEFAULT_HEALTH_PORT = 8080
 DEFAULT_HEALTH_INTERVAL = 10.0

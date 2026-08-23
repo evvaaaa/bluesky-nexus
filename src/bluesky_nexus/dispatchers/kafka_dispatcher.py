@@ -1,6 +1,6 @@
 """Kafka-based RemoteDispatcher service for Bluesky NeXus writing.
 
-This module implements the Kafka backend for the ``bluesky_nexus_writer`` service.
+This module implements the Kafka backend for the ``bluesky_nexus.NexusHdfWriterCallback`` service.
 It consumes Bluesky documents from a ZeroMQ publisher and forwards them to
 :class:`NexusWriter`, which produces NeXus-compatible HDF5 files.
 """
@@ -36,7 +36,7 @@ def run_kafka_dispatcher(
     except Exception as exception:
         raise RuntimeError(
             "Could not import the kafka `RemoteDispatcher` from bluesky-kafka. "
-            "Did you install `bluesky-nexus-callback[kafka]`?"
+            "Did you install `bluesky-nexus[kafka]`?"
         ) from exception
 
     writer = NexusHdfWriterCallback(root_output_directory)
