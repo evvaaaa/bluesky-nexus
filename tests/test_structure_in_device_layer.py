@@ -17,6 +17,7 @@ from bluesky_nexus.base_schema import (
     NxAttribute,
     NxField,
     NxGroup,
+    NxInternalLink,
     add_nx_class_basemodel,
 )
 from bluesky_nexus.nexusformat_schema import NxSubEntry
@@ -221,6 +222,8 @@ def test_serialization_deserialization() -> None:
         datakey_attribute: NxAttribute
         hints_attribute: NxAttribute
         field_shorthand: NxField
+        link: NxInternalLink
+        link_shorthand: NxInternalLink
         field: NxField
         SUB_GROUP_NOT_REQUIRED: NxTestGroup | None = None
 
@@ -235,6 +238,8 @@ def test_serialization_deserialization() -> None:
             "data_key": "some_field_datakey",
             "$some_field_attribute": "some_field_attribute",
         },
+        "&link_shorthand": ["field_shorthand"],
+        "&link": {"link": ["field"]},
     }
     test_nx_group_fields.update({"SUB_GROUP_NOT_REQUIRED": test_nx_group_fields.copy()})
 
@@ -263,6 +268,8 @@ def test_serialization_deserialization() -> None:
             data_key="some_field_datakey",
             some_field_attribute=NxAttribute(constant="some_field_attribute"),  # type: ignore
         )
+        assert group.link == NxInternalLink(link=["field"])
+        assert group.link_shorthand == NxInternalLink(link=["field_shorthand"])
 
     assert nx_group_from_base.model_dump() == {
         "$constant_attribute": "some_constant",
@@ -274,6 +281,8 @@ def test_serialization_deserialization() -> None:
             "hints_key": ["some", "hints", "key"],
         },
         "$nxclass": "NXtestgroup",
+        "&link": ["field"],
+        "&link_shorthand": ["field_shorthand"],
         "SUB_GROUP_NOT_REQUIRED": {
             "$constant_attribute": "some_constant",
             "$constant_attribute_shorthand": "some_constant_shorthand",
@@ -284,6 +293,8 @@ def test_serialization_deserialization() -> None:
                 "hints_key": ["some", "hints", "key"],
             },
             "$nxclass": "NXtestgroup",
+            "&link": ["field"],
+            "&link_shorthand": ["field_shorthand"],
             # This has not been included.
             # "SUB_GROUP_NOT_REQUIRED": None,
             "field": {

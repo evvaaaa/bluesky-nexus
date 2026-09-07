@@ -34,6 +34,11 @@ from ._nx_attribute import (
 from ._nx_base import NxBase
 from ._nx_base_leaf import NxBaseLeaf
 from ._nx_field import NxField
+from ._nx_link import (
+    NX_LINK_SERIALIZED_PREFIX,
+    NxInternalLink,
+    prepend_serialized_prefix_to_nx_internal_links,
+)
 
 T = TypeVar("T", bound="NxGroup")
 
@@ -117,30 +122,34 @@ class NxGroup(NxBase, ABC):
         """
         shortened = {}
         for key, value in self:
-            key = prepend_serialized_prefix_to_nx_attributes(key, value)
-            match value:
-                case NxAttribute(
+            match key, value:
+                case _, NxAttribute(
                     constant=constant_value,
                     data_key=None,
                     hints_key=None,
                     timestamps_of_data_key=None,
                 ):
+                    key = prepend_serialized_prefix_to_nx_attributes(key, value)
                     shortened[key] = constant_value
-                case NxField(
+                case _, NxAttribute():
+                    shortened[prepend_serialized_prefix_to_nx_attributes(key, value)] = value
+                case _, NxInternalLink(link=link):
+                    key = prepend_serialized_prefix_to_nx_internal_links(key, value)
+                    shortened[key] = link
+                case _, NxField(
                     data_key=data_key, constant=None, hints_key=None, timestamps_of_data_key=None
                 ) if value.nx_attributes() == {}:
                     # Shorten a datakey if there aren't additional attributes
                     # to the NxField.
                     shortened[key] = data_key
-                case None:
+                case _, None:
                     # None is only ever used as the default for an optional key across all
                     # the schema. We don't need to serialize and dump this key.
                     continue
+                case "instantiated_inside_group", _:
+                    continue
                 case _:
-                    if isinstance(value, NxGroup):
-                        shortened[key] = value
-                    else:
-                        shortened[key] = value
+                    shortened[key] = value
 
         # Manually add the computed field. Pydantic doesn't seem to support `computed_field`
         # with deserialized without manually adding it.
@@ -193,6 +202,41 @@ class NxGroup(NxBase, ABC):
         validated = handler(values)
         return validated
 
+    # TODO:
+    # For review -
+    # It would be nice to have something like this, where we can see whether links point to
+    # defined fields ahead of time. It's very hard to do without creating a global cache of
+    # which instance is the parent, for all of the contained NxInternalLinks to reference from.
+    # For now we leave this out and force implementations of nexus classes to check themselves.
+    # @model_validator(mode="after")
+    # def _check_nx_links_reference_real_fields_and_subgroups(self) -> Self:
+    #     """Check the initialized `NxInternalLink`s point to elements defined on the device."""
+    #
+    #     if self.instantiated_inside_group:
+    #         # Subgroups can't perform this check since NxInternalLink references
+    #         # are relative to the device's top level NxGroup
+    #         return self
+    #
+    #     for name, value in self.all_nx_internal_links().items():
+    #         attribute = _deep_getattr(self, *value.link)
+    #         if attribute is None:
+    #             pretty_key_value = pformat({name: value})
+    #             raise TypeError(
+    #                 "Malformed link specified, the link does not map "
+    #                 f"to a defined field in the schema:\n"
+    #                 f"{pretty_key_value}"
+    #             )
+    #
+    #         elif not isinstance(attribute, NxGroup | NxField):
+    #             pretty_key_value = pformat({name: value})
+    #             raise TypeError(
+    #                 "Malformed link specified, the link does not map "
+    #                 f"to an NxField or NxGroup, instead :\n"
+    #                 f"{pretty_key_value}"
+    #             )
+    #
+    #     return self
+
     def nx_attributes(self) -> dict[str, NxAttribute]:
         """Gives a dict of the nx attributes defined on this group."""
         attributes = NxBase.nx_attributes(self)
@@ -210,6 +254,17 @@ class NxGroup(NxBase, ABC):
         for sub_group in self.sub_nx_groups().values():
             fields.update(sub_group.all_nx_fields())
         return fields
+
+    def nx_internal_links(self) -> dict[str, NxInternalLink]:
+        """Gives internal links defined on the group."""
+        return {k: v for k, v in self if isinstance(v, NxInternalLink)}
+
+    def all_nx_internal_links(self) -> dict[str, NxInternalLink]:
+        """Gives all internal links defined on the group and sub groups."""
+        links = self.nx_internal_links()
+        for sub_group in self.sub_nx_groups().values():
+            links.update(sub_group.all_nx_internal_links())
+        return links
 
     def nx_fields(self) -> dict[str, NxField]:
         """Gives all `NxField` instances in the group (not subgroups)."""
@@ -236,6 +291,10 @@ class NxGroup(NxBase, ABC):
         attributes_to_initialize = {}
         fields_to_initialize = {}
 
+        # Links are not designed to be subclassed, but we initialize them later
+        # so we can verify that they link valid fields/subgroups.
+        links_to_initialize = {}
+
         for key, value in values.items():
             match (key, value):
                 case (key, value) if isinstance(value, NxBase | NxBaseLeaf):
@@ -250,12 +309,25 @@ class NxGroup(NxBase, ABC):
                     attributes_to_initialize[key] = (
                         value if isinstance(value, dict) else {"constant": value}
                     )
+                # A link is specified:
+                # e.g {
+                #   $nxclass: NXobject,
+                #   some_field: some-dkey,
+                #   sub_group: {$nxclass: NXobject, &some_link: ["some_field"]}
+                # }
+                case (key, value) if isinstance(key, str) and key.startswith(
+                    NX_LINK_SERIALIZED_PREFIX,
+                ):
+                    key = key.removeprefix(NX_LINK_SERIALIZED_PREFIX)  # deserialized key
+                    links_to_initialize[key] = (
+                        value if isinstance(value, dict) else {"link": value}
+                    )
 
                 # A subgroup is specified:
                 # e.g {$nxclass: NXobject, SUB_GROUP: {$nxclass: NXobject, ...}}
                 case (key, value) if isinstance(value, dict) and "$nxclass" in value:
                     subgroup_cls = _nx_class_from_serialized_subgroup(value, NxGroup)
-                    kwargs[key] = subgroup_cls(**value)
+                    kwargs[key] = subgroup_cls(**value)  # type: ignore
 
                 # A field is specified:
                 # e.g {some_alias: {data_key: some_data_key, $long_name: "Longish name"}}
@@ -296,6 +368,9 @@ class NxGroup(NxBase, ABC):
                 kwargs[key] = value
             else:
                 kwargs[key] = NxAttribute(**value)
+
+        for key, value in links_to_initialize.items():
+            kwargs[key] = NxInternalLink(**value)
 
         return kwargs
 

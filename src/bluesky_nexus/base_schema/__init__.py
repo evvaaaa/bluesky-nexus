@@ -19,6 +19,7 @@ in future.
 from ._nx_attribute import NX_ATTRIBUTE_SERIALIZED_PREFIX, NxAttribute, NxConstantAttribute
 from ._nx_field import NxField
 from ._nx_group import NxGroup, add_nx_class_basemodel
+from ._nx_link import NxInternalLink
 
 __all__ = [
     "NX_ATTRIBUTE_SERIALIZED_PREFIX",
@@ -27,4 +28,5 @@ __all__ = [
     "NxField",
     "NxGroup",
     "add_nx_class_basemodel",
+    "NxInternalLink",
 ]

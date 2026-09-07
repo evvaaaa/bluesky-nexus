@@ -90,6 +90,27 @@ def _dict_recursive_get(dictionary: dict, *keys: str) -> Any:
     return value
 
 
+def _nx_group_recursive_get(
+    nx_group: nexus.NXgroup, *keys: str
+) -> nexus.NXgroup | nexus.NXfield | None:
+    """Recursively get from an NXgroup, e.g
+    ``_nx_group_recursive_get(group, "some", "key", "here")``
+    is equivalent to
+    ``nx_group["some"]["key"]["here"]``
+    if any index isn't present, instead of indexing further, `None` will be
+    returned.
+    """
+    key, *remaining_keys = keys
+    if key not in nx_group:
+        return None
+
+    value = nx_group[key]
+    if isinstance(value, nexus.NXgroup) and remaining_keys:
+        return _nx_group_recursive_get(value, *remaining_keys)
+
+    return value
+
+
 def _leaf_value(attribute_or_field: NxBaseLeaf, object_data: ObjectData) -> nexus.NXfield:
     """Get the value of the leaf data from the bluesky event data, the hints field
     of the stream, or the constant on the ``NxBaseLeaf``, return it as an ``nexus.NXfield``."""
@@ -186,13 +207,11 @@ def _new_nx_group(
     run_start_time: float,
 ) -> nexus.NXgroup:
     """Writes the bluesky object into a NeXus group and returns it."""
-    # Use the nexusformat class directly if it exists.
-    group_initializer = getattr(nexus, group_schema.nxclass.constant, nexus.NXgroup)
-
-    group = group_initializer()
-    # nexusformat is wieeerd. If you explicitely make an `nexus.NXsomedevice`
-    # then it doesn't seem to make the attribute correctly. This borderline seems
-    # like a bug.
+    # We would like to use the nexus class directly, e.g nexus.NXdata...
+    # This has some very strange errors.
+    # e.g nexus.NXobject not allowing item assignment, or errors in creating an
+    # NXlink with nexus.NXsubentry.
+    group = getattr(nexus, group_schema.nxclass.constant, nexus.NXgroup)()
     group.attrs["nxclass"] = nexus.NXfield(group_schema.nxclass.constant)
 
     # Add the specified attributes of the group.
@@ -325,6 +344,10 @@ def add_stream_data_to_group(
             # logic on the writer side.
             devices_group[sanitize_datakey_for_nexus(object_name)] = device_group
 
+            # Add the internal links to the device. Required to do so after
+            # the above so that the full path can be resolved.
+            _add_internal_links(device_group, object_data.nx_schema)
+
         elif isinstance(object_data.nx_schema, NxField):
             # It has a single nx_field, no group...
             if object_data.nx_schema.data_key not in object_data.formatted_data_key_name_to_data:
@@ -343,6 +366,37 @@ def add_stream_data_to_group(
                     name=object_name,
                 )
             )
+
+
+def _add_internal_links(
+    group: nexus.NXgroup, schema: NxGroup, device_root: nexus.NXgroup | None = None
+) -> None:
+    """Adds nexus NXlinks for NxInternalLinks in the device."""
+
+    device_root = device_root or group
+
+    for name, nx_internal_link in schema.nx_internal_links().items():
+        referenced = _nx_group_recursive_get(device_root, *nx_internal_link.link)
+        if referenced is None:
+            LOGGER.warning(
+                f"Link in schema {nx_internal_link} could not be added as it "
+                "references a group/field not present in the final nexus structure."
+            )
+            continue
+        if isinstance(referenced, nexus.NXlog):
+            group[name] = nexus.NXlinkfield(target=referenced["value"], soft=False, name=name)
+        elif isinstance(referenced, nexus.NXfield | nexus.NXgroup):
+            group[name] = nexus.NXlinkfield(target=referenced, soft=False, name=name)
+        else:
+            LOGGER.warning(
+                f"Skipping device link {nx_internal_link} as it references "
+                f"{referenced} which isn't an NXgroup or NXfield."
+            )
+            continue
+
+    for sub_group_name, sub_group_schema in schema.sub_nx_groups().items():
+        if sub_group_name in group:
+            _add_internal_links(group[sub_group_name], sub_group_schema, device_root=device_root)
 
 
 def create_nexus_structure(run_data: RunData) -> nexus.NXroot:
@@ -385,15 +439,18 @@ def create_nexus_structure(run_data: RunData) -> nexus.NXroot:
             )
             continue
         try:
-            new_stream_group = nexus.NXgroup(nxclass="NXcollection")
+            new_stream_group = nexus.NXgroup(name=stream_name, nxclass="NXcollection")
+            entry[stream_name] = new_stream_group
             add_stream_data_to_group(new_stream_group, stream_data, run_data.run_start["time"])
         except Exception as _:
             LOGGER.warning(
                 f"Failed to write stream {stream_name}, will try with the others...",
                 exc_info=True,
             )
-        else:
-            entry[stream_name] = new_stream_group
+            # We delete here, instead of allocating if the exception isn't raised
+            # so that nexusformat can work out the NXlinks.
+            if stream_name in entry:
+                del entry[stream_name]
 
     LOGGER.info(f"Parsed nexus structure from run in {time.perf_counter() - start_time}s.")
     return root
