@@ -111,7 +111,7 @@ class NxData(NxObject):
 
         unlinked_axes = []
         for axis_field_link_name in [f"&{name}" for name in serialized["$axes"]]:
-            # Index 0 for the name of the NxLog globally.
+            # Index 0 since the signal is at the top level.
             unlinked_axes.append(serialized[axis_field_link_name][0])
             del serialized[axis_field_link_name]
         serialized["$axes"] = unlinked_axes

@@ -195,6 +195,19 @@ def test_nx_data_multi_dimensional(RE_directly_subscribed: RunEngine, tmpdir: Pa
             ValidationError,
             "signal.data_key\n  Input should be None",
         ),
+        (
+            {
+                "$nxclass": "NXdata",
+                "$signal": "some_signal",
+                "some_signal": "some_data_key",
+                "$axes": ["axis_signal_0"],
+                "axis_signal_0": "some_axis_data_key",
+                "axis0_link": "signal",
+            },
+            TypeError,
+            "Found field `axis0_link` inside `NxData`. This field is reserved by bluesky-nexus "
+            "to allow NxData to reference `NxLog`.",
+        ),
     ],
 )
 def test_nx_data_incorrect_specification(

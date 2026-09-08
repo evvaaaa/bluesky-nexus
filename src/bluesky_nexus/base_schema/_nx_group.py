@@ -122,8 +122,8 @@ class NxGroup(NxBase, ABC):
         """
         shortened = {}
         for key, value in self:
-            match key, value:
-                case _, NxAttribute(
+            match value:
+                case NxAttribute(
                     constant=constant_value,
                     data_key=None,
                     hints_key=None,
@@ -131,22 +131,20 @@ class NxGroup(NxBase, ABC):
                 ):
                     key = prepend_serialized_prefix_to_nx_attributes(key, value)
                     shortened[key] = constant_value
-                case _, NxAttribute():
+                case NxAttribute():
                     shortened[prepend_serialized_prefix_to_nx_attributes(key, value)] = value
-                case _, NxInternalLink(link=link):
+                case NxInternalLink(link=link):
                     key = prepend_serialized_prefix_to_nx_internal_links(key, value)
                     shortened[key] = link
-                case _, NxField(
+                case NxField(
                     data_key=data_key, constant=None, hints_key=None, timestamps_of_data_key=None
                 ) if value.nx_attributes() == {}:
                     # Shorten a datakey if there aren't additional attributes
                     # to the NxField.
                     shortened[key] = data_key
-                case _, None:
+                case None:
                     # None is only ever used as the default for an optional key across all
                     # the schema. We don't need to serialize and dump this key.
-                    continue
-                case "instantiated_inside_group", _:
                     continue
                 case _:
                     shortened[key] = value
