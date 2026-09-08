@@ -1,8 +1,8 @@
 """Contains the definition for NXdata."""
 
-from typing import Self
+from typing import Any, Self
 
-from pydantic import model_validator
+from pydantic import model_serializer, model_validator
 
 from bluesky_nexus.base_schema import (
     NxAttribute,
@@ -10,6 +10,8 @@ from bluesky_nexus.base_schema import (
     NxField,
     add_nx_class_basemodel,
 )
+from bluesky_nexus.base_schema._nx_group import NxGroup
+from bluesky_nexus.base_schema._nx_link import NxInternalLink
 
 from .nx_object import NxObject
 
@@ -48,35 +50,74 @@ class NxData(NxObject):
     title: NxAttribute | None = None
     """Title for the plot."""
 
+    @model_validator(mode="before")
+    @classmethod
+    def _prevent_scalar_string_axes(cls, value: dict) -> dict[str, Any]:
+        """Stops e.g axes="axis1" -> axes=["a", "x", "i", "s", "1"]"""
+        if (
+            "axes" in value
+            and "constant" in value["axes"]
+            and isinstance(value["axes"]["constant"], str)
+        ):
+            pretty_key_value = {"axes": value["axes"]}
+            raise TypeError(
+                f"Received single string {pretty_key_value}, this should be an iterable of string."
+            )
+        return value
+
     @model_validator(mode="after")
-    def _check_data_and_axes_present(self) -> Self:
-        signal = self.signal.constant
-        axes = self.axes.constant
+    def _create_nx_links_into_signals(self) -> Self:
+        """Creates `NxInternalLink`'s into signals to allow `NxLog` fields
+        to be referenced"""
 
-        signal_field = getattr(self, signal, None)
-        if signal_field is None:
-            raise ValueError(
-                f"Specified a signal {signal} as the NxData signal attribute "
-                f"but no signal field of this name was provided."
+        if not hasattr(self, self.signal.constant) or not isinstance(
+            getattr(self, self.signal.constant), NxField
+        ):
+            raise TypeError(
+                f"Referenced signal `{self.signal.constant}` is not an NxField inside `NxData`."
             )
 
-        if not isinstance(signal_field, NxField):
-            raise ValueError(
-                f"NxData signal attribute {signal}: {signal_field} exists "
-                "but it is not of type NxField."
+        signal_link = NxInternalLink(link=[self.signal.constant])
+        if hasattr(self, "signal_link") and self.signal_link != signal_link:  # type: ignore
+            raise TypeError(
+                "Found field `signal_link` inside `NxData`. This field is reserved by "
+                "bluesky-nexus to allow NxData to reference `NxLog`."
             )
+        self.signal_link = signal_link
+        # Change the signal reference attribute to point towards the new link.
+        self.signal.constant = "signal_link"
 
-        for axis in axes:
-            axis_field = getattr(self, axis, None)
-            if axis_field is None:
-                raise ValueError(
-                    f"Specified an axis {axis} in the NxData axes attribute "
-                    f"but no axis field of this name was provided."
+        for axis_index, axis_name in enumerate(self.axes.constant):
+            if not hasattr(self, axis_name) or not isinstance(getattr(self, axis_name), NxField):
+                raise TypeError(
+                    f"Referenced axis `{axis_name}` is not an NxField inside `NxData`."
                 )
-            if not isinstance(axis_field, NxField):
-                raise ValueError(
-                    f"NxData axis attribute {axis}: {axis_field} exists "
-                    "but it is not of type NxField."
+            axis_link_name = f"axis{axis_index}_link"
+            axis_link = NxInternalLink(link=[axis_name])
+            if hasattr(self, axis_link_name) and getattr(self, axis_link_name) != axis_link:
+                raise TypeError(
+                    f"Found field `{axis_link_name}` inside `NxData`. This field is reserved by "
+                    "bluesky-nexus to allow NxData to reference `NxLog`."
                 )
+            setattr(self, axis_link_name, axis_link)
+            # Change the axes reference attribute to point towards the new link
+            self.axes.constant[axis_index] = axis_link_name
 
         return self
+
+    @model_serializer()
+    def _remove_signal_and_axes_nx_links(self) -> dict[str, Any]:
+        serialized = NxGroup._use_shorthand_and_add_at_key_to_attributes(self)
+
+        unlinked_axes = []
+        for axis_field_link_name in [f"&{name}" for name in serialized["$axes"]]:
+            # Index 0 for the name of the NxLog globally.
+            unlinked_axes.append(serialized[axis_field_link_name][0])
+            del serialized[axis_field_link_name]
+        serialized["$axes"] = unlinked_axes
+
+        signal_field_link_name = serialized["$signal"]
+        serialized["$signal"] = serialized[f"&{signal_field_link_name}"][0]
+        del serialized[f"&{signal_field_link_name}"]
+
+        return serialized

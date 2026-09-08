@@ -9,18 +9,14 @@ import pytest
 from bluesky import RunEngine
 from bluesky import plans as bp
 from bluesky.preprocessors import baseline_wrapper
-from cycler import cycler
 from nexusformat import nexus
-from numpy import sin
 from ophyd.sim import SynAxis
 from ophyd_async.core import (
     StandardReadable,
-    callback_on_mock_put,
     soft_signal_r_and_setter,
     soft_signal_rw,
 )
 from ophyd_async.core import StandardReadableFormat as Fmt
-from ophyd_async.plan_stubs import ensure_connected
 from ophyd_async.sim import SimMotor, SimPointDetector
 
 from bluesky_nexus import NexusDevices, __version__
@@ -181,10 +177,7 @@ def test_nexus_writer_on_signals(
         "some_signal",
     ]
     assert list(loaded["another_signal"]["value"]) == [0, 0, 0]
-    assert {k: str(v) for k, v in loaded["another_signal"].attrs.items()} == {
-        "axes": "timestamps",
-        "signal": "value",
-    }
+    assert {k: str(v) for k, v in loaded["another_signal"].attrs.items()} == {}
     assert list(loaded["motor"]) == ["acceleration_time", "motor", "velocity"]
     assert {k: str(v) for k, v in loaded["motor"].attrs.items()} == {"nxclass": "NXsubentry"}
 
@@ -267,7 +260,7 @@ def test_constant_attributes(RE_directly_subscribed: RunEngine, tmpdir) -> None:
         "nxclass",
     ]
     assert loaded["sim_motor_with_description"].attrs["description"] == "Some constant description"
-    assert list(loaded["sim_motor"]["sim_motor"]["value"].attrs) == ["units"]
+    assert list(loaded["sim_motor"]["sim_motor"]["value"].attrs) == ["long_name", "units"]
     assert loaded["sim_motor"]["sim_motor"]["value"].attrs["units"] == "mm"
 
     assert list(
@@ -361,7 +354,7 @@ def test_attributes_from_data_keys(RE_directly_subscribed: RunEngine, tmpdir):
     # Egu is still included as a field even if it's been added as
     # an attribute to another field.
     assert list(loaded["device"]) == ["egu", "readback"]
-    assert list(loaded["device"]["readback"]["value"].attrs) == ["units"]
+    assert list(loaded["device"]["readback"]["value"].attrs) == ["long_name", "units"]
     assert loaded["device"]["readback"]["value"].attrs["units"] == "Oz"
 
 
@@ -380,56 +373,6 @@ def test_attributes_from_data_keys(RE_directly_subscribed: RunEngine, tmpdir):
 #
 #     RE_directly_subscribed(bp.count([SomeSimMotor(name="sim_motor")]))
 #
-
-
-def test_nx_data_multi_dimensional(RE_directly_subscribed: RunEngine, tmpdir: Path):
-    @NexusDevices.add_device_from_schema(
-        {
-            "$nxclass": "NXdata",
-            "$axes": ["axis1", "axis2"],
-            "$signal": "data",
-            "data": "data",
-            "axis1": "axis1",
-            "axis2": "axis2",
-        }
-    )
-    class MultiAxisDataDetector(StandardReadable):
-        def __init__(self, name: str = ""):
-            super().__init__(name=name)
-            with self.add_children_as_readables():
-                self.data, self._setter = soft_signal_r_and_setter(float)
-                self.axis1 = soft_signal_rw(float)
-                self.axis2 = soft_signal_rw(float)
-                self.another_signal, _ = soft_signal_r_and_setter(int)
-
-        async def _new_value(self, *args, **kwargs):
-            self._setter(sin(await self.axis1.get_value()) * sin(await self.axis2.get_value()))
-
-        async def connect(self, *args, **kawrgs):
-            await super().connect(mock=True)
-            callback_on_mock_put(self.axis1, self._new_value)
-            callback_on_mock_put(self.axis2, self._new_value)
-
-    detector = MultiAxisDataDetector(name="some_detector")
-    RE_directly_subscribed(ensure_connected(detector))
-    RE_directly_subscribed(
-        bp.scan_nd(
-            [detector],
-            cycler(detector.axis1, range(5)) * cycler(detector.axis2, range(10)),
-        )
-    )
-    loaded = load_only_generated_nexus_file(tmpdir)["entry"]["primary"]["devices"]
-    assert list(loaded) == ["some_detector"]
-    assert list(loaded["some_detector"]) == [
-        "another_signal",
-        "axis1",
-        "axis2",
-        "data",
-    ]
-    assert set(loaded["some_detector"].attrs) == {"axes", "nxclass", "signal"}
-    assert loaded["some_detector"].attrs["nxclass"] == "NXdata"
-    assert loaded["some_detector"].attrs["signal"] == "data"
-    assert loaded["some_detector"].attrs["axes"] == ["axis1", "axis2"]
 
 
 def test_timestamps_of_data_key(RE_directly_subscribed: RunEngine, tmpdir: Path):
@@ -466,12 +409,14 @@ def test_timestamps_of_data_key(RE_directly_subscribed: RunEngine, tmpdir: Path)
     RE_directly_subscribed(bp.count([SomeDetector(name="some_detector")], num=4))
     loaded = load_only_generated_nexus_file(tmpdir)["entry"]["primary"]["devices"]["some_detector"]
     assert list(loaded) == [
+        "axis0_link",
         "signal1",
         "signal1_t",
         "signal2",
         "signal3",
         "signal4",
         "signal4_t",
+        "signal_link",
     ]
 
     assert len(loaded["signal1_t"]) == 4

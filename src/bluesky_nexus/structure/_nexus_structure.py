@@ -19,7 +19,6 @@ from bluesky_nexus.base_schema import (
 )
 from bluesky_nexus.base_schema._nx_base_leaf import NxBaseLeaf
 from bluesky_nexus.logger import LOGGER
-from bluesky_nexus.nexusformat_schema import NxData
 
 from ._data_extractor import (
     DataKeyData,
@@ -73,9 +72,9 @@ def add_json_serializable_dict_to_nx_group(
             # Numpy can't handle non-homogenous shapes for arrays,
             # which means nexus can't either. If we come accross one then we just
             # convert to string.
-            group[key] = nexus.NXfield(value=str(value))
+            group[key] = nexus.NXfield(value=str(value), name=key)
         else:  # This data is can be transformed into a numpy array.
-            group[key] = nexus.NXfield(value=value)
+            group[key] = nexus.NXfield(value=value, name=key)
 
 
 def _dict_recursive_get(dictionary: dict, *keys: str) -> Any:
@@ -141,7 +140,6 @@ class _NewFieldType(Enum):
     NX_LOG_WITH_TIMESTAMPS = "NX_LOG_WITH_TIMESTAMPS"
     VALUE_ONLY = "VALUE_ONLY"
     TIMESTAMPS_ONLY = "TIMESTAMPS_ONLY"
-    NX_DATA_WITH_TIMESTAMPS = "NX_DATA_WITH_TIMESTAMPS"
 
 
 def _new_nx_field_from_data_key_data(
@@ -150,7 +148,7 @@ def _new_nx_field_from_data_key_data(
     object_data: ObjectData,
     field_type: _NewFieldType,
     run_start_time: float,
-    name: str = "unknown",
+    name: str,
 ) -> nexus.NXlog | nexus.NXfield | nexus.NXdata:
     """Method for getting a new NeXus field.
 
@@ -182,20 +180,22 @@ def _new_nx_field_from_data_key_data(
     if "units" not in attrs and data_key_data.units:
         attrs["units"] = data_key_data.units
 
-    # NXlog and NXdata are numerical so if the value is a string we give it
+    # If long name is not defined, make it equal to the name...
+    # this allows for plots of NXlog to use the signal name instead
+    # of "value", and NXdata to have correct signal names in plots
+    # using links.
+    if "long_name" not in attrs:
+        attrs["long_name"] = name
+
+    # NXlog is numerical so if the value is a string we give it
     # without timestamps.
     if field_type is _NewFieldType.VALUE_ONLY:
         return nexus.NXfield(value=data_key_data.data, name=name, attrs=attrs)
 
-    # It needs a name "value" for NXlog and NXdata.
-    data_field = nexus.NXfield(value=data_key_data.data, name="value", attrs=attrs)
+    new_group = nexus.NXlog(name=name)
+    new_group["time"] = timestamps_field
 
-    if field_type is _NewFieldType.NX_LOG_WITH_TIMESTAMPS:
-        new_group = nexus.NXlog()
-        new_group["time"] = timestamps_field
-        new_group["value"] = nexus.NXfield(value=data_key_data.data, name="value", attrs=attrs)
-    else:
-        new_group = nexus.NXdata(signal=data_field, axes=(timestamps_field,))
+    new_group["value"] = nexus.NXfield(value=data_key_data.data, name="value", attrs=attrs)
 
     return new_group
 
@@ -242,28 +242,19 @@ def _new_nx_group(
 
         data_key_data = object_data.formatted_data_key_name_to_data[data_key_name]
 
-        if (
-            write_value_option is not _NewFieldType.TIMESTAMPS_ONLY
-            and isinstance(group_schema, NxData)
-            and nx_alias in group_schema.axes.constant + [group_schema.signal.constant]
-        ):
-            # Contrary to what the documentation would imply, both nexpy,
-            # and silx dont accept only nxlog "value" when it counts,
-            # e.g plotting an NXdata.
-            # TODO: More consideration is needed here. This is a cheap exception,
-            # and we won't be able to import nexusformat's NXDATA implementation if this
-            # is generatlized.
-            write_value_option = _NewFieldType.VALUE_ONLY
-
         if data_key_data.dtype == "string":
             # NxLog is only applicable for numerical datatypes.
             # TODO: Think about this more.
             write_value_option = _NewFieldType.VALUE_ONLY
 
-        group[nx_alias or sanitize_datakey_for_nexus(object_name)] = (
-            _new_nx_field_from_data_key_data(
-                nx_field_schema, data_key_data, object_data, write_value_option, run_start_time
-            )
+        field_name = nx_alias or sanitize_datakey_for_nexus(object_name)
+        group[field_name] = _new_nx_field_from_data_key_data(
+            nx_field_schema,
+            data_key_data,
+            object_data,
+            write_value_option,
+            run_start_time,
+            field_name,
         )
 
     for (
@@ -350,21 +341,25 @@ def add_stream_data_to_group(
 
         elif isinstance(object_data.nx_schema, NxField):
             # It has a single nx_field, no group...
-            if object_data.nx_schema.data_key not in object_data.formatted_data_key_name_to_data:
+            data_key = object_data.formatted_data_key_name_to_data.get(
+                cast(str, object_data.nx_schema.data_key)
+            )
+            if data_key is None:
                 LOGGER.warning(
                     f"Datakey `{object_data.nx_schema.data_key}` in schema not "
                     "accounted for in an event stream captured... Skipping it."
                 )
                 continue
-            devices_group[sanitize_datakey_for_nexus(object_name)] = (
-                _new_nx_field_from_data_key_data(
-                    object_data.nx_schema,
-                    object_data.formatted_data_key_name_to_data[object_data.nx_schema.data_key],
-                    object_data,
-                    _NewFieldType.NX_DATA_WITH_TIMESTAMPS,
-                    run_start_time,
-                    name=object_name,
-                )
+            device_name = sanitize_datakey_for_nexus(object_name)
+            devices_group[device_name] = _new_nx_field_from_data_key_data(
+                object_data.nx_schema,
+                data_key,
+                object_data,
+                _NewFieldType.VALUE_ONLY
+                if data_key.dtype == "string"
+                else _NewFieldType.NX_LOG_WITH_TIMESTAMPS,
+                run_start_time,
+                device_name,
             )
 
 
@@ -383,10 +378,15 @@ def _add_internal_links(
                 "references a group/field not present in the final nexus structure."
             )
             continue
+
         if isinstance(referenced, nexus.NXlog):
-            group[name] = nexus.NXlinkfield(target=referenced["value"], soft=False, name=name)
-        elif isinstance(referenced, nexus.NXfield | nexus.NXgroup):
-            group[name] = nexus.NXlinkfield(target=referenced, soft=False, name=name)
+            referenced = referenced["value"]
+
+        if isinstance(referenced, nexus.NXfield | nexus.NXgroup):
+            group[name] = nexus.NXlink(
+                target=referenced,
+                soft=False,
+            )
         else:
             LOGGER.warning(
                 f"Skipping device link {nx_internal_link} as it references "
