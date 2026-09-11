@@ -1,8 +1,6 @@
 """Contains the definition for NXaperture."""
 
-from bluesky_nexus.base_schema import NxField, add_nx_class_basemodel
-
-from .nx_component import NxComponent
+from bluesky_nexus.base_schema import NxComponent, NxField, add_nx_class_basemodel
 
 
 @add_nx_class_basemodel

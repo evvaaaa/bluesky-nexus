@@ -17,7 +17,7 @@ from pydantic import (
     model_validator,
 )
 
-from ._nx_attribute import NxAttribute
+from .nx_attribute import NxAttribute
 
 T = TypeVar("T", bound="NxBase")
 

@@ -4,15 +4,14 @@ from typing import Any, Self
 
 from pydantic import model_serializer, model_validator
 
-from bluesky_nexus.base_schema import (
+from .._building_blocks import (
     NxAttribute,
     NxConstantAttribute,
     NxField,
+    NxGroup,
+    NxInternalLink,
     add_nx_class_basemodel,
 )
-from bluesky_nexus.base_schema._nx_group import NxGroup
-from bluesky_nexus.base_schema._nx_link import NxInternalLink
-
 from .nx_object import NxObject
 
 

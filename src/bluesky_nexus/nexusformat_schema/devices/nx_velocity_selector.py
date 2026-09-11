@@ -1,11 +1,10 @@
 """Contains the definition for NXvelocity_selector."""
 
 from bluesky_nexus.base_schema import (
+    NxComponent,
     NxField,
     add_nx_class_basemodel,
 )
-
-from .nx_component import NxComponent
 
 
 @add_nx_class_basemodel

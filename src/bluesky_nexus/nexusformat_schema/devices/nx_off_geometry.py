@@ -1,11 +1,6 @@
 """Contains the definition for NXoff_geometry."""
 
-from bluesky_nexus.base_schema import (
-    NxField,
-    add_nx_class_basemodel,
-)
-
-from .nx_object import NxObject
+from bluesky_nexus.base_schema import NxField, NxObject, add_nx_class_basemodel
 
 
 @add_nx_class_basemodel

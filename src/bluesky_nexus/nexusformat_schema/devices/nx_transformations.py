@@ -10,10 +10,9 @@ from bluesky_nexus.base_schema import (
     NxAttribute,
     NxConstantAttribute,
     NxField,
+    NxObject,
     add_nx_class_basemodel,
 )
-
-from .nx_object import NxObject
 
 _NxTransformationVectorIndex = Literal[0, 1, -1]
 

@@ -26,15 +26,15 @@ from pydantic import (
     model_validator,
 )
 
-from ._nx_attribute import (
+from .nx_attribute import (
     NX_ATTRIBUTE_SERIALIZED_PREFIX,
     NxAttribute,
     prepend_serialized_prefix_to_nx_attributes,
 )
-from ._nx_base import NxBase
-from ._nx_base_leaf import NxBaseLeaf
-from ._nx_field import NxField
-from ._nx_link import (
+from .nx_base import NxBase
+from .nx_base_leaf import NxBaseLeaf
+from .nx_field import NxField
+from .nx_link import (
     NX_LINK_SERIALIZED_PREFIX,
     NxInternalLink,
     prepend_serialized_prefix_to_nx_internal_links,

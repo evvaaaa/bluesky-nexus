@@ -1,6 +1,6 @@
 """Contains the definition for NXobject."""
 
-from bluesky_nexus.base_schema import (
+from .._building_blocks import (
     NxGroup,
     add_nx_class_basemodel,
 )

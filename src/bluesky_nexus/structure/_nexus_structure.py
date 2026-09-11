@@ -14,10 +14,10 @@ from nexusformat import nexus
 
 from bluesky_nexus.base_schema import (
     NX_ATTRIBUTE_SERIALIZED_PREFIX,
+    NxAttribute,
     NxField,
     NxGroup,
 )
-from bluesky_nexus.base_schema._nx_base_leaf import NxBaseLeaf
 from bluesky_nexus.logger import LOGGER
 
 from ._data_extractor import (
@@ -110,7 +110,9 @@ def _nx_group_recursive_get(
     return value
 
 
-def _leaf_value(attribute_or_field: NxBaseLeaf, object_data: ObjectData) -> nexus.NXfield:
+def _leaf_value(
+    attribute_or_field: NxAttribute | NxField, object_data: ObjectData
+) -> nexus.NXfield:
     """Get the value of the leaf data from the bluesky event data, the hints field
     of the stream, or the constant on the ``NxBaseLeaf``, return it as an ``nexus.NXfield``."""
 

@@ -4,14 +4,14 @@ from pydantic import Field
 
 from bluesky_nexus.base_schema import (
     NxAttribute,
+    NxComponent,
     NxConstantAttribute,
+    NxData,
     NxField,
+    NxTimeField,
     add_nx_class_basemodel,
 )
 
-from .nx_component import NxComponent
-from .nx_data import NxData
-from .nx_log import NxTimeField
 from .nx_note import NxNote
 
 

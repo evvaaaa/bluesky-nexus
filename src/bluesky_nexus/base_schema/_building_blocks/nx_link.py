@@ -10,10 +10,10 @@ from typing import Any
 
 from pydantic import model_serializer
 
-from ._nx_attribute import (
+from .nx_attribute import (
     prepend_serialized_prefix_to_nx_attributes,
 )
-from ._nx_base import NxBase
+from .nx_base import NxBase
 
 NX_LINK_SERIALIZED_PREFIX = "&"
 

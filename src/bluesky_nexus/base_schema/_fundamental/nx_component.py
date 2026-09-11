@@ -1,7 +1,6 @@
 """Contains the definition for NXcomponent."""
 
-from bluesky_nexus.base_schema import NxField, add_nx_class_basemodel
-
+from .._building_blocks import NxField, add_nx_class_basemodel
 from .nx_object import NxObject
 
 

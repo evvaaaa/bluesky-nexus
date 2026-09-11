@@ -1,5 +1,9 @@
 """Pydantic schema for defining connections between `HasHints` devices and
-nexusformat base classes:
+nexusformat base classes for the nexusformat schema definitions:
+
+https://github.com/nexpy/nexusformat/tree/main/src/nexusformat/definitions
+
+For documentation on the standard for these classes, see:
 
 https://manual.nexusformat.org/classes/base_classes/complete-structure.html
 
@@ -16,35 +20,27 @@ Eventually it is hoped that there will be a novel generation method to generate
 pydantic schema from NXDL.
 """
 
-from .nx_aperture import NxAperture
-from .nx_component import NxComponent
-from .nx_crystal import NxCrystal
-from .nx_data import NxData
-from .nx_detector import NxDetector
-from .nx_filter import NxFilter
-from .nx_grating import NxGrating
-from .nx_log import NxLog
-from .nx_monochromator import NxMonochromator
-from .nx_note import NxNote
-from .nx_object import NxObject
-from .nx_off_geometry import NxOff_Geometry
-from .nx_positioner import NxPositioner
-from .nx_sub_entry import NxSubEntry
-from .nx_transformations import NxTransformations
-from .nx_velocity_selector import NxVelocity_Selector
+from .devices.nx_aperture import NxAperture
+from .devices.nx_crystal import NxCrystal
+from .devices.nx_detector import NxDetector
+from .devices.nx_filter import NxFilter
+from .devices.nx_grating import NxGrating
+from .devices.nx_monochromator import NxMonochromator
+from .devices.nx_note import NxNote
+from .devices.nx_off_geometry import NxOff_Geometry
+from .devices.nx_positioner import NxPositioner
+from .devices.nx_sub_entry import NxSubEntry
+from .devices.nx_transformations import NxTransformations
+from .devices.nx_velocity_selector import NxVelocity_Selector
 
 __all__ = [
     "NxAperture",
-    "NxComponent",
     "NxCrystal",
-    "NxData",
     "NxDetector",
     "NxFilter",
     "NxGrating",
-    "NxLog",
     "NxMonochromator",
     "NxNote",
-    "NxObject",
     "NxOff_Geometry",
     "NxPositioner",
     "NxSubEntry",

@@ -21,8 +21,13 @@ from ophyd_async.plan_stubs import ensure_connected
 from pydantic import ValidationError
 
 from bluesky_nexus import NexusDevices
-from bluesky_nexus.base_schema import NxAttribute, NxConstantAttribute, NxField, NxInternalLink
-from bluesky_nexus.nexusformat_schema.nx_data import NxData
+from bluesky_nexus.base_schema import (
+    NxAttribute,
+    NxConstantAttribute,
+    NxData,
+    NxField,
+    NxInternalLink,
+)
 
 from . import load_only_generated_nexus_file
 

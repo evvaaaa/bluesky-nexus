@@ -1,25 +1,31 @@
 """Contains the bluesky nexus schema model.
 
-It's assumed any bluesky device corresponds to a subclass of `NxGroup`, containing `NxAttribute`s,
-`NxField`s (which in turn can contain attributes), and subgroups of `NxGroup`.
+There are two subpackages:
 
-Implementations of specific NXDL schema then use these base classes to define their schema
-model.
+1. `building_blocks` which contains schema definitions for building the pydantic schema,
+2. `fundamental` which contains implementations which should never be possible to be overwritten
+    by an institutions own NXDL implementation.
 
-For an example implementation of defined schema representing a set of nxdl, see
-``bluesky_nexus/nexusformat_schema``, which are schema defined for nexusformat's nxdl:
-
-https://manual.nexusformat.org/classes/base_classes/complete-structure.html
-
-nexusformat NXDL is given in with this package through ``bluesky_nexus.nexusformat_schema``.
-It is a design goal for `bluesky_nexus` to be able to load other sets of schema definitions
-in future.
 """
 
-from ._nx_attribute import NX_ATTRIBUTE_SERIALIZED_PREFIX, NxAttribute, NxConstantAttribute
-from ._nx_field import NxField
-from ._nx_group import NxGroup, add_nx_class_basemodel
-from ._nx_link import NxInternalLink
+# Building blocks, abstract classes for defining schema,
+# or implementations of what is allowed in schema attributes.
+
+from ._building_blocks.nx_attribute import (
+    NX_ATTRIBUTE_SERIALIZED_PREFIX,
+    NxAttribute,
+    NxConstantAttribute,
+)
+from ._building_blocks.nx_field import NxField
+from ._building_blocks.nx_group import NX_CLASS_TO_BASEMODEL, NxGroup, add_nx_class_basemodel
+from ._building_blocks.nx_link import NxInternalLink
+from ._fundamental.nx_component import NxComponent
+
+# Fundamental definitions, schema which should never be overwritten
+# in other NXDL.
+from ._fundamental.nx_data import NxData
+from ._fundamental.nx_log import NxLog, NxTimeField
+from ._fundamental.nx_object import NxObject
 
 __all__ = [
     "NX_ATTRIBUTE_SERIALIZED_PREFIX",
@@ -28,5 +34,11 @@ __all__ = [
     "NxField",
     "NxGroup",
     "add_nx_class_basemodel",
+    "NX_CLASS_TO_BASEMODEL",
     "NxInternalLink",
+    "NxData",
+    "NxLog",
+    "NxTimeField",
+    "NxObject",
+    "NxComponent",
 ]

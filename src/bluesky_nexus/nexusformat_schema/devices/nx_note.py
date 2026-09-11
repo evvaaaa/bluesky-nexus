@@ -6,10 +6,9 @@ from pydantic import model_validator
 
 from bluesky_nexus.base_schema import (
     NxField,
+    NxObject,
     add_nx_class_basemodel,
 )
-
-from .nx_object import NxObject
 
 
 @add_nx_class_basemodel

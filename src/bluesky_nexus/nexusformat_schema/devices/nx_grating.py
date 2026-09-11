@@ -1,12 +1,6 @@
 """Contains the definition for NXgrating."""
 
-from bluesky_nexus.base_schema import (
-    NxField,
-    add_nx_class_basemodel,
-)
-
-from .nx_component import NxComponent
-from .nx_data import NxData
+from bluesky_nexus.base_schema import NxComponent, NxData, NxField, add_nx_class_basemodel
 
 
 @add_nx_class_basemodel

@@ -1,11 +1,10 @@
 """Contains the definition for NXlog."""
 
-from bluesky_nexus.base_schema import (
+from .._building_blocks import (
     NxAttribute,
     NxField,
     add_nx_class_basemodel,
 )
-
 from .nx_object import NxObject
 
 
