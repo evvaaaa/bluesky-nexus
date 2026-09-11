@@ -11,14 +11,18 @@ from typing import Any, Self
 
 from pydantic import model_validator
 
-from .nx_base import NxBase, ALPHA_NUMERIC_WITH_UNDERSCORES
+from .nx_base import ALPHA_NUMERIC_WITH_UNDERSCORES, NxBase
 
 NX_LINK_SERIALIZED_PREFIX = "&"
 
 
-def prepend_serialized_prefix_to_nx_internal_links(name: str, value: Any) -> str:
+def prepend_serialized_prefix_to_nx_links(name: str, value: Any) -> str:
     """Adds the serialized prefix to a given name if the value is an `NxInternalLink`."""
-    return f"{NX_LINK_SERIALIZED_PREFIX}{name}" if isinstance(value, NxInternalLink) else name
+    return (
+        f"{NX_LINK_SERIALIZED_PREFIX}{name}"
+        if isinstance(value, NxInternalLink | NxDeviceLink)
+        else name
+    )
 
 
 class _NxLinkBase(NxBase):

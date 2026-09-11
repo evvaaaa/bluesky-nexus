@@ -17,7 +17,7 @@ from __future__ import annotations
 from abc import ABC
 from functools import cached_property
 from pprint import pformat
-from typing import Any, TypeVar, cast
+from typing import Any, ClassVar, Final, TypeVar, cast
 
 from pydantic import (
     ValidatorFunctionWrapHandler,
@@ -25,6 +25,7 @@ from pydantic import (
     model_serializer,
     model_validator,
 )
+from pydantic.fields import ModelPrivateAttr
 
 from .nx_attribute import (
     NX_ATTRIBUTE_SERIALIZED_PREFIX,
@@ -36,8 +37,9 @@ from .nx_base_leaf import NxBaseLeaf
 from .nx_field import NxField
 from .nx_link import (
     NX_LINK_SERIALIZED_PREFIX,
+    NxDeviceLink,
     NxInternalLink,
-    prepend_serialized_prefix_to_nx_internal_links,
+    prepend_serialized_prefix_to_nx_links,
 )
 
 T = TypeVar("T", bound="NxGroup")
@@ -111,10 +113,18 @@ def _nx_class_from_serialized_subgroup[T: "NxGroup"](subgroup: dict, cls: type[T
 class NxGroup(NxBase, ABC):
     """The abstract base class for any NeXus group."""
 
+    _ALLOWED_LINK_TYPE: Final[ClassVar[type[NxInternalLink]]] = ModelPrivateAttr(NxInternalLink)  # type: ignore
+    """Allowed link type, used in deserialization. In groups which specify devices, links are
+    always NxInternalLink, for subclasses of NxApplication, links are NxDeviceLink.
+
+    This is marked final so that no nexus definitions override it, other than a single
+    ignored override in NxApplication.
+    """
+
     @classmethod
     def _allowed_value_types(cls) -> tuple[type | None, ...]:
-        """NXFields may only contain further NxAttribute, NxField, or NxDeviceLink."""
-        return (NxAttribute, NxField, NxInternalLink, NxGroup, None)
+        """NxGroup may only contain further NxAttribute, NxField or the allowed link type."""
+        return (NxAttribute, NxField, cls._ALLOWED_LINK_TYPE.default, NxGroup, None)  # type: ignore
 
     @model_serializer
     def _use_shorthand_and_add_at_key_to_attributes(self) -> dict[str, Any]:
@@ -139,8 +149,11 @@ class NxGroup(NxBase, ABC):
                 case NxAttribute():
                     shortened[prepend_serialized_prefix_to_nx_attributes(key, value)] = value
                 case NxInternalLink(link=link):
-                    key = prepend_serialized_prefix_to_nx_internal_links(key, value)
+                    key = prepend_serialized_prefix_to_nx_links(key, value)
                     shortened[key] = link
+                case NxDeviceLink(device=device, stream=stream):
+                    key = prepend_serialized_prefix_to_nx_links(key, value)
+                    shortened[key] = device if stream == "primary" else value
                 case NxField(
                     data_key=data_key, constant=None, hints_key=None, timestamps_of_data_key=None
                 ) if value.nx_attributes() == {}:
@@ -287,9 +300,14 @@ class NxGroup(NxBase, ABC):
                     NX_LINK_SERIALIZED_PREFIX,
                 ):
                     key = key.removeprefix(NX_LINK_SERIALIZED_PREFIX)  # deserialized key
-                    links_to_initialize[key] = (
-                        value if isinstance(value, dict) else {"link": value}
-                    )
+                    if cls._ALLOWED_LINK_TYPE.default is NxInternalLink:  # type: ignore
+                        links_to_initialize[key] = (
+                            value if isinstance(value, dict) else {"link": value}
+                        )
+                    else:
+                        links_to_initialize[key] = (
+                            value if isinstance(value, dict) else {"device": value}
+                        )
 
                 # A subgroup is specified:
                 # e.g {$nxclass: NXobject, SUB_GROUP: {$nxclass: NXobject, ...}}
@@ -338,7 +356,7 @@ class NxGroup(NxBase, ABC):
                 kwargs[key] = NxAttribute(**value)
 
         for key, value in links_to_initialize.items():
-            kwargs[key] = NxInternalLink(**value)
+            kwargs[key] = cls._ALLOWED_LINK_TYPE.default(**value)  # type: ignore
 
         return kwargs
 

@@ -50,7 +50,9 @@ class NxBase(BaseModel, ABC):
                 continue
             if none_allowed and value is None:
                 continue
-            if not isinstance(value, allowed_value_types_minus_none):
+            if len(allowed_value_types_minus_none) == 0 or not isinstance(
+                value, allowed_value_types_minus_none
+            ):
                 raise TypeError(
                     f"{key} had type {type(value)} which is not an allowed value type in "
                     f"`{type(self).__name__}` values permitted are {allowed_value_types}."
