@@ -28,6 +28,11 @@ class NxField(NxBase, NxBaseLeaf):
     found in bluesky (if provided).
     """
 
+    @classmethod
+    def _allowed_value_types(cls) -> tuple[type | None, ...]:
+        """NXFields may only contain further NxAttribute, or not provided defaults."""
+        return (NxAttribute, None)
+
     @model_validator(mode="before")
     @classmethod
     def _coerce_attribute(cls, values: Any) -> Any:

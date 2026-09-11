@@ -111,6 +111,11 @@ def _nx_class_from_serialized_subgroup[T: "NxGroup"](subgroup: dict, cls: type[T
 class NxGroup(NxBase, ABC):
     """The abstract base class for any NeXus group."""
 
+    @classmethod
+    def _allowed_value_types(cls) -> tuple[type | None, ...]:
+        """NXFields may only contain further NxAttribute, NxField, or NxDeviceLink."""
+        return (NxAttribute, NxField, NxInternalLink, NxGroup, None)
+
     @model_serializer
     def _use_shorthand_and_add_at_key_to_attributes(self) -> dict[str, Any]:
         """Dump the schema with short-hand.
@@ -199,41 +204,6 @@ class NxGroup(NxBase, ABC):
         values = cls._deserialize_from_shorthand_with_nxclass_descriminator(values)
         validated = handler(values)
         return validated
-
-    # TODO:
-    # For review -
-    # It would be nice to have something like this, where we can see whether links point to
-    # defined fields ahead of time. It's very hard to do without creating a global cache of
-    # which instance is the parent, for all of the contained NxInternalLinks to reference from.
-    # For now we leave this out and force implementations of nexus classes to check themselves.
-    # @model_validator(mode="after")
-    # def _check_nx_links_reference_real_fields_and_subgroups(self) -> Self:
-    #     """Check the initialized `NxInternalLink`s point to elements defined on the device."""
-    #
-    #     if self.instantiated_inside_group:
-    #         # Subgroups can't perform this check since NxInternalLink references
-    #         # are relative to the device's top level NxGroup
-    #         return self
-    #
-    #     for name, value in self.all_nx_internal_links().items():
-    #         attribute = _deep_getattr(self, *value.link)
-    #         if attribute is None:
-    #             pretty_key_value = pformat({name: value})
-    #             raise TypeError(
-    #                 "Malformed link specified, the link does not map "
-    #                 f"to a defined field in the schema:\n"
-    #                 f"{pretty_key_value}"
-    #             )
-    #
-    #         elif not isinstance(attribute, NxGroup | NxField):
-    #             pretty_key_value = pformat({name: value})
-    #             raise TypeError(
-    #                 "Malformed link specified, the link does not map "
-    #                 f"to an NxField or NxGroup, instead :\n"
-    #                 f"{pretty_key_value}"
-    #             )
-    #
-    #     return self
 
     def nx_attributes(self) -> dict[str, NxAttribute]:
         """Gives a dict of the nx attributes defined on this group."""

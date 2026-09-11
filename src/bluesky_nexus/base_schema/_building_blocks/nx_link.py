@@ -6,14 +6,12 @@ The link is relative to the root of the device. Devices referencing fields in ot
 devices this way is not supported.
 """
 
-from typing import Any
+from pprint import pformat
+from typing import Any, Self
 
-from pydantic import model_serializer
+from pydantic import model_validator
 
-from .nx_attribute import (
-    prepend_serialized_prefix_to_nx_attributes,
-)
-from .nx_base import NxBase
+from .nx_base import NxBase, ALPHA_NUMERIC_WITH_UNDERSCORES
 
 NX_LINK_SERIALIZED_PREFIX = "&"
 
@@ -23,31 +21,58 @@ def prepend_serialized_prefix_to_nx_internal_links(name: str, value: Any) -> str
     return f"{NX_LINK_SERIALIZED_PREFIX}{name}" if isinstance(value, NxInternalLink) else name
 
 
-class NxInternalLink(NxBase):
-    """A hard link to some other nexus object in the schema.
+class _NxLinkBase(NxBase):
+    @classmethod
+    def _allowed_value_types(cls) -> tuple[type | None, ...]:
+        """NxLink cannot contain any additional field types, even NxAttribute."""
+        return ()
+
+
+class NxInternalLink(_NxLinkBase):
+    """A hard link to some other nexus object internal to the device schema
+    schema.
 
     https://manual.nexusformat.org/design.html#links
 
-    The reference is absolute from the root of the device.
+    The reference is absolute from the root of the device which
+    the structure is generating.
+
+    In the group schema, the following shorthand is applied:
+
+    * `foo: NxInternalLink(link=["bar"])` -> `&foo: ["bar"]`
     """
 
     link: list[str]
 
-    @model_serializer
-    def _use_link_shorthand(self) -> dict[str, Any]:
-        """Dump the schema with short-hand.
 
-        * `foo: NxInternalLink(link="bar")` -> `&foo: "bar"`
-        """
-        shortened = {}
-        for key, value in self:
-            key = prepend_serialized_prefix_to_nx_attributes(key, value)
-            match value:
-                case NxInternalLink(link=link):
-                    shortened[key] = link
-                case None if key in NxInternalLink.model_fields:
-                    continue  # Value is `None` for unused field.
-                case _:
-                    shortened[key] = value
+class NxDeviceLink(_NxLinkBase):
+    """A hard link to a nexus device object which will be
+    generated in the schema.
 
-        return shortened
+    https://manual.nexusformat.org/design.html#links
+
+    The reference is absolute from devices/ in the NeXus structure,
+    e.g foo=NxDeviceLink("some_device", stream="baseline") creates a link
+    into "devices/baseline/some_device" in the final NeXus structure.
+
+    In the application schema, the following shorthand is applied:
+
+    * `foo: NxDeviceLink(link=["bar"], stream="primary")` -> `&foo: ["bar"]`
+    * `foo: NxDeviceLink(link=["bar"], stream="baseline")`
+            -> `&foo: {link: ["bar"], stream: "primary"}`
+    """
+
+    device: str
+    stream: str = "primary"
+
+    @model_validator(mode="after")
+    def _ensure_device_and_stream_are_alpha_numeric(self) -> Self:
+        for attribute_name in ("device", "stream"):
+            attribute = getattr(self, attribute_name)
+            if not ALPHA_NUMERIC_WITH_UNDERSCORES.match(attribute):
+                pretty_key = pformat({"device": self.device, "stream": self.stream})
+                raise TypeError(
+                    f"Error in given NxLink: {pretty_key} has a {attribute_name} which isn't a "
+                    "valid NeXus name."
+                )
+        return self
