@@ -10,8 +10,8 @@ import yaml
 from bluesky.protocols import HasHints
 from event_model import PerObjectHint
 
-from bluesky_nexus.base_schema import NX_ATTRIBUTE_SERIALIZED_PREFIX, NxGroup
 from bluesky_nexus.logger import LOGGER
+from bluesky_nexus.schema import NX_ATTRIBUTE_SERIALIZED_PREFIX, NxGroup
 
 T = TypeVar("T")
 

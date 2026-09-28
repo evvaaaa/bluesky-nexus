@@ -1,15 +1,12 @@
 """
 This module contains the base for all bluesky nexus device types `NxGroup`.
 
-This can be subclassed to define bluesky nexus schema corresponding to nxdl schema:
-for example `bluesky_nexus.nexusformat_schema.NxMonochromator`
+This is the base class in the heirarchy for all metaclass nexus classes, and
+contains serialization/deserialization logic for the bluesky-nexus schema.
 
 In serialized schema, a group is specified by the presence or an `$nxclass` key,
 which is used to fetch the the correct nexus class for validation automatically
 on deserialization in `NxGroup.from_dictionary`.
-
-This module also contains a decorator for appending different instrument schema basemodels to
-a global dictionary using `add_nx_class_basemodel`.
 """
 
 from __future__ import annotations
@@ -17,60 +14,26 @@ from __future__ import annotations
 from abc import ABC
 from functools import cached_property
 from pprint import pformat
-from typing import Any, TypeVar, cast
+from typing import Any, ClassVar, Final, TypeVar, cast
 
-from pydantic import (
-    ValidatorFunctionWrapHandler,
-    computed_field,
-    model_serializer,
-    model_validator,
-)
+import pydantic
 
-from ._nx_attribute import (
+from ._nx_base import NxBase
+from ._nx_base_leaf import NxBaseLeaf
+from .nx_attribute import (
     NX_ATTRIBUTE_SERIALIZED_PREFIX,
     NxAttribute,
     prepend_serialized_prefix_to_nx_attributes,
 )
-from ._nx_base import NxBase
-from ._nx_base_leaf import NxBaseLeaf
-from ._nx_field import NxField
+from .nx_field import NxField
+from .nx_link import (
+    NX_LINK_SERIALIZED_PREFIX,
+    NxDeviceLink,
+    NxInternalLink,
+    prepend_serialized_prefix_to_nx_links,
+)
 
 T = TypeVar("T", bound="NxGroup")
-
-NX_CLASS_TO_BASEMODEL: dict[str, type[NxGroup]] = {}
-"""Stores all the allowable nexus NXDL names mapped
-to the type of nexus basemodel used to validate them."""
-
-
-def add_nx_class_basemodel[T: "NxGroup"](cls: type[T]) -> type[T]:
-    """
-    Used to wrap a subclass of `NxGroup` so that it can be loaded
-    from the literal in any serialized static schema.
-    """
-    nx_class_name = _nexus_class_name_from_python_class(cls)
-    if already_present := NX_CLASS_TO_BASEMODEL.get(nx_class_name):
-        raise TypeError(
-            f"{cls.__module__}.{cls.__qualname__} cannot be added as an "
-            "nxclass as it's already present as "
-            f"{already_present.__module__}.{already_present.__qualname__}"
-        )
-    NX_CLASS_TO_BASEMODEL[nx_class_name] = cls
-    return cls
-
-
-def _nexus_class_name_from_python_class(cls: type[NxGroup]) -> str:
-    """Gives the correct NeXus NXDL base class name from a pydantic basemodel name,
-    e.g "class NxData(NxObject)" -> "NXdata".
-    """
-
-    python_name = cls.__name__
-
-    if not python_name.startswith("Nx"):
-        raise ValueError(
-            f"Nexus basemodels must start with 'Nx'. This basemodel is called '{python_name}'."
-        )
-
-    return f"NX{python_name.removeprefix('Nx').lower()}"
 
 
 def _nx_class_from_serialized_subgroup[T: "NxGroup"](subgroup: dict, cls: type[T]) -> type[T]:
@@ -80,33 +43,46 @@ def _nx_class_from_serialized_subgroup[T: "NxGroup"](subgroup: dict, cls: type[T
             f"No {NX_ATTRIBUTE_SERIALIZED_PREFIX}nxclass attrbute specified in schema."
         )
 
-    nx_cls = NX_CLASS_TO_BASEMODEL.get(document_nx_class_name)
-    if nx_cls is None:
-        pretty_allowed_classes = pformat(set(NX_CLASS_TO_BASEMODEL))
-        raise TypeError(
-            f"Requested `{NX_ATTRIBUTE_SERIALIZED_PREFIX}nxclass: {document_nx_class_name}` "
-            f"but this isn't defined with pydantic schemas: {pretty_allowed_classes}"
-        )
+    # There is probably a nicer way to do this to avoid circular import,
+    # however, NxGroup needs NxBaseClass to deserialize, and NxBaseClass
+    # Needs NxGroup as the default base if "extends" isn't specified in the
+    # NXDL. If you are reading this, and aren't as thoroughly busy as I, please
+    # suggest something nicer.
+    from .nx_base_class import NxBaseClass
+
+    nx_cls = NxBaseClass[document_nx_class_name]  # type: ignore
 
     # The class is specified. It is fetched from the environment for
     # validation on instantiation.
-
     if not issubclass(nx_cls, cls):
-        # NxSomeGroup.from_dictionary can only initialize subgroups of NxSomeGroup
-        # e.g you can NxGroup.from_dictionary to get an NxObject,
-        # but you can't NxMonochromator.from_dictionary to get an NxObject
         raise TypeError(
             f"Found the specified NXclass {nx_cls}, but it cannot be "
             f"initialized from `{cls.__name__}.from_dictionary` as it isn't a subclass "
             "of it."
         )
-    return nx_cls
+    return cast(type[T], nx_cls)
 
 
 class NxGroup(NxBase, ABC):
-    """The abstract base class for any NeXus group."""
+    """The abstract base class for any NeXus base class "group".
+    This is abstract, but subclassed by the metaclass returns from `nx_base_class`."""
 
-    @model_serializer
+    _ALLOWED_LINK_TYPE: Final[ClassVar[type[NxInternalLink]]] = pydantic.fields.ModelPrivateAttr(  # type: ignore
+        NxInternalLink
+    )
+    """Allowed link type, used in deserialization. In groups which specify devices, links are
+    always NxInternalLink, for subclasses of NxApplication, links are NxDeviceLink.
+
+    This is marked final so that no nexus definitions override it, other than a single
+    ignored override in NxApplication.
+    """
+
+    @classmethod
+    def _allowed_value_types(cls) -> tuple[type | None, ...]:
+        """NxGroup may only contain further NxAttribute, NxField or the allowed link type."""
+        return (NxAttribute, NxField, cls._ALLOWED_LINK_TYPE.default, NxGroup, None)  # type: ignore
+
+    @pydantic.model_serializer
     def _use_shorthand_and_add_at_key_to_attributes(self) -> dict[str, Any]:
         """Dump the schema with short-hand.
 
@@ -117,7 +93,6 @@ class NxGroup(NxBase, ABC):
         """
         shortened = {}
         for key, value in self:
-            key = prepend_serialized_prefix_to_nx_attributes(key, value)
             match value:
                 case NxAttribute(
                     constant=constant_value,
@@ -125,7 +100,16 @@ class NxGroup(NxBase, ABC):
                     hints_key=None,
                     timestamps_of_data_key=None,
                 ):
+                    key = prepend_serialized_prefix_to_nx_attributes(key, value)
                     shortened[key] = constant_value
+                case NxAttribute():
+                    shortened[prepend_serialized_prefix_to_nx_attributes(key, value)] = value
+                case NxInternalLink(link=link):
+                    key = prepend_serialized_prefix_to_nx_links(key, value)
+                    shortened[key] = link
+                case NxDeviceLink(device=device, stream=stream):
+                    key = prepend_serialized_prefix_to_nx_links(key, value)
+                    shortened[key] = device if stream == "primary" else value
                 case NxField(
                     data_key=data_key, constant=None, hints_key=None, timestamps_of_data_key=None
                 ) if value.nx_attributes() == {}:
@@ -137,17 +121,14 @@ class NxGroup(NxBase, ABC):
                     # the schema. We don't need to serialize and dump this key.
                     continue
                 case _:
-                    if isinstance(value, NxGroup):
-                        shortened[key] = value
-                    else:
-                        shortened[key] = value
+                    shortened[key] = value
 
         # Manually add the computed field. Pydantic doesn't seem to support `computed_field`
         # with deserialized without manually adding it.
         shortened.update({f"{NX_ATTRIBUTE_SERIALIZED_PREFIX}nxclass": self.nxclass.constant})
         return shortened
 
-    @computed_field  # type: ignore
+    @pydantic.computed_field  # type: ignore
     @cached_property
     def nxclass(self) -> NxAttribute:
         """
@@ -157,14 +138,8 @@ class NxGroup(NxBase, ABC):
         This field is serialized and dumped and then used for type
         discrimination in deserialization. It should never be replaced in
         subclasses.
-
-        It's presence forces a nice correspondance between the class names
-        in a pydantic schema package and the NXDL it represents, e.g
-        `class NxSomeBluesky_NexusGroup(NxObject)` -> `"$nxclass": "NXsomebluesky_nexusgroup"`.
         """
-        return NxAttribute(
-            constant=_nexus_class_name_from_python_class(self.__class__),
-        )
+        return NxAttribute(constant=type(self).__name__)
 
     @classmethod
     def _drop_nxclass(cls, values: T) -> T:
@@ -182,11 +157,11 @@ class NxGroup(NxBase, ABC):
             values.pop("nxclass", None)
         return values
 
-    @model_validator(mode="wrap")
+    @pydantic.model_validator(mode="wrap")
     @classmethod
-    def pre_validation(cls, values: Any, handler: ValidatorFunctionWrapHandler) -> Any:
+    def pre_validation(cls, values: Any, handler: pydantic.ValidatorFunctionWrapHandler) -> Any:
         """Remove nxclass field (serialized or otherwise) from values passed into
-        `NxGroup`s, and then call the other validators, some of which are possibly
+        `NxGroup`, and then call the other validators, some of which are possibly
         defined in subclasses."""
         values = cls._drop_nxclass(values)
         values = cls._deserialize_from_shorthand_with_nxclass_descriminator(values)
@@ -210,6 +185,17 @@ class NxGroup(NxBase, ABC):
         for sub_group in self.sub_nx_groups().values():
             fields.update(sub_group.all_nx_fields())
         return fields
+
+    def nx_internal_links(self) -> dict[str, NxInternalLink]:
+        """Gives internal links defined on the group."""
+        return {k: v for k, v in self if isinstance(v, NxInternalLink)}
+
+    def all_nx_internal_links(self) -> dict[str, NxInternalLink]:
+        """Gives all internal links defined on the group and sub groups."""
+        links = self.nx_internal_links()
+        for sub_group in self.sub_nx_groups().values():
+            links.update(sub_group.all_nx_internal_links())
+        return links
 
     def nx_fields(self) -> dict[str, NxField]:
         """Gives all `NxField` instances in the group (not subgroups)."""
@@ -236,6 +222,10 @@ class NxGroup(NxBase, ABC):
         attributes_to_initialize = {}
         fields_to_initialize = {}
 
+        # Links are not designed to be subclassed, but we initialize them later
+        # so we can verify that they link valid fields/subgroups.
+        links_to_initialize = {}
+
         for key, value in values.items():
             match (key, value):
                 case (key, value) if isinstance(value, NxBase | NxBaseLeaf):
@@ -250,12 +240,30 @@ class NxGroup(NxBase, ABC):
                     attributes_to_initialize[key] = (
                         value if isinstance(value, dict) else {"constant": value}
                     )
+                # A link is specified:
+                # e.g {
+                #   $nxclass: NXobject,
+                #   some_field: some-dkey,
+                #   sub_group: {$nxclass: NXobject, &some_link: ["some_field"]}
+                # }
+                case (key, value) if isinstance(key, str) and key.startswith(
+                    NX_LINK_SERIALIZED_PREFIX,
+                ):
+                    key = key.removeprefix(NX_LINK_SERIALIZED_PREFIX)  # deserialized key
+                    if cls._ALLOWED_LINK_TYPE.default is NxInternalLink:  # type: ignore
+                        links_to_initialize[key] = (
+                            value if isinstance(value, dict) else {"link": value}
+                        )
+                    else:
+                        links_to_initialize[key] = (
+                            value if isinstance(value, dict) else {"device": value}
+                        )
 
                 # A subgroup is specified:
                 # e.g {$nxclass: NXobject, SUB_GROUP: {$nxclass: NXobject, ...}}
                 case (key, value) if isinstance(value, dict) and "$nxclass" in value:
                     subgroup_cls = _nx_class_from_serialized_subgroup(value, NxGroup)
-                    kwargs[key] = subgroup_cls(**value)
+                    kwargs[key] = subgroup_cls(**value)  # type: ignore
 
                 # A field is specified:
                 # e.g {some_alias: {data_key: some_data_key, $long_name: "Longish name"}}
@@ -296,6 +304,9 @@ class NxGroup(NxBase, ABC):
                 kwargs[key] = value
             else:
                 kwargs[key] = NxAttribute(**value)
+
+        for key, value in links_to_initialize.items():
+            kwargs[key] = cls._ALLOWED_LINK_TYPE.default(**value)  # type: ignore
 
         return kwargs
 

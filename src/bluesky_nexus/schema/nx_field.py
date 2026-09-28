@@ -8,13 +8,13 @@ from typing import Any
 
 from pydantic import model_serializer, model_validator
 
-from ._nx_attribute import (
+from ._nx_base import NxBase
+from ._nx_base_leaf import NxBaseLeaf
+from .nx_attribute import (
     NX_ATTRIBUTE_SERIALIZED_PREFIX,
     NxAttribute,
     prepend_serialized_prefix_to_nx_attributes,
 )
-from ._nx_base import NxBase
-from ._nx_base_leaf import NxBaseLeaf
 
 
 class NxField(NxBase, NxBaseLeaf):
@@ -27,6 +27,11 @@ class NxField(NxBase, NxBaseLeaf):
     provided then it will be added by the callback using the defintion
     found in bluesky (if provided).
     """
+
+    @classmethod
+    def _allowed_value_types(cls) -> tuple[type | None, ...]:
+        """NXFields may only contain further NxAttribute, or not provided defaults."""
+        return (NxAttribute, None)
 
     @model_validator(mode="before")
     @classmethod

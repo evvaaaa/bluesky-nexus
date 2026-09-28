@@ -34,6 +34,7 @@ dependencies = [
   "numpy",
   "pydantic",
   "PyYAML",
+  "defusedxml",
 ]
 
 [project.optional-dependencies]
@@ -147,7 +148,7 @@ omit = [
   "tests/*",
   "src/bluesky_nexus/__main__.py",
   "src/bluesky_nexus/logger.py",
-  "docs/_static/tutorials"
+  "docs/_static/tutorials",
 ]
 
 [tool.coverage.paths]

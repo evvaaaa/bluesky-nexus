@@ -49,6 +49,6 @@ grating:
 
 transformations:
   $nxclass: NXtransformations
-  alpha: {data_key: alpha, $transformation_type: rotation, $vector: [1, 0, 0], $long_name: "Angle of Incidence"}
-  beta: {data_key: beta, $transformation_type: rotation, $vector: [1, 0, 0], $long_name: "Angle of Diffraction"}
-  theta: {data_key: theta, $transformation_type: rotation, $vector: [0, 0, 1], $long_name: "Grating Rotation Angle"}
+  alpha: {data_key: alpha, $transformation_type: rotation, $vector: [1, 0, 0], $long_name: "Angle of Incidence", $depends_on: "."}
+  beta: {data_key: beta, $transformation_type: rotation, $vector: [1, 0, 0], $long_name: "Angle of Diffraction", $depends_on: "."}
+  theta: {data_key: theta, $transformation_type: rotation, $vector: [0, 0, 1], $long_name: "Grating Rotation Angle", $depends_on: "."}

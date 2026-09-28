@@ -1,5 +1,5 @@
 $nxclass: NXsubentry
-SOME_SUBGROUP:
+some_subgroup:
   $nxclass: NXsubentry
   some_data_key: some_data_key_value
 $some_attribute: some_attribute_value

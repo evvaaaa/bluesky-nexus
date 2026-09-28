@@ -6,7 +6,10 @@
 This is an explantion of the schema format. It may be confusing to some users who are less familiar with NeXus, or with ophyd/ophyd-async. For examples on how to define device schema which you can follow along with see [](./schema_definition_examples.md).
 ```
 
-There are [6 types of nexus structure](https://manual.nexusformat.org/design.html#nexus-objects-and-terms) in total. `bluesky_nexus` allows for defining groups, fields, and attributes on a bluesky device class though a schema specification. This schema should be thought of as a mapping between NXDL classes, and the data keys that will be produced by an instance of that device class when it's read. Each schema is an instance of a pydantic class defining the nexus base class of the device [`nexusformat_schema`](#bluesky_nexus.nexusformat_schema).
+There are [6 types of nexus structure](https://manual.nexusformat.org/design.html#nexus-objects-and-terms) in total. `bluesky_nexus` allows for defining base classes, fields, and attributes on a bluesky device class though a schema specification. Eventually, attributes will be added. This schema should be thought of as a mapping between NXDL classes, and the data keys that will be produced by an instance of that device class when it's read. Each schema is an instance of a pydantic class defining the nexus base class of the device.
+
+This schema is loaded from NXDL with a metaclass: [`NxBaseClass`](#bluesky_nexus.schema.NxBaseClass).
+
 
 Bluesky nexus provides the [`NexusDevices`](#bluesky_nexus.nexus_devices._decorator.NexusDevices) decorator to add schema. It can load from one of three sources:
 
@@ -21,9 +24,9 @@ A main goal of bluesky nexus will be to support custom schema for whichever NXDL
 
 ### Groups
 
-[Groups](https://manual.nexusformat.org/design.html#design-groups) are defined by subclasses of [`NxGroup`](#bluesky_nexus.base_schema.NxGroup).
+[Groups](https://manual.nexusformat.org/design.html#design-groups) are defined by subclasses of [`NxGroup`](#bluesky_nexus.schema.NxGroup).
 
-By default, `bluesky_nexus` gives all devices and their data keys the nexus structure `NXsubentry`, corresponding to the pydantic schema [`NxSubEntry`](#bluesky_nexus.nexusformat_schema.NxSubEntry). There are a few different ways to define other kinds of group for a given device class instead:
+By default, `bluesky_nexus` gives all devices and their data keys the nexus structure `NXsubentry`, corresponding to the pydantic schema`NxBaseClass["NXsubentry"]`. There are a few different ways to define other kinds of group for a given device class instead:
 
 
 #### From pydantic schema
@@ -66,7 +69,7 @@ $nxclass: NXobject
 
 ### Fields
 
-The nexus [field](https://manual.nexusformat.org/design.html#design-fields) type is defined with the `bluesky_nexus` [`NxField`](#bluesky_nexus.base_schema.NxField). This model links a nexus field in the outputted structure with:
+The nexus [field](https://manual.nexusformat.org/design.html#design-fields) type is defined with the `bluesky_nexus` [`NxField`](#bluesky_nexus.schema.NxField). This model links a nexus field in the outputted structure with:
 
 * A `data_key`, minus the name of the object at instantiation, and the initial separator.
 * A `constant` defined in the schema. This should be used in the case of fields in the nexus format which would almost never be received through a signal, e.g location of a detector.
@@ -132,7 +135,7 @@ It has the same methods for definition as the above, with the only differences b
 * In the serialized schema, attributes are defined with the `$` prefix on keys.
 * In the serialized schema the shorthand for attributes is constant.
 
-The [NxAttribute](#bluesky_nexus.base_schema.NxAttribute) model links to nexus attributes in the structure.
+The [NxAttribute](#bluesky_nexus.schema.NxAttribute) model links to nexus attributes in the structure.
 
 #### Example
 

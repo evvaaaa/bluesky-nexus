@@ -5,11 +5,7 @@
    :members:
    :undoc-members:
    :show-inheritance:
-.. automodule:: bluesky_nexus.base_schema
-   :members:
-   :undoc-members:
-   :show-inheritance:
-.. automodule:: bluesky_nexus.nexusformat_schema
+.. automodule:: bluesky_nexus.schema
    :members:
    :undoc-members:
    :show-inheritance:
