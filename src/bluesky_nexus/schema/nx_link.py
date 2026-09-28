@@ -11,7 +11,7 @@ from typing import Any, Self
 
 from pydantic import model_validator
 
-from .nx_base import ALPHA_NUMERIC_WITH_UNDERSCORES, NxBase
+from ._nx_base import ALPHA_NUMERIC_WITH_UNDERSCORES, NxBase
 
 NX_LINK_SERIALIZED_PREFIX = "&"
 

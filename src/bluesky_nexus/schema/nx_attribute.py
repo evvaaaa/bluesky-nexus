@@ -6,7 +6,7 @@ metadata in the ``NxGroup`` it is contained in.
 
 from typing import Any, TypeVar
 
-from .nx_base_leaf import NxBaseLeaf
+from ._nx_base_leaf import NxBaseLeaf
 
 T = TypeVar("T", bound=Any)
 

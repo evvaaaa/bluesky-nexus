@@ -10,17 +10,15 @@ from ophyd import Device, EpicsSignal
 from ophyd.sim import SynAxis
 from ophyd_async.core import StandardReadable, soft_signal_r_and_setter
 from ophyd_async.sim import SimPointDetector
-from pydantic import ValidationError
 
 from bluesky_nexus import NexusDevices
-from bluesky_nexus.base_schema import (
+from bluesky_nexus.schema import (
+    BLUESKY_NEXUS_BASE_CLASSES_DIRECTORY,
     NxAttribute,
+    NxBaseClass,
     NxField,
     NxGroup,
-    NxInternalLink,
-    add_nx_class_basemodel,
 )
-from bluesky_nexus.nexusformat_schema import NxSubEntry
 
 
 @pytest.mark.parametrize(
@@ -31,12 +29,14 @@ from bluesky_nexus.nexusformat_schema import NxSubEntry
         (Path(__file__).parent.absolute() / "test_devices" / "simple_from_yaml_schema.yaml"),
         {
             "$nxclass": "NXsubentry",
-            "SOME_SUBGROUP": {"$nxclass": "NXsubentry", "some_data_key": "some_data_key_value"},
+            "some_subgroup": {"$nxclass": "NXsubentry", "some_data_key": "some_data_key_value"},
             "$some_attribute": "some_attribute_value",
             "another_data_key": "another_data_key_value",
         },
-        NxSubEntry(
-            SOME_SUBGROUP=NxSubEntry(some_data_key=NxField(data_key="some_data_key_value")),
+        NxBaseClass["NXsubentry"](
+            some_subgroup=NxBaseClass["NXsubentry"](
+                some_data_key=NxField(data_key="some_data_key_value")
+            ),
             some_attribute=NxAttribute(constant="some_attribute_value"),
             another_data_key=NxField(data_key="another_data_key_value"),
         ),
@@ -51,7 +51,7 @@ def test_methods_of_loading_schema(argument) -> None:
         "NX_schema": {
             "$nxclass": "NXsubentry",
             "$some_attribute": "some_attribute_value",
-            "SOME_SUBGROUP": {"$nxclass": "NXsubentry", "some_data_key": "some_data_key_value"},
+            "some_subgroup": {"$nxclass": "NXsubentry", "some_data_key": "some_data_key_value"},
             "another_data_key": "another_data_key_value",
         },
         "fields": [],
@@ -119,16 +119,17 @@ def test_writer_behaviour_failing_to_match_schema() -> None:
 
 def test_attempt_with_unknown_schema_from_client() -> None:
     with pytest.raises(
-        TypeError,
-    ) as excinfo:
+        FileNotFoundError,
+        match=(
+            rf"(?:\[Errno \d+\] )?No such file or directory: "
+            rf"['\"]?{str(BLUESKY_NEXUS_BASE_CLASSES_DIRECTORY).replace('.', r'\.')}"
+            rf"/NXbanana\.nxdl\.xml['\"]?"
+        ),
+    ):
 
         @NexusDevices.add_device_from_dictionary({"$nxclass": "NXbanana", "length": "length"})
         class BananaMotor(SynAxis):
             pass
-
-    assert "Requested `$nxclass: NXbanana` but this isn't defined with pydantic schemas:" in str(
-        excinfo
-    )
 
 
 def test_schema_addition() -> None:
@@ -214,102 +215,103 @@ def test_schema_addition() -> None:
     assert (nx_object + nx_sub_entry).model_dump() == nx_object.model_dump()
 
 
-def test_serialization_deserialization() -> None:
-    @add_nx_class_basemodel
-    class NxTestGroup(NxGroup):
-        constant_attribute_shorthand: NxAttribute
-        constant_attribute: NxAttribute
-        datakey_attribute: NxAttribute
-        hints_attribute: NxAttribute
-        field_shorthand: NxField
-        link: NxInternalLink
-        link_shorthand: NxInternalLink
-        field: NxField
-        SUB_GROUP_NOT_REQUIRED: NxTestGroup | None = None
-
-    test_nx_group_fields = {
-        "$nxclass": "NXtestgroup",
-        "$constant_attribute_shorthand": "some_constant_shorthand",
-        "$constant_attribute": {"constant": "some_constant"},
-        "$datakey_attribute": {"data_key": "some_attribute_datakey"},
-        "$hints_attribute": {"hints_key": ["some", "hints", "key"]},
-        "field_shorthand": "some_field_datakey_shorthand",
-        "field": {
-            "data_key": "some_field_datakey",
-            "$some_field_attribute": "some_field_attribute",
-        },
-        "&link_shorthand": ["field_shorthand"],
-        "&link": {"link": ["field"]},
-    }
-    test_nx_group_fields.update({"SUB_GROUP_NOT_REQUIRED": test_nx_group_fields.copy()})
-
-    nx_group_from_base = NxGroup.from_dictionary(test_nx_group_fields)
-    nx_group_refined = NxTestGroup.from_dictionary(test_nx_group_fields)
-    assert (
-        isinstance(nx_group_from_base, NxTestGroup)
-        and isinstance(nx_group_refined, NxTestGroup)
-        and isinstance(nx_group_refined.SUB_GROUP_NOT_REQUIRED, NxTestGroup)
-    )
-
-    for group in (
-        nx_group_from_base,
-        nx_group_refined,
-        nx_group_refined.SUB_GROUP_NOT_REQUIRED,
-    ):
-        assert group.nxclass == NxAttribute(constant="NXtestgroup")
-        assert group.constant_attribute_shorthand == NxAttribute(
-            constant="some_constant_shorthand"
-        )
-        assert group.constant_attribute == NxAttribute(constant="some_constant")
-        assert group.datakey_attribute == NxAttribute(data_key="some_attribute_datakey")
-        assert group.hints_attribute == NxAttribute(hints_key=["some", "hints", "key"])
-        assert group.field_shorthand == NxField(data_key="some_field_datakey_shorthand")
-        assert group.field == NxField(
-            data_key="some_field_datakey",
-            some_field_attribute=NxAttribute(constant="some_field_attribute"),  # type: ignore
-        )
-        assert group.link == NxInternalLink(link=["field"])
-        assert group.link_shorthand == NxInternalLink(link=["field_shorthand"])
-
-    assert nx_group_from_base.model_dump() == {
-        "$constant_attribute": "some_constant",
-        "$constant_attribute_shorthand": "some_constant_shorthand",
-        "$datakey_attribute": {
-            "data_key": "some_attribute_datakey",
-        },
-        "$hints_attribute": {
-            "hints_key": ["some", "hints", "key"],
-        },
-        "$nxclass": "NXtestgroup",
-        "&link": ["field"],
-        "&link_shorthand": ["field_shorthand"],
-        "SUB_GROUP_NOT_REQUIRED": {
-            "$constant_attribute": "some_constant",
-            "$constant_attribute_shorthand": "some_constant_shorthand",
-            "$datakey_attribute": {
-                "data_key": "some_attribute_datakey",
-            },
-            "$hints_attribute": {
-                "hints_key": ["some", "hints", "key"],
-            },
-            "$nxclass": "NXtestgroup",
-            "&link": ["field"],
-            "&link_shorthand": ["field_shorthand"],
-            # This has not been included.
-            # "SUB_GROUP_NOT_REQUIRED": None,
-            "field": {
-                "$some_field_attribute": "some_field_attribute",
-                "data_key": "some_field_datakey",
-            },
-            "field_shorthand": "some_field_datakey_shorthand",
-        },
-        "field": {
-            "$some_field_attribute": "some_field_attribute",
-            "data_key": "some_field_datakey",
-        },
-        "field_shorthand": "some_field_datakey_shorthand",
-    }
-    assert NxGroup.from_dictionary(nx_group_from_base.model_dump()) == nx_group_from_base
+# TODO: Test using new metclasses.
+# def test_serialization_deserialization() -> None:
+#     @add_nx_class_basemodel
+#     class NxTestGroup(NxGroup):
+#         constant_attribute_shorthand: NxAttribute
+#         constant_attribute: NxAttribute
+#         datakey_attribute: NxAttribute
+#         hints_attribute: NxAttribute
+#         field_shorthand: NxField
+#         link: NxInternalLink
+#         link_shorthand: NxInternalLink
+#         field: NxField
+#         SUB_GROUP_NOT_REQUIRED: NxTestGroup | None = None
+#
+#     test_nx_group_fields = {
+#         "$nxclass": "NXtestgroup",
+#         "$constant_attribute_shorthand": "some_constant_shorthand",
+#         "$constant_attribute": {"constant": "some_constant"},
+#         "$datakey_attribute": {"data_key": "some_attribute_datakey"},
+#         "$hints_attribute": {"hints_key": ["some", "hints", "key"]},
+#         "field_shorthand": "some_field_datakey_shorthand",
+#         "field": {
+#             "data_key": "some_field_datakey",
+#             "$some_field_attribute": "some_field_attribute",
+#         },
+#         "&link_shorthand": ["field_shorthand"],
+#         "&link": {"link": ["field"]},
+#     }
+#     test_nx_group_fields.update({"SUB_GROUP_NOT_REQUIRED": test_nx_group_fields.copy()})
+#
+#     nx_group_from_base = NxGroup.from_dictionary(test_nx_group_fields)
+#     nx_group_refined = NxTestGroup.from_dictionary(test_nx_group_fields)
+#     assert (
+#         isinstance(nx_group_from_base, NxTestGroup)
+#         and isinstance(nx_group_refined, NxTestGroup)
+#         and isinstance(nx_group_refined.SUB_GROUP_NOT_REQUIRED, NxTestGroup)
+#     )
+#
+#     for group in (
+#         nx_group_from_base,
+#         nx_group_refined,
+#         nx_group_refined.SUB_GROUP_NOT_REQUIRED,
+#     ):
+#         assert group.nxclass == NxAttribute(constant="NXtestgroup")
+#         assert group.constant_attribute_shorthand == NxAttribute(
+#             constant="some_constant_shorthand"
+#         )
+#         assert group.constant_attribute == NxAttribute(constant="some_constant")
+#         assert group.datakey_attribute == NxAttribute(data_key="some_attribute_datakey")
+#         assert group.hints_attribute == NxAttribute(hints_key=["some", "hints", "key"])
+#         assert group.field_shorthand == NxField(data_key="some_field_datakey_shorthand")
+#         assert group.field == NxField(
+#             data_key="some_field_datakey",
+#             some_field_attribute=NxAttribute(constant="some_field_attribute"),  # type: ignore
+#         )
+#         assert group.link == NxInternalLink(link=["field"])
+#         assert group.link_shorthand == NxInternalLink(link=["field_shorthand"])
+#
+#     assert nx_group_from_base.model_dump() == {
+#         "$constant_attribute": "some_constant",
+#         "$constant_attribute_shorthand": "some_constant_shorthand",
+#         "$datakey_attribute": {
+#             "data_key": "some_attribute_datakey",
+#         },
+#         "$hints_attribute": {
+#             "hints_key": ["some", "hints", "key"],
+#         },
+#         "$nxclass": "NXtestgroup",
+#         "&link": ["field"],
+#         "&link_shorthand": ["field_shorthand"],
+#         "SUB_GROUP_NOT_REQUIRED": {
+#             "$constant_attribute": "some_constant",
+#             "$constant_attribute_shorthand": "some_constant_shorthand",
+#             "$datakey_attribute": {
+#                 "data_key": "some_attribute_datakey",
+#             },
+#             "$hints_attribute": {
+#                 "hints_key": ["some", "hints", "key"],
+#             },
+#             "$nxclass": "NXtestgroup",
+#             "&link": ["field"],
+#             "&link_shorthand": ["field_shorthand"],
+#             # This has not been included.
+#             # "SUB_GROUP_NOT_REQUIRED": None,
+#             "field": {
+#                 "$some_field_attribute": "some_field_attribute",
+#                 "data_key": "some_field_datakey",
+#             },
+#             "field_shorthand": "some_field_datakey_shorthand",
+#         },
+#         "field": {
+#             "$some_field_attribute": "some_field_attribute",
+#             "data_key": "some_field_datakey",
+#         },
+#         "field_shorthand": "some_field_datakey_shorthand",
+#     }
+#     assert NxGroup.from_dictionary(nx_group_from_base.model_dump()) == nx_group_from_base
 
 
 def test_acceptable_nx_data_specification():
@@ -355,64 +357,11 @@ def test_nx_transformations():
         }
     )
 
-    with pytest.raises(
-        ValidationError,
-        match=("1 validation error for NxTransformations\nvector\n  Field required"),
-    ):
-        NexusDevices.add_device_from_dictionary(
-            {"$nxclass": "NXtransformations", "some_field": "some_data_key"}
-        )
-
-    with pytest.raises(
-        ValidationError,
-        match=(
-            "1 validation error for NxTransformations\nvector.constant\n  "
-            "Input should be a valid tuple"
-        ),
-    ):
+    with pytest.raises(TypeError):
+        # Trying to make a field for an attribute
         NexusDevices.add_device_from_dictionary(
             {
                 "$nxclass": "NXtransformations",
-                "some_field": {"data_key": "some_data_key", "$vector": 1},
-            }
-        )
-    with pytest.raises(
-        ValidationError,
-        match=(
-            "2 validation errors for NxTransformations\nvector.constant.1\n  "
-            "Input should be 0, 1 or -1"
-        ),
-    ):
-        NexusDevices.add_device_from_dictionary(
-            {
-                "$nxclass": "NXtransformations",
-                "some_field": {"data_key": "some_data_key", "$vector": (1, 2)},
-            }
-        )
-    with pytest.raises(
-        ValidationError,
-        match=("1 validation error for NxTransformations\nvector.constant.2\n  Field required"),
-    ):
-        NexusDevices.add_device_from_dictionary(
-            {
-                "$nxclass": "NXtransformations",
-                "some_field": {"data_key": "some_data_key", "$vector": (1, -1)},
-            }
-        )
-    with pytest.raises(
-        TypeError,
-        match=(
-            "Field another_field_end is referencing an AXISNAME another_field which "
-            "was not provided in the schema"
-        ),
-    ):
-        NexusDevices.add_device_from_dictionary(
-            {
-                "$nxclass": "NXtransformations",
-                "some_field": {
-                    "data_key": "some_data_key",
-                    "$vector": (1, 0, 0),
-                },
-                "another_field_end": "another_data_key",
+                "some_field": {"data_key": "some_data_key", "vector": "some_data_key"},
             }
         )

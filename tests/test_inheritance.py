@@ -12,7 +12,7 @@ from ophyd_async.epics.motor import Motor
 from ophyd_async.plan_stubs import ensure_connected
 
 from bluesky_nexus import NexusDevices
-from bluesky_nexus.base_schema import NxGroup, add_nx_class_basemodel
+from bluesky_nexus.schema import NxBaseClass, NxGroup
 
 from . import add_device_metadata_to_hints_wrapper, load_only_generated_nexus_file
 
@@ -448,60 +448,19 @@ def test_description_across_whole_codebase_from_hints_on_instantiation(
 
 
 def test_deserialization_heirarchy() -> None:
-    @add_nx_class_basemodel
-    class NxGroup1(NxGroup): ...
-
-    @add_nx_class_basemodel
-    class NxGroup2(NxGroup1): ...
-
-    @add_nx_class_basemodel
-    class NxGroup3(NxGroup2): ...
-
     for cls, cls_is_a_subclass in (
-        (
-            NxGroup3,
-            NxGroup3,
-        ),
-        (
-            NxGroup2,
-            NxGroup2,
-        ),
-        (
-            NxGroup2,
-            NxGroup3,
-        ),
-        (
-            NxGroup1,
-            NxGroup1,
-        ),
-        (
-            NxGroup1,
-            NxGroup3,
-        ),
-        (
-            NxGroup1,
-            NxGroup2,
-        ),
-        (
-            NxGroup1,
-            NxGroup3,
-        ),
+        (NxBaseClass["NXobject"], NxBaseClass["NXcomponent"]),
+        (NxBaseClass["NXcomponent"], NxBaseClass["NXcomponent"]),
+        (NxBaseClass["NXcomponent"], NxBaseClass["NXmonochromator"]),
+        (NxBaseClass["NXobject"], NxBaseClass["NXobject"]),
+        (NxBaseClass["NXobject"], NxBaseClass["NXmonochromator"]),
     ):
         assert isinstance(cls.from_dictionary(cls_is_a_subclass().model_dump()), cls_is_a_subclass)
 
     for cls, cls_not_a_subclass in (
-        (
-            NxGroup2,
-            NxGroup1,
-        ),
-        (
-            NxGroup3,
-            NxGroup1,
-        ),
-        (
-            NxGroup2,
-            NxGroup1,
-        ),
+        (NxBaseClass["NXcomponent"], NxBaseClass["NXobject"]),
+        (NxBaseClass["NXmonochromator"], NxBaseClass["NXobject"]),
+        (NxBaseClass["NXmonochromator"], NxBaseClass["NXcomponent"]),
     ):
         with pytest.raises(
             TypeError,

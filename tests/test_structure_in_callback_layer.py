@@ -1,15 +1,12 @@
 """These tests are for how the schema is parsed/created in the writer."""
 
-import re
 from pathlib import Path
 from time import time
 
 import numpy as np
-import pytest
 from bluesky import RunEngine
 from bluesky import plans as bp
 from bluesky.preprocessors import baseline_wrapper
-from nexusformat import nexus
 from ophyd.sim import SynAxis
 from ophyd_async.core import (
     StandardReadable,
@@ -20,15 +17,9 @@ from ophyd_async.core import StandardReadableFormat as Fmt
 from ophyd_async.sim import SimMotor, SimPointDetector
 
 from bluesky_nexus import NexusDevices, __version__
-from bluesky_nexus.base_schema import (
-    NxField,
-    NxGroup,
-    add_nx_class_basemodel,
-)
 
 from . import (
     add_device_metadata_to_hints_wrapper,
-    get_logs,
     load_only_generated_nexus_file,
     wait_for_nexus_file,
 )
@@ -182,52 +173,53 @@ def test_nexus_writer_on_signals(
     assert {k: str(v) for k, v in loaded["motor"].attrs.items()} == {"nxclass": "NXsubentry"}
 
 
-def test_schema_client_server_differing_schema(
-    RE_subscribed_over_zmq: RunEngine, tmpdir: Path
-) -> None:
-    new_motor_schema = {"$nxclass": "NXnew", "some_data": "foo"}
-
-    with pytest.raises(TypeError) as excinfo:
-
-        @NexusDevices.add_device_from_dictionary(new_motor_schema)
-        class NewMotorWhichWillFail(SimMotor): ...
-
-    # Can't use match with literal "\$" for whatever reason...
-    assert "Requested `$nxclass: NXnew` but this isn't defined with pydantic schemas: " in str(
-        excinfo
-    )
-
-    @add_nx_class_basemodel
-    class NxNew(NxGroup):
-        some_data: NxField
-
-    # Passes because the nexus group was added in this process.
-    @NexusDevices.add_device_from_dictionary(new_motor_schema)
-    class NewMotor(SimMotor): ...
-
-    motor = NewMotor(name="motor")
-    RE_subscribed_over_zmq(bp.count([motor], num=3))
-    loaded = wait_for_nexus_file(tmpdir)["entry"]["primary"]["devices"]
-    logs = get_logs(tmpdir).read_text()
-    pattern = re.compile(
-        (
-            r".*?Received a malformed schema in motor\. The error was:\n\s+Requested "
-            r"`\$nxclass: NXnew` but this isn't defined with pydantic schemas: "
-            r"\{[^}]*\}\nA default schema will be used instead\."
-        ),
-        re.DOTALL,
-    )
-
-    # The subprocess didn't have the schema we made in this process, so it wrote a new
-    # NXsubentry for the device after raising the error.
-    assert pattern.search(logs)
-    assert str(loaded["motor"].attrs["nxclass"]) == nexus.NXattr("NXsubentry")
-    assert list(loaded["motor"]) == [
-        "acceleration_time",
-        "motor",
-        "velocity",
-    ]
-    assert list(loaded["motor"]["motor"]["value"]) == [0, 0, 0]
+# TODO: test using new metaclasses.
+# def test_schema_client_server_differing_schema(
+#     RE_subscribed_over_zmq: RunEngine, tmpdir: Path
+# ) -> None:
+#     new_motor_schema = {"$nxclass": "NXnew", "some_data": "foo"}
+#
+#     with pytest.raises(TypeError) as excinfo:
+#
+#         @NexusDevices.add_device_from_dictionary(new_motor_schema)
+#         class NewMotorWhichWillFail(SimMotor): ...
+#
+#     # Can't use match with literal "\$" for whatever reason...
+#     assert "Requested `$nxclass: NXnew` but this isn't defined with pydantic schemas: " in str(
+#         excinfo
+#     )
+#
+#     @add_nx_class_basemodel
+#     class NxNew(NxGroup):
+#         some_data: NxField
+#
+#     # Passes because the nexus group was added in this process.
+#     @NexusDevices.add_device_from_dictionary(new_motor_schema)
+#     class NewMotor(SimMotor): ...
+#
+#     motor = NewMotor(name="motor")
+#     RE_subscribed_over_zmq(bp.count([motor], num=3))
+#     loaded = wait_for_nexus_file(tmpdir)["entry"]["primary"]["devices"]
+#     logs = get_logs(tmpdir).read_text()
+#     pattern = re.compile(
+#         (
+#             r".*?Received a malformed schema in motor\. The error was:\n\s+Requested "
+#             r"`\$nxclass: NXnew` but this isn't defined with pydantic schemas: "
+#             r"\{[^}]*\}\nA default schema will be used instead\."
+#         ),
+#         re.DOTALL,
+#     )
+#
+#     # The subprocess didn't have the schema we made in this process, so it wrote a new
+#     # NXsubentry for the device after raising the error.
+#     assert pattern.search(logs)
+#     assert str(loaded["motor"].attrs["nxclass"]) == nexus.NXattr("NXsubentry")
+#     assert list(loaded["motor"]) == [
+#         "acceleration_time",
+#         "motor",
+#         "velocity",
+#     ]
+#     assert list(loaded["motor"]["motor"]["value"]) == [0, 0, 0]
 
 
 def test_constant_attributes(RE_directly_subscribed: RunEngine, tmpdir) -> None:
@@ -358,23 +350,6 @@ def test_attributes_from_data_keys(RE_directly_subscribed: RunEngine, tmpdir):
     assert loaded["device"]["readback"]["value"].attrs["units"] == "Oz"
 
 
-# TODO: Commented out for now, see TODO in nx_structure._nexus_structure.add_stream_data_to_group
-# def test_passing_bluesky_nexus_nx_schema_but_incorrect_nexusformat_definitions(
-#     RE_directly_subscribed: RunEngine, tmpdir, caplog: pytest.LogCaptureFixture
-# ):
-#     @add_nx_class_basemodel
-#     class NxData(NxGroup):
-#         data: NxObject  # A NXdata should contain a single field for `data:`
-#
-#     @NexusDevices.add_device_from_pydantic_schema(
-#         NxData(data=NxObject(some_data_key=NxField(data_key="user_readback")))
-#     )
-#     class SomeSimMotor(SimMotor): ...
-#
-#     RE_directly_subscribed(bp.count([SomeSimMotor(name="sim_motor")]))
-#
-
-
 def test_timestamps_of_data_key(RE_directly_subscribed: RunEngine, tmpdir: Path):
     read_times = []
 
@@ -409,14 +384,12 @@ def test_timestamps_of_data_key(RE_directly_subscribed: RunEngine, tmpdir: Path)
     RE_directly_subscribed(bp.count([SomeDetector(name="some_detector")], num=4))
     loaded = load_only_generated_nexus_file(tmpdir)["entry"]["primary"]["devices"]["some_detector"]
     assert list(loaded) == [
-        "axis0_link",
         "signal1",
         "signal1_t",
         "signal2",
         "signal3",
         "signal4",
         "signal4_t",
-        "signal_link",
     ]
 
     assert len(loaded["signal1_t"]) == 4

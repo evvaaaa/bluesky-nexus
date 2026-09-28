@@ -12,13 +12,13 @@ from typing import Any, cast
 import numpy as np
 from nexusformat import nexus
 
-from bluesky_nexus.base_schema import (
+from bluesky_nexus.logger import LOGGER
+from bluesky_nexus.schema import (
     NX_ATTRIBUTE_SERIALIZED_PREFIX,
     NxAttribute,
     NxField,
     NxGroup,
 )
-from bluesky_nexus.logger import LOGGER
 
 from ._data_extractor import (
     DataKeyData,
@@ -327,7 +327,7 @@ def add_stream_data_to_group(
             # There would need to be changes in nexusformat for this. Mainly, there's no API
             # for receiving the errors other than just logging them, but also, taking the
             # taking the example from
-            # `test_passing_bluesky_nexus.base_schema_but_incorrect_nexusformat_definitions`,
+            # `test_passing_bluesky_nexus.schema_but_incorrect_nexusformat_definitions`,
             # we get things like:
             # 2026-08-14 11:19:29 [CRITICAL] NXValidate: NXdata: data
             # "@signal" is not present in the group

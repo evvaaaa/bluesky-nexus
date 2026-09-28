@@ -8,13 +8,13 @@ from typing import Any
 
 from pydantic import model_serializer, model_validator
 
+from ._nx_base import NxBase
+from ._nx_base_leaf import NxBaseLeaf
 from .nx_attribute import (
     NX_ATTRIBUTE_SERIALIZED_PREFIX,
     NxAttribute,
     prepend_serialized_prefix_to_nx_attributes,
 )
-from .nx_base import NxBase
-from .nx_base_leaf import NxBaseLeaf
 
 
 class NxField(NxBase, NxBaseLeaf):

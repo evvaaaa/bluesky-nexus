@@ -13,3 +13,10 @@ nexus_structure
 
 schema_definition_examples
 ```
+
+```{toctree}
+:maxdepth: 2
+:caption: NXdata Explanation
+
+nx_data_explanation
+```

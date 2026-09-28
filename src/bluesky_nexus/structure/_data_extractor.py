@@ -23,12 +23,14 @@ from event_model import (
 )
 from event_model.documents.event_descriptor import Dtype, DtypeNumpy, DtypeNumpyItem
 
-from bluesky_nexus.base_schema import (
+from bluesky_nexus.logger import LOGGER
+from bluesky_nexus.schema import (
+    NxBaseClass,
     NxField,
     NxGroup,
 )
-from bluesky_nexus.logger import LOGGER
-from bluesky_nexus.nexusformat_schema import NxSubEntry
+
+# from bluesky_nexus.nexusformat_schema import NxSubEntry
 
 
 def _add_lists_mutably(list1: list, list2: list) -> None:
@@ -234,8 +236,8 @@ class ObjectData:
                 hint=hint,
             )
         else:
-            # Make an NxSubEntry with all the fields from the data keys.
-            nx_schema = NxSubEntry()
+            # # Make an NxSubEntry with all the fields from the data keys.
+            nx_schema = NxBaseClass["NXsubentry"]()
             nx_schema = new_schema_with_missing_fields(formatted_data_key_name_to_data, nx_schema)
             LOGGER.debug(f"Creating new NxSubEntry schema for device {object_name}.")
         return ObjectData(
