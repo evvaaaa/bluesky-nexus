@@ -3,6 +3,6 @@ Contains the logic for specifying NeXus classes from the
 bluesky device layer.
 """
 
-from ._decorator import NexusDevices
+from ._decorator import NxDevice
 
-__all__ = ["NexusDevices"]
+__all__ = ["NxDevice"]

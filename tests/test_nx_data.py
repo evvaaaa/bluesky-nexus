@@ -18,7 +18,7 @@ from ophyd_async.core import (
 )
 from ophyd_async.plan_stubs import ensure_connected
 
-from bluesky_nexus import NexusDevices
+from bluesky_nexus import NxDevice
 from bluesky_nexus.schema import (
     NxAttribute,
     NxBaseClass,
@@ -60,7 +60,7 @@ def test_nx_data_deserializes_with_links_and_serializes_without():
 
 
 def test_nx_data_multi_dimensional(RE_directly_subscribed: RunEngine, tmpdir: Path):
-    @NexusDevices.add_device_from_schema(
+    @NxDevice.add_device_from_schema(
         {
             "$nxclass": "NXdata",
             "$axes": ["some_axis1_link", "some_axis2_link"],

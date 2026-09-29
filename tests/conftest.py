@@ -13,7 +13,7 @@ from bluesky.callbacks.zmq import Proxy, Publisher
 from bluesky_nexus import NexusHdfWriterCallback
 from bluesky_nexus.dispatchers import run_zmq_dispatcher
 from bluesky_nexus.logger import setup_logging
-from bluesky_nexus.nexus_devices._decorator import _inheritance_structure, _schema_added
+from bluesky_nexus.device._decorator import _inheritance_structure, _schema_added
 from bluesky_nexus.schema.nx_base_class import _already_made
 
 
@@ -35,11 +35,11 @@ def ensure_fresh_mutable_global_caches(monkeypatch) -> None:
     classes don't modify the environment.
     """
     monkeypatch.setattr(
-        "bluesky_nexus.nexus_devices._decorator._schema_added",
+        "bluesky_nexus.device._decorator._schema_added",
         _schema_added.copy(),
     )
     monkeypatch.setattr(
-        "bluesky_nexus.nexus_devices._decorator._inheritance_structure",
+        "bluesky_nexus.device._decorator._inheritance_structure",
         _inheritance_structure.copy(),
     )
     monkeypatch.setattr(

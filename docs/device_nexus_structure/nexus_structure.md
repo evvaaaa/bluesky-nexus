@@ -11,7 +11,7 @@ There are [6 types of nexus structure](https://manual.nexusformat.org/design.htm
 This schema is loaded from NXDL with a metaclass: [`NxBaseClass`](#bluesky_nexus.schema.NxBaseClass).
 
 
-Bluesky nexus provides the [`NexusDevices`](#bluesky_nexus.nexus_devices._decorator.NexusDevices) decorator to add schema. It can load from one of three sources:
+Bluesky nexus provides the [`NxDevice`](#bluesky_nexus.device._decorator.NxDevice) decorator to add schema. It can load from one of three sources:
 
 1) From pydantic schema directly.
 2) A dictionary directly.
@@ -34,24 +34,24 @@ By default, `bluesky_nexus` gives all devices and their data keys the nexus stru
 In the pydantic schema this is defined by the type of the model itself.
 
 ``` python
-@NexusDevices.from_schema(NxObject())
+@NxDevice.from_schema(NxObject())
 class SomeDevice(Device): ...
 ```
 
-In the serialized schema, this is provided by an attribute called `nxclass`. When `NexusDevices` adds the schema it deserializes and instantiates, so the below two methods are equivalent to this one.
+In the serialized schema, this is provided by an attribute called `nxclass`. When `NxDevice` adds the schema it deserializes and instantiates, so the below two methods are equivalent to this one.
 
 #### From dictionary
 
 
 ``` python
-@NexusDevices.from_dictionary({"$nxclass": "NXobject"})
+@NxDevice.from_dictionary({"$nxclass": "NXobject"})
 class SomeDevice(Device): ...
 ```
 
 #### From yaml
 
 ``` python
-@NexusDevices.from_dictionary("some_device.yaml")
+@NxDevice.from_dictionary("some_device.yaml")
 class SomeDevice(Device): ...
 ```
 
@@ -80,7 +80,7 @@ For any field defined in schema, if the field isn't present when the data is rec
 #### From pydantic schema
 
 ``` python
-@NexusDevices.from_schema(
+@NxDevice.from_schema(
   NxObject(
     a_different_name=NxField(data_key="some_signal"),
     description=NxField(constant="A description...")
@@ -93,7 +93,7 @@ class SomeDevice(Device):
 #### From dictionary
 
 ``` python
-@NexusDevices.from_dictionary(
+@NxDevice.from_dictionary(
   {
     "$nxclass": "NXobject", "a_different_name": "some_signal",
     "description": {"constant": "A description..."}
@@ -107,7 +107,7 @@ class SomeDevice(Device):
 #### From yaml
 
 ``` python
-@NexusDevices.from_dictionary("some_device.yaml")
+@NxDevice.from_dictionary("some_device.yaml")
 class SomeDevice(Device):
   some_signal = Cpt(EpicsSignalRO, "PREFIX")
 ```
@@ -140,7 +140,7 @@ The [NxAttribute](#bluesky_nexus.schema.NxAttribute) model links to nexus attrib
 #### Example
 
 ``` python
-@NexusDevices.from_schema(
+@NxDevice.from_schema(
   NxObject(
     a_different_name=NxField(
       data_key="some_signal",
@@ -170,7 +170,7 @@ The units attribute is accepted on every nexus field. If not specified in the sc
 Sub groups can be specified through the tree structure
 
 ``` python
-@NexusDevices.from_schema(
+@NxDevice.from_schema(
   NxObject(
     a_different_name=NxField(
       data_key="some_signal",
@@ -212,7 +212,7 @@ sub_device_name_in_nexus_structure:
 Unless `inherit=False` is given with
 
 ``` python
-NexusDevice.from_schema(..., inherit=False)
+NxDevice.from_schema(..., inherit=False)
 ```
 
 then a given device will load the parent schema from it's parent devices, so long as those devices are NeXus subclasses of the one being loaded into the child device.
@@ -221,16 +221,16 @@ then a given device will load the parent schema from it's parent devices, so lon
 # https://manual.nexusformat.org/classes/base_classes/NXcomponent.html
 # NXcomponent contains a field called description. We set any device to by default
 # use the hints field "description" if it's present.
-@NexusDevices.from_schema({"$nxclass": "NXcomponent", "description": {"hints_key": ["metadata", "description"]}})(Device)
+@NxDevice.from_schema({"$nxclass": "NXcomponent", "description": {"hints_key": ["metadata", "description"]}})(Device)
 
 # https://manual.nexusformat.org/classes/base_classes/NXaperture.html
 # NXaperture extends NXcomponent, so this field will inherit the schema key from it's parent device.
-@NexusDevices.from_schema({"$nxclass": "NXaperture", ...})
+@NxDevice.from_schema({"$nxclass": "NXaperture", ...})
 class MyAperture1(Device):
   some_signal = Cpt(EpicsSignalRO, "PREFIX1")
 
 # As a subclass, this "description" will overwrite the parent's description on this class
-@NexusDevices.from_schema({"$nxclass": "NXaperture", "description": {"constant": "Some description."}, ...})
+@NxDevice.from_schema({"$nxclass": "NXaperture", "description": {"constant": "Some description."}, ...})
 class MyAperture2(Device):
   some_signal = Cpt(EpicsSignalRO, "PREFIX1")
 ```
@@ -245,17 +245,17 @@ A device does not have to use the decorator in order to inherit the schema from 
 Devices also support multi-inheritance of subgroups, attributes, and fields. The keys in the schema are overwritten from parent to child with the same priority as ordinary inheritance through python.
 
 ``` python
-@NexusDevices.from_schema({"$nxclass": "NXaperture", "some_key": "parent_signal_1"})
+@NxDevice.from_schema({"$nxclass": "NXaperture", "some_key": "parent_signal_1"})
 class Parent1(Device):
   parent_signal_1 = Cpt(EpicsSignalRO, "PREFIX1")
 
-@NexusDevices.from_schema({"$nxclass": "NXcomponent", "some_key": "parent_signal_21", "another_key": "parent_signal_22"})
+@NxDevice.from_schema({"$nxclass": "NXcomponent", "some_key": "parent_signal_21", "another_key": "parent_signal_22"})
 class Parent2(Device):
   parent_signal_2 = Cpt(EpicsSignalRO, "PREFIX2")
 
 # This schema has "some_key": parent_signal_1", and "another_key": "parent_signal_22".
 # Left hand side is treated with priority just like python inheritance.
-@NexusDevices.from_schema({"$nxclass": "NXaperture"})
+@NxDevice.from_schema({"$nxclass": "NXaperture"})
 class Child(Parent1, Parent2):
   child_signal = Cpt(EpicsSignalRO, "PREFIX3")
 ```

@@ -11,7 +11,7 @@ from ophyd.sim import SynAxis
 from ophyd_async.core import StandardReadable, soft_signal_r_and_setter
 from ophyd_async.sim import SimPointDetector
 
-from bluesky_nexus import NexusDevices
+from bluesky_nexus import NxDevice
 from bluesky_nexus.schema import (
     BLUESKY_NEXUS_BASE_CLASSES_DIRECTORY,
     NxAttribute,
@@ -43,7 +43,7 @@ from bluesky_nexus.schema import (
     ),
 )
 def test_methods_of_loading_schema(argument) -> None:
-    @NexusDevices.add_device_from_schema(argument)
+    @NxDevice.add_device_from_schema(argument)
     class SomeDevice(Device): ...
 
     assert SomeDevice("X", name="device").hints == {
@@ -63,7 +63,7 @@ def test_loading_schema_from_a_non_existent_path() -> None:
         ValueError, match=r"Path `/.*/tests/some_sub_package/my_schema.yaml` does not exist\."
     ):  # Becomes absolute, includin root.
 
-        @NexusDevices.add_device_from_path("some_sub_package/my_schema.yaml")
+        @NxDevice.add_device_from_path("some_sub_package/my_schema.yaml")
         class SomeDevice(Device): ...
 
 
@@ -79,7 +79,7 @@ def test_methods_of_declaring_fields_with_data_keys(data_key_subset: dict) -> No
     dictionary_schema = {"$nxclass": "NXsubentry"}
     dictionary_schema.update(data_key_subset)
 
-    @NexusDevices.add_device_from_dictionary(dictionary_schema)
+    @NxDevice.add_device_from_dictionary(dictionary_schema)
     class SomeDevice(Device):
         signal = Cpt(EpicsSignal, "SIGNAL")
 
@@ -102,7 +102,7 @@ def test_writer_behaviour_failing_to_match_schema() -> None:
         ),
     ):
 
-        @NexusDevices.add_device_from_dictionary(
+        @NxDevice.add_device_from_dictionary(
             {
                 "$nxclass": "NXdetector",
                 "data": {
@@ -127,7 +127,7 @@ def test_attempt_with_unknown_schema_from_client() -> None:
         ),
     ):
 
-        @NexusDevices.add_device_from_dictionary({"$nxclass": "NXbanana", "length": "length"})
+        @NxDevice.add_device_from_dictionary({"$nxclass": "NXbanana", "length": "length"})
         class BananaMotor(SynAxis):
             pass
 
@@ -315,7 +315,7 @@ def test_schema_addition() -> None:
 
 
 def test_acceptable_nx_data_specification():
-    @NexusDevices.add_device_from_schema(
+    @NxDevice.add_device_from_schema(
         {
             "$nxclass": "NXdata",
             "$signal": "some_signal_name",
@@ -336,20 +336,20 @@ def test_acceptable_nx_data_specification():
 
 def test_nx_transformations():
     # Allowed
-    NexusDevices.add_device_from_dictionary({"$nxclass": "NXtransformations"})
+    NxDevice.add_device_from_dictionary({"$nxclass": "NXtransformations"})
 
-    NexusDevices.add_device_from_dictionary(
+    NxDevice.add_device_from_dictionary(
         {"$nxclass": "NXtransformations", "$some_attribute": "Some Attr"}
     )
 
-    NexusDevices.add_device_from_dictionary(
+    NxDevice.add_device_from_dictionary(
         {
             "$nxclass": "NXtransformations",
             "some_field": {"data_key": "some_data_key", "$vector": (1, 0, 0)},
         }
     )
 
-    NexusDevices.add_device_from_dictionary(
+    NxDevice.add_device_from_dictionary(
         {
             "$nxclass": "NXtransformations",
             "some_field": {"data_key": "some_data_key", "$vector": (1, 0, 0)},
@@ -359,7 +359,7 @@ def test_nx_transformations():
 
     with pytest.raises(TypeError):
         # Trying to make a field for an attribute
-        NexusDevices.add_device_from_dictionary(
+        NxDevice.add_device_from_dictionary(
             {
                 "$nxclass": "NXtransformations",
                 "some_field": {"data_key": "some_data_key", "vector": "some_data_key"},

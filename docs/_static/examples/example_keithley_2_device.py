@@ -1,7 +1,7 @@
-from bluesky_nexus import NexusDevices
+from bluesky_nexus import NxDevice
 
 
-@NexusDevices.add_device_from_path("Keithley.yaml")
+@NxDevice.add_device_from_path("Keithley.yaml")
 class Keithley(Device):
     readback = Cpt(EpicsSignalRO, "rdCur", kind=Kind.hinted, labels={"detectors", "electrometers"})
     ... # And so on

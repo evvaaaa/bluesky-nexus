@@ -84,7 +84,7 @@ def _add_nx_schema_getter_to_hints[T](device_cls: type[T]) -> None:
     device_cls.hints = new_hints  # type: ignore
 
 
-class NexusDevices:
+class NxDevice:
     """Static class for adding nexus schema to devices."""
 
     @classmethod

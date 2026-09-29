@@ -1,7 +1,7 @@
-from bluesky_nexus import NexusDevices
+from bluesky_nexus import NxDevice
 
 
-@NexusDevices.add_device_from_path("PlaneGratingMonochromator.yaml")
+@NxDevice.add_device_from_path("PlaneGratingMonochromator.yaml")
 class PlaneGratingMonochromator(StandardReadable):
     """A simulated plane grating monochromator."""
 

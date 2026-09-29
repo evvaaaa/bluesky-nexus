@@ -4,7 +4,7 @@ from bluesky import RunEngine
 from bluesky import plans as bp
 from ophyd_async.sim import SimPointDetector
 
-from bluesky_nexus import NexusDevices
+from bluesky_nexus import NxDevice
 
 from . import (
     load_only_generated_nexus_file,
@@ -12,7 +12,7 @@ from . import (
 
 
 def test_internal_device_links(RE_directly_subscribed: RunEngine, tmpdir: Path) -> None:
-    @NexusDevices.add_device_from_dictionary(
+    @NxDevice.add_device_from_dictionary(
         {
             "$nxclass": "NXcomponent",
             "channel_1_value": "channel-1-value",
@@ -136,5 +136,5 @@ def test_internal_device_links(RE_directly_subscribed: RunEngine, tmpdir: Path) 
 #         match=error,
 #     ):
 #
-#         @NexusDevices.add_device_from_dictionary(schema)
+#         @NxDevice.add_device_from_dictionary(schema)
 #         class SimPointDetectorWithSchema(SimPointDetector): ...
