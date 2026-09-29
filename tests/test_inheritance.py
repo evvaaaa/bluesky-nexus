@@ -18,16 +18,15 @@ from . import add_device_metadata_to_hints_wrapper, load_only_generated_nexus_fi
 
 
 def test_schema_single_inheritance() -> None:
-    @NxDevice.add_device_from_dictionary(
-        {
-            "$nxclass": "NXobject",
-            "the_odysee": {
-                "$units": "lyrics",
-                "data_key": "signal_made_of_bronze",
-            },
-        }
-    )
-    class Grandma(Device):
+    dict1 = {
+        "$nxclass": "NXobject",
+        "the_odysee": {
+            "$units": "lyrics",
+            "data_key": "signal_made_of_bronze",
+        },
+    }
+
+    class Grandma(NxDevice[NxBaseClass.from_dictionary(dict1)], Device):
         signal_made_of_bronze = Cpt(EpicsSignal, "BRONZE")
 
     expected_grandma_schema = {
@@ -47,10 +46,9 @@ def test_schema_single_inheritance() -> None:
         ).model_dump()
     )
 
-    @NxDevice.add_device_from_dictionary(
-        {"$nxclass": "NXobject", "beowulf": "signal_made_of_iron"}
-    )
-    class Mama(Grandma):
+    dict2 = {"$nxclass": "NXobject", "beowulf": "signal_made_of_iron"}
+
+    class Mama(NxDevice[NxBaseClass.from_dictionary(dict2)], Grandma):
         signal_made_of_iron = Cpt(EpicsSignal, "IRON")
 
     expected_mama_schema = {"beowulf": "signal_made_of_iron"}
@@ -66,17 +64,16 @@ def test_schema_single_inheritance() -> None:
         ).model_dump()
     )
 
-    @NxDevice.add_device_from_dictionary(
-        {
+    dict3 = {
+        "$nxclass": "NXobject",
+        "pride_and_prejudice": "signal_made_of_steel",
+        "the_odysee": {
             "$nxclass": "NXobject",
-            "pride_and_prejudice": "signal_made_of_steel",
-            "the_odysee": {
-                "$nxclass": "NXobject",
-                "new_movie": "signal_made_of_bronze",
-            },
-        }
-    )
-    class Me(Mama):
+            "new_movie": "signal_made_of_bronze",
+        },
+    }
+
+    class Me(NxDevice[NxBaseClass.from_dictionary(dict3)], Mama):
         signal_made_of_steel = Cpt(EpicsSignal, "STEEL")
 
     expected_me_schema = {"pride_and_prejudice": "signal_made_of_steel"}
@@ -96,177 +93,141 @@ def test_schema_single_inheritance() -> None:
         ).model_dump()
     )
 
-    expected_auntie_schema = {
-        "$nxclass": "NXobject",
-        "beowulf": "signal_made_of_iron",
-    }
-
-    @NxDevice.add_device_from_dictionary(
-        {"$nxclass": "NXobject", "beowulf": "signal_made_of_iron"}, inherit=False
-    )
-    class Auntie(Grandma):
-        signal_made_of_iron = Cpt(EpicsSignal, "IRON")
-
-    assert Auntie("AUNTIE", name="auntie").hints["NX_schema"] == expected_auntie_schema
-
-    expected_me_schema = {
-        "$nxclass": "NXobject",
-        "pride_and_prejudice": "signal_made_of_steel",
-    }
-    expected_me_schema.update(expected_auntie_schema)
-
-    @NxDevice.add_device_from_dictionary(
-        {
-            "$nxclass": "NXobject",
-            "pride_and_prejudice": "signal_made_of_steel",
-        }
-    )
-    class ITakeOnlyAfterMyAunt(Auntie):
-        signal_made_of_steel = Cpt(EpicsSignal, "STEEL")
-
-    assert ITakeOnlyAfterMyAunt("ME", name="me").hints["NX_schema"] == expected_me_schema
-
 
 def test_schema_multi_inheritance() -> None:
-    @NxDevice.add_device_from_dictionary(
-        {
+    dict1 = {
+        "$nxclass": "NXobject",
+        "signalnm": "value11",
+        "signal1n": "value11",
+        "signaln1": "value11",
+        "GROUP": {
             "$nxclass": "NXobject",
             "signalnm": "value11",
             "signal1n": "value11",
             "signaln1": "value11",
-            "GROUP": {
-                "$nxclass": "NXobject",
-                "signalnm": "value11",
-                "signal1n": "value11",
-                "signaln1": "value11",
-                "signal": {
-                    "data_key": "signal",
-                    "$attrnm": "value11",
-                    "$attr1n": "value11",
-                    "$attrn1": "value11",
-                },
+            "signal": {
+                "data_key": "signal",
+                "$attrnm": "value11",
+                "$attr1n": "value11",
+                "$attrn1": "value11",
             },
         },
-    )
-    class Device11(Device):
+    }
+
+    class Device11(NxDevice[NxBaseClass.from_dictionary(dict1)], Device):
         device_n_m_int = 11
         device_1_n_int = 11
         device_n_1_int = 11
 
-    @NxDevice.add_device_from_dictionary(
-        {
+    dict2 = {
+        "$nxclass": "NXobject",
+        "signalnm": "value12",
+        "signal1n": "value12",
+        "signaln2": "value12",
+        "GROUP": {
             "$nxclass": "NXobject",
             "signalnm": "value12",
             "signal1n": "value12",
             "signaln2": "value12",
-            "GROUP": {
-                "$nxclass": "NXobject",
-                "signalnm": "value12",
-                "signal1n": "value12",
-                "signaln2": "value12",
-                "signal": {
-                    "data_key": "signal",
-                    "$attrnm": "value12",
-                    "$attr1n": "value12",
-                    "$attrn2": "value12",
-                },
+            "signal": {
+                "data_key": "signal",
+                "$attrnm": "value12",
+                "$attr1n": "value12",
+                "$attrn2": "value12",
             },
         },
-    )
-    class Device12(Device):
+    }
+
+    class Device12(NxDevice[NxBaseClass.from_dictionary(dict2)], Device):
         device_n_m_int = 12
         device_1_n_int = 12
         device_n_2_int = 12
 
-    @NxDevice.add_device_from_dictionary(
-        {
+    dict3 = {
+        "$nxclass": "NXobject",
+        "signaln": "value1",
+        "signal1": "value1",
+        "GROUP": {
             "$nxclass": "NXobject",
             "signaln": "value1",
             "signal1": "value1",
-            "GROUP": {
-                "$nxclass": "NXobject",
-                "signaln": "value1",
-                "signal1": "value1",
-                "signal": {
-                    "data_key": "signal",
-                    "$attrn": "value1",
-                    "$attr1": "value1",
-                },
+            "signal": {
+                "data_key": "signal",
+                "$attrn": "value1",
+                "$attr1": "value1",
             },
         },
-    )
-    class Device1(Device11, Device12):
+    }
+
+    class Device1(NxDevice[NxBaseClass.from_dictionary(dict3)], Device11, Device12):
         device_n_int = 1
         device_1_int = 1
 
-    @NxDevice.add_device_from_dictionary(
-        {
+    dict4 = {
+        "$nxclass": "NXobject",
+        "signalnm": "value21",
+        "signal2n": "value21",
+        "signaln1": "value21",
+        "GROUP": {
             "$nxclass": "NXobject",
             "signalnm": "value21",
             "signal2n": "value21",
             "signaln1": "value21",
-            "GROUP": {
-                "$nxclass": "NXobject",
-                "signalnm": "value21",
-                "signal2n": "value21",
-                "signaln1": "value21",
-                "signal": {
-                    "data_key": "signal",
-                    "$attrnm": "value21",
-                    "$attr2n": "value21",
-                    "$attrn1": "value21",
-                },
+            "signal": {
+                "data_key": "signal",
+                "$attrnm": "value21",
+                "$attr2n": "value21",
+                "$attrn1": "value21",
             },
         },
-    )
-    class Device21(Device):
+    }
+
+    class Device21(NxDevice[NxBaseClass.from_dictionary(dict4)], Device):
         device_n_m_int = 21
         device_2_n_int = 21
         device_n_1_int = 21
 
-    @NxDevice.add_device_from_dictionary(
-        {
+    dict5 = {
+        "$nxclass": "NXobject",
+        "signalnm": "value22",
+        "signal2n": "value22",
+        "signaln2": "value22",
+        "GROUP": {
             "$nxclass": "NXobject",
             "signalnm": "value22",
             "signal2n": "value22",
             "signaln2": "value22",
-            "GROUP": {
-                "$nxclass": "NXobject",
-                "signalnm": "value22",
-                "signal2n": "value22",
-                "signaln2": "value22",
-                "signal": {
-                    "data_key": "signal",
-                    "$attrnm": "value22",
-                    "$attr2n": "value22",
-                    "$attrn2": "value22",
-                },
+            "signal": {
+                "data_key": "signal",
+                "$attrnm": "value22",
+                "$attr2n": "value22",
+                "$attrn2": "value22",
             },
         },
-    )
-    class Device22(Device):
+    }
+
+    class Device22(NxDevice[NxBaseClass.from_dictionary(dict5)], Device):
         device_n_m_int = 22
         device_2_n_int = 22
         device_n_2_int = 22
 
-    @NxDevice.add_device_from_dictionary(
-        {
+    dict6 = {
+        "$nxclass": "NXobject",
+        "signaln": "value2",
+        "signal2": "value2",
+        "GROUP": {
             "$nxclass": "NXobject",
             "signaln": "value2",
             "signal2": "value2",
-            "GROUP": {
-                "$nxclass": "NXobject",
-                "signaln": "value2",
-                "signal2": "value2",
-                "signal": {
-                    "data_key": "signal",
-                    "$attrn": "value2",
-                    "$attr2": "value2",
-                },
+            "signal": {
+                "data_key": "signal",
+                "$attrn": "value2",
+                "$attr2": "value2",
             },
         },
-    )
-    class Device2(Device21, Device22):
+    }
+
+    class Device2(NxDevice[NxBaseClass.from_dictionary(dict6)], Device21, Device22):
         device_n_int = 2
         device_2_int = 2
 
@@ -321,33 +282,34 @@ def test_schema_multi_inheritance() -> None:
 def test_schema_single_inheritance_on_device(
     RE_directly_subscribed: RunEngine, tmpdir: Path
 ) -> None:
-    NxDevice.add_device_from_dictionary(
-        {
-            "$nxclass": "NXpositioner",
-            "value": "",
-            "target_value": "user_setpoint",
-            "tolerance": "encoder_resolution",
-            "soft_limit_min": "low_limit_travel",
-            "soft_limit_max": "high_limit_travel",
-            "velocity": "velocity",
-            "acceleration_time": "acceleration_time",
-        }
-    )(Motor)
+    positioner_dict = {
+        "$nxclass": "NXpositioner",
+        "value": "",
+        "target_value": "user_setpoint",
+        "tolerance": "encoder_resolution",
+        "soft_limit_min": "low_limit_travel",
+        "soft_limit_max": "high_limit_travel",
+        "velocity": "velocity",
+        "acceleration_time": "acceleration_time",
+    }
 
-    class Shutter(Motor):
+    class TestMotorBase(NxDevice[NxBaseClass.from_dictionary(positioner_dict)], Motor): ...
+
+    class Shutter(TestMotorBase):
         def __init__(self, prefix: str, name: str = "") -> None:
             super().__init__(prefix, name=name)
             with self.add_children_as_readables(format=Fmt.CONFIG_SIGNAL):
                 self.open_value = epics_signal_r(float, f"{prefix}:OPEN_VAL")
                 self.close_value = epics_signal_r(float, f"{prefix}:CLOSE_VAL")
 
-    @NxDevice.add_device_from_dictionary(
-        {
-            "$nxclass": "NXpositioner",
-            "SUB_GROUP": {"$nxclass": "NXsubentry", "value_at_open": "open_value"},
-        }
-    )
-    class ShutterWithSomeDifferingNxSchema(Shutter): ...
+    sub_positioner_dict = {
+        "$nxclass": "NXpositioner",
+        "SUB_GROUP": {"$nxclass": "NXsubentry", "value_at_open": "open_value"},
+    }
+
+    class ShutterWithSomeDifferingNxSchema(
+        NxDevice[NxBaseClass.from_dictionary(sub_positioner_dict)], Shutter
+    ): ...
 
     shutter_with_some_differing_schema = ShutterWithSomeDifferingNxSchema(
         "S1", name="shutter_differing"
@@ -395,18 +357,23 @@ def test_description_across_whole_codebase_from_hints_on_instantiation(
     # This test mimicks what we do with device instantiation map
     # at HZB. There metadata is added to the device instance.
 
+    dictionary = {
+        "$nxclass": "NXcomponent",
+        "description": {"hints_key": ["metadata", "description"]},
+    }
+
     @add_device_metadata_to_hints_wrapper
-    @NxDevice.add_device_from_dictionary(
-        {"$nxclass": "NXcomponent", "description": {"hints_key": ["metadata", "description"]}}
-    )
-    class ThisWouldBeTheRealDeviceInThePackage(Device): ...
+    class ThisWouldBeTheRealDeviceInThePackage(
+        NxDevice[NxBaseClass.from_dictionary(dictionary)], Device
+    ): ...
 
     class SynAxisWouldUseTheAbove(ThisWouldBeTheRealDeviceInThePackage, SynAxis): ...
 
-    @NxDevice.add_device_from_dictionary(
-        {"$nxclass": "NXdetector", "$some_attribute": 1, "data": "acceleration"}
-    )
-    class SubclassPlusDescription(SynAxisWouldUseTheAbove): ...
+    dictionary = {"$nxclass": "NXdetector", "$some_attribute": 1, "data": "acceleration"}
+
+    class SubclassPlusDescription(
+        NxDevice[NxBaseClass.from_dictionary(dictionary)], SynAxisWouldUseTheAbove
+    ): ...
 
     description1 = (
         "This description was added from the patch to ophyd device. "

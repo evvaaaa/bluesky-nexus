@@ -1,5 +1,4 @@
 from __future__ import annotations
-
 import os
 from pathlib import Path
 from types import EllipsisType
@@ -44,7 +43,7 @@ if (
 
 
 class _NxBaseClassMeta(type(pydantic.BaseModel)):  # type: ignore
-    def __getitem__(self, nxdl_name: str) -> type[NxBaseClass]:
+    def __getitem__(cls, nxdl_name: str) -> type[NxBaseClass]:
         # Normalize to "<name>.nxdl.xml".
         nxdl_name = f"{nxdl_name.removesuffix('.xml').removesuffix('.nxdl')}.nxdl.xml"
 
@@ -114,14 +113,14 @@ def _pydantic_field_from_parsed_field(parsed_field: ParsedField) -> type[NxField
 def _pydantic_model_from_schema_nxdl(parsed_nxdl: ParsedGroup) -> type[NxBaseClass]:
     if parsed_nxdl.extends:
         try:
-            base_class = NxBaseClass[parsed_nxdl.extends]  # type: ignore
+            base_class: type[NxBaseClass] = NxBaseClass[parsed_nxdl.extends]
         except Exception as exception:
             raise TypeError(
                 f"Cannot generate schema for {parsed_nxdl.name} as it inherits from "
                 f"{parsed_nxdl.extends} which failed with the above exception."
             ) from exception
     else:
-        base_class = cast(type[NxBaseClass], NxGroup)
+        base_class = NxBaseClass
 
     direct_attributes: dict[str, tuple[Any, None | EllipsisType]] = {}
     for subgroup_field_name, parsed_sub_group in parsed_nxdl.sub_groups.items():
@@ -154,6 +153,7 @@ def _pydantic_model_from_schema_nxdl(parsed_nxdl: ParsedGroup) -> type[NxBaseCla
         parsed_nxdl.name.removesuffix(".nxdl.xml"),
         __config__=pydantic.ConfigDict(extra="allow"),
         __base__=base_class,
+        __name__=parsed_nxdl.name,
         **direct_attributes,  # type: ignore
     )
 

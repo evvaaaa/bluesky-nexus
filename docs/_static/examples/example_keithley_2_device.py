@@ -1,8 +1,8 @@
 from bluesky_nexus import NxDevice
+from bluesky_nexus.schema.nx_base_class import NxBaseClass
 
 
-@NxDevice.add_device_from_path("Keithley.yaml")
-class Keithley(Device):
+class Keithley(NxDevice[NxBaseClass.from_path("Keithley.yaml")], Device):
     readback = Cpt(EpicsSignalRO, "rdCur", kind=Kind.hinted, labels={"detectors", "electrometers"})
     ... # And so on
 

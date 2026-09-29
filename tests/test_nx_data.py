@@ -60,20 +60,21 @@ def test_nx_data_deserializes_with_links_and_serializes_without():
 
 
 def test_nx_data_multi_dimensional(RE_directly_subscribed: RunEngine, tmpdir: Path):
-    @NxDevice.add_device_from_schema(
-        {
-            "$nxclass": "NXdata",
-            "$axes": ["some_axis1_link", "some_axis2_link"],
-            "&some_axis1_link": ["some_axis1", "value"],
-            "&some_axis2_link": ["some_axis2", "value"],
-            "&signal_link": ["some_signal", "value"],
-            "$signal": "signal_link",
-            "some_signal": "another_signal",
-            "some_axis1": "axis1",
-            "some_axis2": "axis2",
-        }
-    )
-    class MultiAxisDataDetector(StandardReadable):
+    dictionary = {
+        "$nxclass": "NXdata",
+        "$axes": ["some_axis1_link", "some_axis2_link"],
+        "&some_axis1_link": ["some_axis1", "value"],
+        "&some_axis2_link": ["some_axis2", "value"],
+        "&signal_link": ["some_signal", "value"],
+        "$signal": "signal_link",
+        "some_signal": "another_signal",
+        "some_axis1": "axis1",
+        "some_axis2": "axis2",
+    }
+
+    class MultiAxisDataDetector(
+        NxDevice[NxBaseClass.from_dictionary(dictionary)], StandardReadable
+    ):
         def __init__(self, name: str = ""):
             super().__init__(name=name)
             with self.add_children_as_readables():

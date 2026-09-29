@@ -13,7 +13,6 @@ from bluesky.callbacks.zmq import Proxy, Publisher
 from bluesky_nexus import NexusHdfWriterCallback
 from bluesky_nexus.dispatchers import run_zmq_dispatcher
 from bluesky_nexus.logger import setup_logging
-from bluesky_nexus.device._decorator import _inheritance_structure, _schema_added
 from bluesky_nexus.schema.nx_base_class import _already_made
 
 
@@ -31,17 +30,8 @@ def logs_on_during_tests() -> None:
 
 @pytest.fixture(scope="function", autouse=True)
 def ensure_fresh_mutable_global_caches(monkeypatch) -> None:
-    """It's important that any tests adding basemodels, or adding schema to
-    classes don't modify the environment.
-    """
-    monkeypatch.setattr(
-        "bluesky_nexus.device._decorator._schema_added",
-        _schema_added.copy(),
-    )
-    monkeypatch.setattr(
-        "bluesky_nexus.device._decorator._inheritance_structure",
-        _inheritance_structure.copy(),
-    )
+    """It's important that any tests adding basemodels."""
+
     monkeypatch.setattr(
         "bluesky_nexus.schema.nx_base_class._already_made",
         _already_made.copy(),

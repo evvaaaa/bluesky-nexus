@@ -13,10 +13,12 @@ from ophyd_async.core import (
     soft_signal_r_and_setter,
     soft_signal_rw,
 )
+from bluesky_nexus.schema import NxBaseClass
 from ophyd_async.core import StandardReadableFormat as Fmt
 from ophyd_async.sim import SimMotor, SimPointDetector
 
 from bluesky_nexus import NxDevice, __version__
+from bluesky_nexus.schema._nx_base import NxBase
 
 from . import (
     add_device_metadata_to_hints_wrapper,
@@ -78,14 +80,15 @@ def test_example_schema_and_manual_schema_with_equivalence(
 ) -> None:
     """Checks that the autofilled schema is equivalent to what we're expecting."""
 
-    @NxDevice.add_device_from_dictionary(
-        {
-            "$nxclass": "NXsubentry",
-            "channel_1_value": "channel-1-value",
-            "channel_2_value": "channel-2-value",
-        }
-    )
-    class SimPointDetectorWithSchema(SimPointDetector):
+    dictionary = {
+        "$nxclass": "NXsubentry",
+        "channel_1_value": "channel-1-value",
+        "channel_2_value": "channel-2-value",
+    }
+
+    class SimPointDetectorWithSchema(
+        NxDevice[NxBaseClass.from_dictionary(dictionary)], SimPointDetector
+    ):
         pass
 
     RE_directly_subscribed(
@@ -120,13 +123,12 @@ def test_simple_nx_detector(
     RE_directly_subscribed: RunEngine,
     tmpdir: Path,
 ) -> None:
-    @NxDevice.add_device_from_dictionary(
-        {
-            "$nxclass": "NXdetector",
-            "data": {"data_key": "channel-1-value"},
-        }
-    )
-    class NxSimPointDetector(SimPointDetector):
+    dictionary = {
+        "$nxclass": "NXdetector",
+        "data": {"data_key": "channel-1-value"},
+    }
+
+    class NxSimPointDetector(NxDevice[NxBaseClass.from_dictionary(dictionary)], SimPointDetector):
         pass
 
     detector = NxSimPointDetector(None, name="detector")
@@ -173,69 +175,19 @@ def test_nexus_writer_on_signals(
     assert {k: str(v) for k, v in loaded["motor"].attrs.items()} == {"nxclass": "NXsubentry"}
 
 
-# TODO: test using new metaclasses.
-# def test_schema_client_server_differing_schema(
-#     RE_subscribed_over_zmq: RunEngine, tmpdir: Path
-# ) -> None:
-#     new_motor_schema = {"$nxclass": "NXnew", "some_data": "foo"}
-#
-#     with pytest.raises(TypeError) as excinfo:
-#
-#         @NxDevice.add_device_from_dictionary(new_motor_schema)
-#         class NewMotorWhichWillFail(SimMotor): ...
-#
-#     # Can't use match with literal "\$" for whatever reason...
-#     assert "Requested `$nxclass: NXnew` but this isn't defined with pydantic schemas: " in str(
-#         excinfo
-#     )
-#
-#     @add_nx_class_basemodel
-#     class NxNew(NxGroup):
-#         some_data: NxField
-#
-#     # Passes because the nexus group was added in this process.
-#     @NxDevice.add_device_from_dictionary(new_motor_schema)
-#     class NewMotor(SimMotor): ...
-#
-#     motor = NewMotor(name="motor")
-#     RE_subscribed_over_zmq(bp.count([motor], num=3))
-#     loaded = wait_for_nexus_file(tmpdir)["entry"]["primary"]["devices"]
-#     logs = get_logs(tmpdir).read_text()
-#     pattern = re.compile(
-#         (
-#             r".*?Received a malformed schema in motor\. The error was:\n\s+Requested "
-#             r"`\$nxclass: NXnew` but this isn't defined with pydantic schemas: "
-#             r"\{[^}]*\}\nA default schema will be used instead\."
-#         ),
-#         re.DOTALL,
-#     )
-#
-#     # The subprocess didn't have the schema we made in this process, so it wrote a new
-#     # NXsubentry for the device after raising the error.
-#     assert pattern.search(logs)
-#     assert str(loaded["motor"].attrs["nxclass"]) == nexus.NXattr("NXsubentry")
-#     assert list(loaded["motor"]) == [
-#         "acceleration_time",
-#         "motor",
-#         "velocity",
-#     ]
-#     assert list(loaded["motor"]["motor"]["value"]) == [0, 0, 0]
-
-
 def test_constant_attributes(RE_directly_subscribed: RunEngine, tmpdir) -> None:
-    @NxDevice.add_device_from_dictionary(
-        {
-            "$nxclass": "NXsubentry",
-            "$description": "Some constant description",
-            "sim_motor_with_description": {
-                "data_key": "",
-                "$units": "overriden",
-                "$long_name": "Long motor name",
-                "$non_standard_attr": 7,
-            },
-        }
-    )
-    class SimMotorWithDescription(SynAxis): ...
+    dictionary = {
+        "$nxclass": "NXsubentry",
+        "$description": "Some constant description",
+        "sim_motor_with_description": {
+            "data_key": "",
+            "$units": "overriden",
+            "$long_name": "Long motor name",
+            "$non_standard_attr": 7,
+        },
+    }
+
+    class SimMotorWithDescription(NxDevice[NxBaseClass.from_dictionary(dictionary)], SynAxis): ...
 
     sim_motor_with_description = SimMotorWithDescription(name="sim_motor_with_description")
     sim_motor = SimMotor(name="sim_motor")
@@ -282,14 +234,13 @@ def test_constant_attributes(RE_directly_subscribed: RunEngine, tmpdir) -> None:
 
 
 def test_attributes_from_hints(RE_directly_subscribed: RunEngine, tmpdir):
+    dictionary = {
+        "$nxclass": "NXsubentry",
+        "description": {"hints_key": ["metadata", "description"]},
+    }
+
     @add_device_metadata_to_hints_wrapper
-    @NxDevice.add_device_from_dictionary(
-        {
-            "$nxclass": "NXsubentry",
-            "description": {"hints_key": ["metadata", "description"]},
-        }
-    )
-    class SynAxisWithDescription(SynAxis): ...
+    class SynAxisWithDescription(NxDevice[NxBaseClass.from_dictionary(dictionary)], SynAxis): ...
 
     syn_axis_with_description = SynAxisWithDescription(name="syn_axis_with_description")
     syn_axis_with_description.md = {"description": "Some description..."}
@@ -319,16 +270,17 @@ def test_attributes_from_hints(RE_directly_subscribed: RunEngine, tmpdir):
 
 
 def test_attributes_from_data_keys(RE_directly_subscribed: RunEngine, tmpdir):
-    @NxDevice.add_device_from_dictionary(
-        {
-            "$nxclass": "NXsubentry",
-            "readback": {
-                "data_key": "readback",
-                "$units": {"data_key": "egu"},
-            },
-        }
-    )
-    class ADeviceForAnUnfortunatelyDesignedIOCWhereUnitsArentInDotEgu(StandardReadable):
+    dictionary = {
+        "$nxclass": "NXsubentry",
+        "readback": {
+            "data_key": "readback",
+            "$units": {"data_key": "egu"},
+        },
+    }
+
+    class ADeviceForAnUnfortunatelyDesignedIOCWhereUnitsArentInDotEgu(
+        NxDevice[NxBaseClass.from_dictionary(dictionary)], StandardReadable
+    ):
         def __init__(self, name: str = "") -> None:
             super().__init__(name)
             with self.add_children_as_readables(format=Fmt.CONFIG_SIGNAL):
@@ -353,19 +305,17 @@ def test_attributes_from_data_keys(RE_directly_subscribed: RunEngine, tmpdir):
 def test_timestamps_of_data_key(RE_directly_subscribed: RunEngine, tmpdir: Path):
     read_times = []
 
-    @NxDevice.add_device_from_schema(
-        {
-            "$nxclass": "NXdata",
-            "$axes": ["signal1_t"],
-            "$signal": "signal1",
-            "signal1": "signal1",
-            "signal1_t": {"timestamps_of_data_key": "signal1"},
-            "signal2": "signal1",
-            "signal4_t": {"timestamps_of_data_key": "signal4"},
-        },
-        inherit=False,
-    )
-    class SomeDetector(StandardReadable):
+    dictionary = {
+        "$nxclass": "NXdata",
+        "$axes": ["signal1_t"],
+        "$signal": "signal1",
+        "signal1": "signal1",
+        "signal1_t": {"timestamps_of_data_key": "signal1"},
+        "signal2": "signal1",
+        "signal4_t": {"timestamps_of_data_key": "signal4"},
+    }
+
+    class SomeDetector(NxDevice[NxBaseClass.from_dictionary(dictionary)], StandardReadable):
         def __init__(self, name: str = "") -> None:
             super().__init__(name)
             with self.add_children_as_readables():
