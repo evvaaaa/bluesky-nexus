@@ -1,9 +1,10 @@
 from bluesky_nexus import NxDevice
 from bluesky_nexus.schema.nx_base_class import NxBaseClass
 
-
-class PlaneGratingMonochromator(NxDevice[NxBaseClass.from_path("PlaneGratingMonochromator.yaml")], StandardReadable):
+class PlaneGratingMonochromator(NxDevice, StandardReadable):
     """A simulated plane grating monochromator."""
+
+    BLUESKY_NEXUS_BASE_CLASS = NxBaseClass.from_path("PlaneGratingMonochromator.yaml")
 
     def __init__(self, name: str = "") -> None:
         super().__init__(name=name)

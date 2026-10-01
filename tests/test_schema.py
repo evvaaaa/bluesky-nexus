@@ -1,6 +1,6 @@
 import pytest
-from bluesky_nexus.schema.nx_base_class import NxBaseClass, BLUESKY_NEXUS_BASE_CLASSES_DIRECTORY
-from bluesky_nexus.schema.nx_group import NxGroup
+
+from bluesky_nexus.schema.nx_base_class import BLUESKY_NEXUS_BASE_CLASSES_DIRECTORY, NxBaseClass
 
 
 def test_nx_transformations():

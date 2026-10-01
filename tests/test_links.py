@@ -27,10 +27,8 @@ def test_internal_device_links(RE_directly_subscribed: RunEngine, tmpdir: Path) 
         "&link_to_subgroup": ["sub_group"],
     }
 
-    class SimPointDetectorWithSchema(
-        NxDevice[NxBaseClass.from_dictionary(dictionary)], SimPointDetector
-    ):
-        pass
+    class SimPointDetectorWithSchema(NxDevice, SimPointDetector):
+        BLUESKY_NEXUS_BASE_CLASS = NxBaseClass.from_dictionary(dictionary)
 
     RE_directly_subscribed(
         bp.count(

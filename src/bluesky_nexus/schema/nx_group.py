@@ -11,15 +11,15 @@ on deserialization in `NxGroup.from_dictionary`.
 
 from __future__ import annotations
 
-from abc import ABC
-import yaml
 import inspect
-from pathlib import Path
+from abc import ABC
 from functools import cached_property
+from pathlib import Path
 from pprint import pformat
 from typing import Any, ClassVar, Final, TypeVar, cast
 
 import pydantic
+import yaml
 
 from ._nx_base import NxBase
 from ._nx_base_leaf import NxBaseLeaf
@@ -53,7 +53,7 @@ def _nx_class_from_serialized_subgroup[T: "NxGroup"](subgroup: dict, cls: type[T
     # suggest something nicer.
     from .nx_base_class import NxBaseClass
 
-    nx_cls = NxBaseClass[document_nx_class_name]  # type: ignore
+    nx_cls = NxBaseClass.build(document_nx_class_name)  # type: ignore
 
     # The class is specified. It is fetched from the environment for
     # validation on instantiation.

@@ -13,12 +13,11 @@ from ophyd_async.core import (
     soft_signal_r_and_setter,
     soft_signal_rw,
 )
-from bluesky_nexus.schema import NxBaseClass
 from ophyd_async.core import StandardReadableFormat as Fmt
 from ophyd_async.sim import SimMotor, SimPointDetector
 
 from bluesky_nexus import NxDevice, __version__
-from bluesky_nexus.schema._nx_base import NxBase
+from bluesky_nexus.schema import NxBaseClass
 
 from . import (
     add_device_metadata_to_hints_wrapper,
@@ -86,10 +85,8 @@ def test_example_schema_and_manual_schema_with_equivalence(
         "channel_2_value": "channel-2-value",
     }
 
-    class SimPointDetectorWithSchema(
-        NxDevice[NxBaseClass.from_dictionary(dictionary)], SimPointDetector
-    ):
-        pass
+    class SimPointDetectorWithSchema(NxDevice, SimPointDetector):
+        BLUESKY_NEXUS_BASE_CLASS = NxBaseClass.from_dictionary(dictionary)
 
     RE_directly_subscribed(
         bp.count(
@@ -128,8 +125,8 @@ def test_simple_nx_detector(
         "data": {"data_key": "channel-1-value"},
     }
 
-    class NxSimPointDetector(NxDevice[NxBaseClass.from_dictionary(dictionary)], SimPointDetector):
-        pass
+    class NxSimPointDetector(NxDevice, SimPointDetector):
+        BLUESKY_NEXUS_BASE_CLASS = NxBaseClass.from_dictionary(dictionary)
 
     detector = NxSimPointDetector(None, name="detector")
     RE_directly_subscribed(
@@ -187,7 +184,8 @@ def test_constant_attributes(RE_directly_subscribed: RunEngine, tmpdir) -> None:
         },
     }
 
-    class SimMotorWithDescription(NxDevice[NxBaseClass.from_dictionary(dictionary)], SynAxis): ...
+    class SimMotorWithDescription(NxDevice, SynAxis):
+        BLUESKY_NEXUS_BASE_CLASS = NxBaseClass.from_dictionary(dictionary)
 
     sim_motor_with_description = SimMotorWithDescription(name="sim_motor_with_description")
     sim_motor = SimMotor(name="sim_motor")
@@ -233,14 +231,15 @@ def test_constant_attributes(RE_directly_subscribed: RunEngine, tmpdir) -> None:
     )
 
 
-def test_attributes_from_hints(RE_directly_subscribed: RunEngine, tmpdir):
+def test_attributes_from_hints(RE_directly_subscribed: RunEngine, tmpdir: Path):
     dictionary = {
         "$nxclass": "NXsubentry",
         "description": {"hints_key": ["metadata", "description"]},
     }
 
     @add_device_metadata_to_hints_wrapper
-    class SynAxisWithDescription(NxDevice[NxBaseClass.from_dictionary(dictionary)], SynAxis): ...
+    class SynAxisWithDescription(NxDevice, SynAxis):
+        BLUESKY_NEXUS_BASE_CLASS = NxBaseClass.from_dictionary(dictionary)
 
     syn_axis_with_description = SynAxisWithDescription(name="syn_axis_with_description")
     syn_axis_with_description.md = {"description": "Some description..."}
@@ -269,7 +268,7 @@ def test_attributes_from_hints(RE_directly_subscribed: RunEngine, tmpdir):
     assert loaded["syn_axis_with_description"]["description"] == "Some description..."
 
 
-def test_attributes_from_data_keys(RE_directly_subscribed: RunEngine, tmpdir):
+def test_attributes_from_data_keys(RE_directly_subscribed: RunEngine, tmpdir: Path):
     dictionary = {
         "$nxclass": "NXsubentry",
         "readback": {
@@ -278,9 +277,9 @@ def test_attributes_from_data_keys(RE_directly_subscribed: RunEngine, tmpdir):
         },
     }
 
-    class ADeviceForAnUnfortunatelyDesignedIOCWhereUnitsArentInDotEgu(
-        NxDevice[NxBaseClass.from_dictionary(dictionary)], StandardReadable
-    ):
+    class ADeviceForAnUnfortunatelyDesignedIOCWhereUnitsArentInDotEgu(NxDevice, StandardReadable):
+        BLUESKY_NEXUS_BASE_CLASS = NxBaseClass.from_dictionary(dictionary)
+
         def __init__(self, name: str = "") -> None:
             super().__init__(name)
             with self.add_children_as_readables(format=Fmt.CONFIG_SIGNAL):
@@ -315,7 +314,9 @@ def test_timestamps_of_data_key(RE_directly_subscribed: RunEngine, tmpdir: Path)
         "signal4_t": {"timestamps_of_data_key": "signal4"},
     }
 
-    class SomeDetector(NxDevice[NxBaseClass.from_dictionary(dictionary)], StandardReadable):
+    class SomeDetector(NxDevice, StandardReadable):
+        BLUESKY_NEXUS_BASE_CLASS = NxBaseClass.from_dictionary(dictionary)
+
         def __init__(self, name: str = "") -> None:
             super().__init__(name)
             with self.add_children_as_readables():

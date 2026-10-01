@@ -1,120 +1,156 @@
-from __future__ import annotations
-from typing import Annotated, Generic, get_args, get_origin, Any
-from typing import TYPE_CHECKING, Generic, TypeVar
-from bluesky.protocols import HasHints
-
-from ophyd import ClassVar, TypeVar
-
-from .annotations import NxConstant, NxDataKey
-from ._bluesky_nexus_hints import NxHints
-
 """Contains a decorator for loading bluesky-nexus schema into a device's hints."""
 
-from typing import cast
+from __future__ import annotations
+
+from abc import ABC
+from typing import Annotated, Any, TypeVar, cast, get_args, get_origin
+
+from bluesky.protocols import HasHints, HasName
+from ophyd import ClassVar
+
+from bluesky_nexus.schema import NX_ATTRIBUTE_SERIALIZED_PREFIX, NxBaseClass
+
+from ._bluesky_nexus_hints import NxHints
+from .annotations import NxConstant, NxDataKey, NxSubGroup
 
 
-from bluesky_nexus.schema import NxBaseClass
-
-
-def _parse_annotations(device: NxDevice, schema: type[NxBaseClass]) -> NxBaseClass:
-    kwargs = {}
-    for name, annotation in type(device).__annotations__.items():
-        nx_annotation = _get_nx_annotation(annotation)
-        if isinstance(nx_annotation, NxConstant):
-            # e.g - some_nexus_name: NxConstant(6)
-            kwargs[name] = nx_annotation.constant
-        elif isinstance(nx_annotation, NxDataKey):
-            # e.g - some_data_key_name: NxConstant("the_name_in_nexus")
-            kwargs[nx_annotation.nx_name] = name
-
-    return schema(**kwargs)
-
-
-def _get_nx_annotation(annotation: Any) -> NxDataKey | NxConstant | None:
+def _get_nx_annotation_from_python_annotation(
+    annotation: Any,
+) -> NxDataKey | NxConstant | NxSubGroup | None:
+    """Extracts the bluesky nexus annotation type from a single python type annotation."""
     candidates = get_args(annotation) if get_origin(annotation) is Annotated else (annotation,)
 
     for candidate in candidates:
-        if isinstance(candidate, NxDataKey | NxConstant):
+        if isinstance(candidate, NxDataKey | NxConstant | NxSubGroup):
             return candidate
 
     return None
 
 
-def _sum_parent_schema[T](cls: type[T], schema_sofar: NxBaseClass) -> NxBaseClass:
-    for direct_parent in cls.__bases__:
-        schema_sofar += _sum_parent_schema(direct_parent, schema_sofar=schema_sofar)
-        maybe_schema_instance = getattr(direct_parent, "BLUESKY_NEXUS_SCHEMA", None)
-        if isinstance(maybe_schema_instance, NxBaseClass):
-            schema_sofar += maybe_schema_instance
-
-    return schema_sofar
+T = TypeVar("T")
 
 
-def _get_other_hints(cls: type) -> property | None:
-    """Gets the hints from the class which would have been defined if NxDevice had not been
-    inherited, e.g ophyd-async StandardReadable.hints, or ophyd Device.hints."""
-    mro = cls.mro()
-
-    # Search the MRO (excluding the class itself) for the first 'hints' property
-    # that is not defined on the generated per-parameterized NxDevice class.
-    for base in mro[1:]:
-        attr = base.__dict__.get("hints")
-        if isinstance(attr, property):
-            # Generated NxDevice classes created by __class_getitem__ put
-            # BLUESKY_NEXUS_SCHEMA in their __dict__.  Skip those so we
-            # return the hints from other parent classes.
-            if "BLUESKY_NEXUS_SCHEMA" in base.__dict__:
-                continue
-            return attr
-    return None
-
-
-class _NxDeviceMeta(type):
-    """Metaclass for generating a new NxDevice with __getitem__ instead of using generics."""
-
-    def __getitem__(cls, schema: NxBaseClass | type[NxBaseClass]) -> type[NxDevice]:
-        class _NxDevice:
-            BLUESKY_NEXUS_SCHEMA: ClassVar[NxBaseClass | type[NxBaseClass]] = schema
-
-            @property
-            def hints(self) -> NxHints:
-                """Appends the bluesky-nexus hints to the hints of the device
-                which would be used if this class werent inherited."""
-
-                output = {}
-
-                # The hints of this device if NxDevice weren't inherited, e.g
-                # ophyd-async StandardReadable.hints.
-                other_hints = _get_other_hints(type(self))
-                if other_hints is None:
-                    raise TypeError(
-                        "Inherited NxDevice in a class which doesn't contain hints "
-                        "from other parent classes."
-                    )
-                output.update(other_hints.__get__(self))
-
-                schema_or_schema_t = self.BLUESKY_NEXUS_SCHEMA
-
-                if isinstance(schema_or_schema_t, type):
-                    # Uisng declarative, parse the annotations.
-                    schema = _parse_annotations(
-                        self,  # type: ignore
-                        schema_or_schema_t,
-                    )
-                else:
-                    # Using procedural, sum the schema together.
-                    schema = _sum_parent_schema(type(self), schema_or_schema_t)
-
-                # schema_with_parents = _sum_parent_schema(type(self), schema)
-                raw_schema = schema.model_dump(exclude_unset=True, exclude_none=True)
-                output.update({"NX_class": schema.nxclass.constant, "NX_schema": raw_schema})
-
-                return cast(NxHints, output)
-
-        return _NxDevice  # type: ignore
-
-
-class NxDevice(metaclass=_NxDeviceMeta):
+class NxDevice(ABC):
     """A class which can be inherited from to provide schema to a device."""
 
-    BLUESKY_NEXUS_SCHEMA: NxBaseClass
+    """The base class added via bluesky nexus.
+
+    The decorator `NxDevice.insert_schema` embeds the schema instance here and patches
+    the hints of the device.
+
+    By inheriting `NxDevice`, and adding the `BLUESKY_NEXUS_BASE_CLASS` class variable to your
+    subclass.
+    """
+
+    BLUESKY_NEXUS_BASE_CLASS: ClassVar[type[NxBaseClass] | NxBaseClass]
+
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        """Enforce that subclasses define the class variable at runtime."""
+        super().__init_subclass__(**kwargs)
+        if not hasattr(cls, "BLUESKY_NEXUS_BASE_CLASS"):
+            raise TypeError(
+                f"{cls.__name__} must define class variable 'BLUESKY_NEXUS_BASE_CLASS'"
+            )
+        if not isinstance(cls, HasName):
+            raise TypeError(
+                "Can only inherit `NxDevice` on a device which corresponds to `HasName`."
+            )
+        if not isinstance(cls, HasHints):
+            raise TypeError(
+                "Can only inherit `NxDevice` on a device which corresponds to `HasHints`."
+            )
+        return None
+
+    @property
+    def hints(self) -> Any:  # Any because ophyd type hints this differently from ophyd async.
+        """Hints from a device which inherits NxDevice.
+
+        If a device inherits NxDevice then it specifies hints declaratively.
+        """
+
+        output = {}
+
+        # The hints of this device if NxDevice weren't inherited, e.g
+        # ophyd-async StandardReadable.hints.
+        other_hints = None
+        for parent_cls in type(self).mro()[1:]:
+            if issubclass(parent_cls, NxDevice):
+                continue
+
+            if hasattr(parent_cls, "hints"):
+                other_hints = parent_cls.hints
+                break
+        if other_hints is not None:
+            output.update(other_hints.__get__(self))
+
+        schema = self.nexus_schema()
+        raw_schema = schema.model_dump(exclude_unset=True, exclude_none=True)
+
+        output.update({"NX_class": schema.nxclass.constant, "NX_schema": raw_schema})
+
+        return cast(NxHints, output)
+
+    def nexus_schema(self: NxDevice) -> NxBaseClass:
+        """Returns the schema instance specified for this device."""
+        return _nexus_schema_from_nx_device(self, self.name)  # type: ignore
+
+
+def _merged_annotations(obj: object) -> dict[str, type]:
+    """Gives the annotations accross the MRO, including inherited."""
+    cls = obj if isinstance(obj, type) else obj.__class__
+    ann: dict[str, type] = {}
+    for base in reversed(cls.mro()):  # base-first so subclass overrides
+        ann.update(getattr(base, "__annotations__", {}))
+    return ann
+
+
+def _nexus_schema_from_nx_device(device: NxDevice, object_name: str) -> NxBaseClass:
+    """Returns the bluesky-nexus schema for this NxDevice."""
+    if isinstance(device.BLUESKY_NEXUS_BASE_CLASS, NxBaseClass):
+        # Procedural definition requries no walking.
+        return device.BLUESKY_NEXUS_BASE_CLASS
+
+    schema_cls = device.BLUESKY_NEXUS_BASE_CLASS
+    kwargs = {}
+
+    # Declarative definition, parse the annotations.
+    for name, annotation in _merged_annotations(device).items():
+        nx_annotation = _get_nx_annotation_from_python_annotation(annotation)
+
+        match nx_annotation:
+            case NxConstant(nx_name=nx_name, is_nx_attribute=is_nx_attribute):
+                # e.g - some_nexus_name: NxConstant(6)
+                if not (constant_value := getattr(device, name, None)):
+                    # Only append if the constant is defined on the instance.
+                    continue
+
+                if is_nx_attribute:
+                    kwargs[f"{NX_ATTRIBUTE_SERIALIZED_PREFIX}{nx_name}"] = constant_value
+                else:
+                    kwargs[nx_name] = {"constant": constant_value}
+            case NxDataKey(nx_name=nx_name, is_nx_attribute=is_nx_attribute) if (
+                signal := getattr(device, name, None)
+            ) and isinstance(signal, HasName):
+                # Remove the object name and the first separator from the datakey name.
+                data_key_name = (
+                    signal.name.removeprefix(object_name).removeprefix("-").removeprefix("_")
+                )
+                # e.g - some_data_key_name: NxConstant("the_name_in_nexus")
+                if is_nx_attribute:
+                    kwargs[f"{NX_ATTRIBUTE_SERIALIZED_PREFIX}{nx_annotation.nx_name}"] = {
+                        "data_key": data_key_name
+                    }
+                else:
+                    kwargs[nx_annotation.nx_name] = data_key_name
+
+            # TODO: Declarative subdevices won't work in bluesky-nexus until
+            # https://github.com/bluesky/ophyd-async/issues/1433
+            # is resolved.
+            # case NxSubGroup(nx_name=nx_name) if (
+            #     sub_device := getattr(device, name, None)
+            # ) and isinstance(sub_device, NxDevice):
+            #     kwargs[nx_annotation.nx_name] = _nexus_schema_from_nx_device(
+            #         sub_device, object_name
+            #     )
+
+    return schema_cls(**kwargs)  # type: ignore

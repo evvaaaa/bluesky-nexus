@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 import os
 from pathlib import Path
 from types import EllipsisType
@@ -43,7 +44,12 @@ if (
 
 
 class _NxBaseClassMeta(type(pydantic.BaseModel)):  # type: ignore
-    def __getitem__(cls, nxdl_name: str) -> type[NxBaseClass]:
+    def build(cls, nxdl_name: str) -> type[NxBaseClass]:
+        """Build the NxBaseClass from an NXDL name."""
+
+        # I would prefer to use __getitem__ here, but mypy doesn't
+        # support it... pyright does.
+
         # Normalize to "<name>.nxdl.xml".
         nxdl_name = f"{nxdl_name.removesuffix('.xml').removesuffix('.nxdl')}.nxdl.xml"
 
@@ -113,7 +119,7 @@ def _pydantic_field_from_parsed_field(parsed_field: ParsedField) -> type[NxField
 def _pydantic_model_from_schema_nxdl(parsed_nxdl: ParsedGroup) -> type[NxBaseClass]:
     if parsed_nxdl.extends:
         try:
-            base_class: type[NxBaseClass] = NxBaseClass[parsed_nxdl.extends]
+            base_class: type[NxBaseClass] = NxBaseClass.build(parsed_nxdl.extends)
         except Exception as exception:
             raise TypeError(
                 f"Cannot generate schema for {parsed_nxdl.name} as it inherits from "
@@ -126,7 +132,7 @@ def _pydantic_model_from_schema_nxdl(parsed_nxdl: ParsedGroup) -> type[NxBaseCla
     for subgroup_field_name, parsed_sub_group in parsed_nxdl.sub_groups.items():
         try:
             direct_attributes[subgroup_field_name] = (
-                NxBaseClass[parsed_sub_group.subgroup_nxdl_file],
+                NxBaseClass.build(parsed_sub_group.subgroup_nxdl_file),
                 None,
             )
         except Exception as exception:

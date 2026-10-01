@@ -43,7 +43,7 @@ def test_nx_data_deserializes_with_links_and_serializes_without():
         "$another_attribute": "another_attribute_value",
         "another_field": "another_field-field",
     }
-    loaded = NxBaseClass["NXdata"].from_dictionary(dictionary_definition)
+    loaded = NxBaseClass.from_dictionary(dictionary_definition)
 
     assert loaded.signal_link == NxInternalLink(link=["data", "value"])
     assert loaded.axis0_link == NxInternalLink(link=["axis0", "value"])
@@ -72,9 +72,9 @@ def test_nx_data_multi_dimensional(RE_directly_subscribed: RunEngine, tmpdir: Pa
         "some_axis2": "axis2",
     }
 
-    class MultiAxisDataDetector(
-        NxDevice[NxBaseClass.from_dictionary(dictionary)], StandardReadable
-    ):
+    class MultiAxisDataDetector(NxDevice, StandardReadable):
+        BLUESKY_NEXUS_BASE_CLASS = NxBaseClass.from_dictionary(dictionary)
+
         def __init__(self, name: str = ""):
             super().__init__(name=name)
             with self.add_children_as_readables():
