@@ -50,7 +50,7 @@ The following snippet sets up a `RunEngine` subscribed to:
 * A new callback which prints the tree of the generated nexus structure.
 * The [`NexusHdfWriterCallback`](#bluesky_nexus.NexusHdfWriterCallback) packaged with `bluesky_nexus` which writes NeXus files to the specified directory.
 
-```{include} _static/examples/tutorial_setting_up_run_engine.py
+```{include} _static/examples/example_setting_up_run_engine.py
 :code: python
 
 ```

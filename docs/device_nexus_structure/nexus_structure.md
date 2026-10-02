@@ -11,7 +11,7 @@ There are [6 types of nexus structure](https://manual.nexusformat.org/design.htm
 This schema is loaded from NXDL with a metaclass: [`NxBaseClass`](#bluesky_nexus.schema.NxBaseClass).
 
 
-Bluesky nexus provides the [`NxDevice`](#bluesky_nexus.device._decorator.NxDevice) decorator to add schema. It can load from one of three sources:
+Bluesky nexus provides the [`NxDevice`](#bluesky_nexus.device._nx_device.NxDevice) decorator to add schema. It can load from one of three sources:
 
 1) From pydantic schema directly.
 2) A dictionary directly.
@@ -26,7 +26,7 @@ A main goal of bluesky nexus will be to support custom schema for whichever NXDL
 
 [Groups](https://manual.nexusformat.org/design.html#design-groups) are defined by subclasses of [`NxGroup`](#bluesky_nexus.schema.NxGroup).
 
-By default, `bluesky_nexus` gives all devices and their data keys the nexus structure `NXsubentry`, corresponding to the pydantic schema`NxBaseClass["NXsubentry"]`. There are a few different ways to define other kinds of group for a given device class instead:
+By default, `bluesky_nexus` gives all devices and their data keys the nexus structure `NXsubentry`, corresponding to the pydantic schema`NxBaseClass.build("NXsubentry")`. There are a few different ways to define other kinds of group for a given device class instead:
 
 
 #### From pydantic schema

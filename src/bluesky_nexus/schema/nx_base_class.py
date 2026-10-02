@@ -172,7 +172,7 @@ def _pydantic_model_from_schema_nxdl(parsed_nxdl: ParsedGroup) -> type[NxBaseCla
     # for parsed_generic_subgroup in parsed_nxdl.generic_sub_groups:
     #     try:
     #         allowed_generic_subgroups.append(
-    #             NxBaseClass[parsed_generic_subgroup.subgroup_nxdl_file]  # type: ignore
+    #             NxBaseClass.build(parsed_generic_subgroup.subgroup_nxdl_file)  # type: ignore
     #         )
     #     except Exception as exception:
     #         raise TypeError(
