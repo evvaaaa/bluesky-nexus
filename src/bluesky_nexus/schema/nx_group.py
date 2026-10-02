@@ -11,12 +11,15 @@ on deserialization in `NxGroup.from_dictionary`.
 
 from __future__ import annotations
 
+import inspect
 from abc import ABC
 from functools import cached_property
+from pathlib import Path
 from pprint import pformat
 from typing import Any, ClassVar, Final, TypeVar, cast
 
 import pydantic
+import yaml
 
 from ._nx_base import NxBase
 from ._nx_base_leaf import NxBaseLeaf
@@ -50,7 +53,7 @@ def _nx_class_from_serialized_subgroup[T: "NxGroup"](subgroup: dict, cls: type[T
     # suggest something nicer.
     from .nx_base_class import NxBaseClass
 
-    nx_cls = NxBaseClass[document_nx_class_name]  # type: ignore
+    nx_cls = NxBaseClass.build(document_nx_class_name)  # type: ignore
 
     # The class is specified. It is fetched from the environment for
     # validation on instantiation.
@@ -309,6 +312,42 @@ class NxGroup(NxBase, ABC):
             kwargs[key] = cls._ALLOWED_LINK_TYPE.default(**value)  # type: ignore
 
         return kwargs
+
+    @classmethod
+    def from_path(cls: type[T], nexus_schema: str | Path) -> T:
+        """Load the chosen ``nexus_schema`` from a given path either absolute across the files
+         system, or relative to the device definition/where this wrapper is called from.
+
+        Schema is validated against the pydantic basemodel.
+        """
+
+        this_file = Path(__file__).resolve()
+        frame = inspect.currentframe()
+        if not frame:
+            raise ValueError(f"Cannot parse {nexus_schema} either relative nor absolute.")
+        caller_file = None
+        # Skip current frame and walk back to find the path where the decorator
+        # is called from.
+        frame = frame.f_back
+        while frame:
+            try:
+                fpath = Path(frame.f_code.co_filename).resolve()
+            except Exception:
+                frame = frame.f_back
+                continue
+            if fpath != this_file:
+                caller_file = fpath
+                break
+            frame = frame.f_back
+
+        base_directory = caller_file.parent if caller_file is not None else Path.cwd()
+        path = (base_directory / Path(nexus_schema)).resolve()
+
+        if not path.exists():
+            raise ValueError(f"Path `{path.absolute()}` does not exist.")
+        with path.open("r") as f:
+            loaded_dictionary = yaml.safe_load(f)
+        return cls.from_dictionary(loaded_dictionary)
 
     @classmethod
     def from_dictionary(cls: type[T], dictionary: dict) -> T:

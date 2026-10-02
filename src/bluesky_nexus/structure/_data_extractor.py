@@ -237,7 +237,7 @@ class ObjectData:
             )
         else:
             # # Make an NxSubEntry with all the fields from the data keys.
-            nx_schema = NxBaseClass["NXsubentry"]()
+            nx_schema = NxBaseClass.build("NXsubentry")()
             nx_schema = new_schema_with_missing_fields(formatted_data_key_name_to_data, nx_schema)
             LOGGER.debug(f"Creating new NxSubEntry schema for device {object_name}.")
         return ObjectData(

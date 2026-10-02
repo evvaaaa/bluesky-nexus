@@ -4,7 +4,8 @@ from bluesky import RunEngine
 from bluesky import plans as bp
 from ophyd_async.sim import SimPointDetector
 
-from bluesky_nexus import NexusDevices
+from bluesky_nexus import NxDevice
+from bluesky_nexus.schema import NxBaseClass
 
 from . import (
     load_only_generated_nexus_file,
@@ -12,23 +13,22 @@ from . import (
 
 
 def test_internal_device_links(RE_directly_subscribed: RunEngine, tmpdir: Path) -> None:
-    @NexusDevices.add_device_from_dictionary(
-        {
+    dictionary = {
+        "$nxclass": "NXcomponent",
+        "channel_1_value": "channel-1-value",
+        "channel_3_value": "channel-3-value",
+        "&link_in_parent": ["channel_1_value"],
+        "sub_group": {
             "$nxclass": "NXcomponent",
-            "channel_1_value": "channel-1-value",
-            "channel_3_value": "channel-3-value",
-            "&link_in_parent": ["channel_1_value"],
-            "sub_group": {
-                "$nxclass": "NXcomponent",
-                "&link_parent_outside_sub_group": ["channel_3_value"],
-                "channel_2_value": "channel-2-value",
-            },
-            "&link_sub_group_outside_sub_group": ["sub_group", "channel_2_value"],
-            "&link_to_subgroup": ["sub_group"],
-        }
-    )
-    class SimPointDetectorWithSchema(SimPointDetector):
-        pass
+            "&link_parent_outside_sub_group": ["channel_3_value"],
+            "channel_2_value": "channel-2-value",
+        },
+        "&link_sub_group_outside_sub_group": ["sub_group", "channel_2_value"],
+        "&link_to_subgroup": ["sub_group"],
+    }
+
+    class SimPointDetectorWithSchema(NxDevice, SimPointDetector):
+        BLUESKY_NEXUS_BASE_CLASS = NxBaseClass.from_dictionary(dictionary)
 
     RE_directly_subscribed(
         bp.count(
@@ -136,5 +136,5 @@ def test_internal_device_links(RE_directly_subscribed: RunEngine, tmpdir: Path) 
 #         match=error,
 #     ):
 #
-#         @NexusDevices.add_device_from_dictionary(schema)
+#         @NxDevice.add_device_from_dictionary(schema)
 #         class SimPointDetectorWithSchema(SimPointDetector): ...

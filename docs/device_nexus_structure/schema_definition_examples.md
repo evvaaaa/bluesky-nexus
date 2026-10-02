@@ -18,13 +18,13 @@ To define some, I'm going to create a new file `Keithely.yaml` in the same direc
 
 ```
 
-1) `$nxclass` is a NeXus attribute which has to come from a constant. It's presence in a level of the schema indicates whether that level is a NeXus group. `bluesky-nexus` loads schema from a directory in your environment. This can be supplied by the environment variable `BLUESKY_NEXUS_BASE_CLASSES_DIRECTORY`, but defaults to the [nexusformat schema packaged as a pypi requirement](https://github.com/nexpy/nexusformat/tree/main/src/nexusformat/definitions). If you supply an incorrect NXDL name for any given [`NxBaseClass`](#bluesky_nexus.schema.NxBaseClass), e.g `NxBaseSchema["NXsome_name_which_doesnt_have_an_nxdl_file"]`, or a required item is missing in the supplied schema, then an error will be raised by the decorator.
+1) `$nxclass` is a NeXus attribute which has to come from a constant. `bluesky-nexus` loads NXDL XML schema from a directory in your environment. This can be supplied by the environment variable `BLUESKY_NEXUS_BASE_CLASSES_DIRECTORY`, but defaults to the [nexusformat schema packaged as a pypi requirement](https://github.com/nexpy/nexusformat/tree/main/src/nexusformat/definitions). [`NxBaseClass.build`](#bluesky_nexus.schema.NxBaseClass.build) then builds a schema for converting bluesky devices into a NeXus structure from that NXDL. If you supply an incorrect NXDL name for any given [`NxBaseClass`](#bluesky_nexus.schema.NxBaseClass), e.g `NxBaseSchema.build("NXsome_name_which_doesnt_have_an_nxdl_file")`, or a required item is missing in the supplied schema, then an error will be raised.
 2) The first four definitions simply map the data keys in the device (minus the name of the instance) to their name in the nexus schema. Since all data keys are added to the structure, it wouldn't be strictly necessary to map these if the data key name were already equal to the name in the nexus structure... This isn't always possible.
 3) `data` is mapping to the `readback` data key. `readback` is given the same name as the device itself as a datakey, an so the name we use with it "" is.
-4) {`timestamps_of_data_key`: ""} will give 
-5) The last four are constant fields for all keithley. If any subclass of this Keithley wanted to override them, then they could in their own schema.
+4) {`timestamps_of_data_key`: ""} will end up as a field in NeXus which contains the timestamps of the readback.
+5) The last four are constant fields for any Keithley which you could connect to. If any subclass of this Keithley wanted to override them, then they could in their own schema.
 
-```{include} ../_static/examples/example_keithely_2_device.py
+```{include} ../_static/examples/example_keithley_2_device.py
 :code: python
 
 ```
@@ -74,9 +74,9 @@ We make a new schema called `PlanGratingMonochromator.yaml` and include it in th
 :code: yaml
 
 ```
-1) The class attribute `$nxclass: NXmonochromator` is used. This group is a nexusformat [`NXmonochromator`](https://manual.nexusformat.org/classes/base_classes/NXmonochromator.html), and the schema will be validated against the pydantic class loaded from NXDL [`NxBaseSchema["NXmonochromator"]`](#bluesky_nexus.schema.NxBaseClass)
+1) The class attribute `$nxclass: NXmonochromator` is used. This group is a nexusformat [`NXmonochromator`](https://manual.nexusformat.org/classes/base_classes/NXmonochromator.html), and the schema will be validated against the pydantic class loaded from NXDL [`NxBaseSchema.build("NXmonochromator)]`](#bluesky_nexus.schema.NxBaseClass)
 2) The readback field `energy-readback` is given the name `energy` to conform to the NeXus base class.
-3) A sub group is made for the exit slit. `NXmonochromator` expects exit slits to be defined in [a subgroup with this name](https://manual.nexusformat.org/classes/base_classes/NXmonochromator.html#nxmonochromator-exit-slit-group). The data keys relevant to exit slit are mapped here. The `$nclass: NXaperture` will mean that the sub group definitions will be making an [`NXaperture`](https://manual.nexusformat.org/classes/base_classes/NXaperture.html) and validated against `NxBaseClass["NXaperture"]`
+3) A sub group is made for the exit slit. `NXmonochromator` expects exit slits to be defined in [a subgroup with this name](https://manual.nexusformat.org/classes/base_classes/NXmonochromator.html#nxmonochromator-exit-slit-group). The data keys relevant to exit slit are mapped here. The `$nclass: NXaperture` will mean that the sub group definitions will be making an [`NXaperture`](https://manual.nexusformat.org/classes/base_classes/NXaperture.html) and validated against `NxBaseClass.build("NXaperture")`
 4) `diff_order` is not part of `NXmonochromator`, but we would like to give it a full name when it's written instead of the shortened data key.
 5) We define some filters which are relevant to the monochromator. The coordinates of the transformations for both are used given as constants.
 6) We give the full name of constant fixed focus, we also overwrite the units we get through EPICS to the standard that NeXus expects.
@@ -87,8 +87,6 @@ Now we load the schema into our device. Any obvious errors we've made in our sch
 
 ```{note}
 The pydantic schema cannot validate whether the data keys specified will actually end up being read by the device. It can only verify that, should they exist, the specification given will be a correct `NXmonochromator`.
-
-This project would like to investigate being able to specify schema through annotations on declarative devices, which would make the validation that data keys exist tautological.
 ```
 
 ```{include} ../_static/examples/example_mono_2_devices.py

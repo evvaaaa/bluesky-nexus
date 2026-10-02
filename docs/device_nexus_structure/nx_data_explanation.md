@@ -1,6 +1,6 @@
 # `NXData` Linking Explanation
 
-When defining a `NxBaseClass["NXData"]` there is some nuance in bluesky-nexus. We want every field to automatically become an [`NXLog`](https://manual.nexusformat.org/classes/base_classes/NXlog.html) with it's timestamps. From the description of NXlog, we would assume that it would be perfectly valid to define an [NXData](https://manual.nexusformat.org/classes/base_classes/NXdata.html) device schema, e.g
+When defining a `NxBaseClass.build("NXdata")` there is some nuance in bluesky-nexus. We want every field to automatically become an [`NXLog`](https://manual.nexusformat.org/classes/base_classes/NXlog.html) with it's timestamps. From the description of NXlog, we would assume that it would be perfectly valid to define an [NXData](https://manual.nexusformat.org/classes/base_classes/NXdata.html) device schema, e.g
 
 ``` yaml
 $nxclass: NXdata
