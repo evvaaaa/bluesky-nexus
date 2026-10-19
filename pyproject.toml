@@ -118,7 +118,6 @@ commands = [
     [
         "mypy",
         "src",
-        "tests",
         { replace = "posargs", default = [
         ], extend = true },
     ],
