@@ -1,7 +1,7 @@
 [![CI](https://github.com/bluesky/bluesky-nexus/actions/workflows/ci.yml/badge.svg)](https://github.com/bluesky/bluesky-nexus/actions/workflows/ci.yml)
 [![Coverage](https://codecov.io/gh/bluesky/bluesky-nexus/branch/main/graph/badge.svg)](https://codecov.io/gh/bluesky/bluesky-nexus)
 [![PyPI](https://img.shields.io/pypi/v/bluesky-nexus.svg)](https://pypi.org/project/bluesky-nexus)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
+![License](https://img.shields.io/badge/License-MIT%202.0-blue.svg)
 
 # bluesky_nexus
 
