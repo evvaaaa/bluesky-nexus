@@ -7,9 +7,6 @@
 
 A package for generating a standard NeXus structure for bluesky plans.
 
-This is where you should write a short paragraph that describes what your module does,
-how it does it, and why people should use it.
-
 What            | Where
 :---:           | :---:
 Source          | <https://github.com/bluesky/bluesky-nexus>
@@ -17,21 +14,12 @@ PyPI            | `pip install bluesky-nexus`
 Documentation   | <https://bluesky.github.io/bluesky-nexus>
 Releases        | <https://github.com/bluesky/bluesky-nexus/releases>
 
-This is where you should put some images or code snippets that illustrate
-some relevant examples. If it is a library then you might put some
-introductory code here:
+## Design Philosophy
 
-```python
-from bluesky_nexus import __version__
-
-print(f"Hello bluesky_nexus {__version__}")
-```
-
-Or if it is a commandline tool then you might put some example commands here:
-
-```
-python -m bluesky_nexus --version
-```
+- [`bluesky-nexus`](#bluesky_nexus) provides a standardized nexus structure for any bluesky plan.
+- A *take it as it is* approach. [`bluesky-nexus`](#bluesky_nexus) can make a structure for any bluesky run. More structure can be imposed on top of this.
+- The nexus structure of a device can be defined on the device class. Device structure is ophyd/ophyd-async agnostic.
+- The structure can be used by callbacks by subclassing [`NexusCallback`](#bluesky_nexus.BlueskyNexusCallback).
 
 <!-- README only content. Anything below this line won't be included in index.md -->
 
