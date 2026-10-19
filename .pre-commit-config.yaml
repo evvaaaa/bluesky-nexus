@@ -1,52 +1,37 @@
-exclude: '^docs/'
-
 repos:
-  # Trailing-whitespace and end-of-file fixer
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
-      - id: trailing-whitespace
+      - id: check-added-large-files
+        exclude: ^uv.lock
+      - id: check-yaml
+      - id: check-merge-conflict
       - id: end-of-file-fixer
 
-  # Local hooks using installed packages
   - repo: local
     hooks:
-      # Ruff linting
       - id: ruff
-        name: ruff
-        entry: uv run ruff check --fix
+        name: lint with ruff
         language: system
+        entry: ruff check --force-exclude --fix
         types: [python]
         require_serial: true
 
-      # Ruff formatting
       - id: ruff-format
-        name: ruff format
-        entry: uv run ruff format
+        name: format with ruff
         language: system
+        entry: ruff format --force-exclude
         types: [python]
         require_serial: true
 
-      # Mypy type checking
-      - id: mypy
-        name: mypy
-        entry: uv run mypy src
-        language: system
-        types: [python]
-        require_serial: true
+      - id: uv-sync
+        name: update uv.lock and venv
         pass_filenames: false
-
-      # Bandit security linting
-      - id: bandit
-        name: bandit
-        entry: uv run bandit -r src -c pyproject.toml
         language: system
-        types: [python]
-        pass_filenames: false
+        entry: uv sync
+        files: ^(uv\.lock|pyproject\.toml)$
 
-  - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: "v3.1.0"
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
     hooks:
-      - id: prettier
-        types_or: [markdown]
-        exclude: '^(CHANGELOG\.md|\.pre-commit-config\.yaml)$'
+      - id: gitleaks

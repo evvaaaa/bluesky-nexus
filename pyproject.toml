@@ -1,184 +1,171 @@
 [build-system]
-requires = ["hatchling>=1.18", "hatch-vcs"]
-build-backend = "hatchling.build"
-
-[tool.hatch.metadata]
-allow-direct-references = true
-
-[tool.hatch.version]
-source = "vcs"
-raw-options = { version_scheme = "release-branch-semver" }
-
-[tool.hatch.build.targets.wheel]
-packages = ["src/bluesky_nexus"]
-
-[tool.hatch.build.targets.sdist]
-exclude = ["/.venv", "/.uv-cache", "/.git", "/.github"]
+requires = ["setuptools>=64", "setuptools_scm[toml]>=8"]
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "bluesky-nexus"
-dynamic = ["version"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+]
 description = "A package for generating a standard NeXus structure for bluesky plans."
+dependencies = [] # Add project dependencies here, e.g. ["click", "numpy"]
+dynamic = ["version"]
+license.file = "LICENSE"
 readme = "README.md"
-license = { text = "MIT" }
-keywords = ["bluesky", "nexus", "hdf5", "data-science", "pydantic"]
-authors = [
-  { name = "Daniel Tomecki", email = "daniel.tomecki@helmholtz-berlin.de" },
-  { name = "Eva Lott", email = "eva.lott@helmholtz-berlin.de" },
-]
-requires-python = ">=3.12"
-dependencies = [
-  "bluesky",
-  "nexusformat",
-  "event-model",
-  "numpy",
-  "pydantic",
-  "PyYAML",
-  "defusedxml",
-]
+requires-python = ">=3.11"
 
-[project.optional-dependencies]
-zmq = ["pyzmq", "uvicorn", "fastapi"]
-
-kafka = ["bluesky-kafka"]
-
+[dependency-groups]
 dev = [
-  "ruff",
-  "mypy",
-  "bandit[toml]",
-  "pre-commit",
-  "pytest",
-  "pytest-asyncio",
-  "pytest-html",
-  "pytest-cov",
-  "pytest-timeout",
-  "coverage",
-  "py",
-]
-docs = [
-  "sphinx",
-  "sphinx-rtd-theme",
-  "sphinx-autodoc-typehints",
-  "myst-parser",
-  "types-PyYAML",
-]
-test = [
-  "pytest",
-  "pytest-asyncio",
-  "pytest-html",
-  "pytest-cov",
-  "pytest-timeout",
-  "coverage",
-  "py",
-
-  # For device definitions in tests.
-  "ophyd",
-  "ophyd-async[sim, ca]",
-  "pytest",
-  "pre-commit",
-  "pyepics",
-
-
-  # So we can test zmq.
-  "pyzmq",
-  "uvicorn",
-  "fastapi",
+    "mypy",
+    "myst-parser",
+    "pre-commit",
+    "pydata-sphinx-theme>=0.12",
+    "pytest",
+    "pytest-cov",
+    "ruff",
+    "sphinx-autobuild",
+    "sphinx-copybutton",
+    "sphinx-design",
+    "tox-uv",
+    "types-mock",
 ]
 
+[project.scripts]
+bluesky-nexus = "bluesky_nexus.__main__:main"
+
+[project.urls]
+GitHub = "https://github.com/bluesky/bluesky-nexus"
+
+[[project.authors]] # Further authors may be added by duplicating this section
+email = "eva.lott@helmholtz-berlin.de"
+name = "Eva Lott"
+
+[tool.setuptools_scm]
+version_file = "src/bluesky_nexus/_version.py"
+
+[tool.mypy]
+ignore_missing_imports = true # Ignore missing stubs in imported modules
+
+[tool.pytest.ini_options]
+# Run pytest with all our checkers, and don't spam us with massive tracebacks on error
+addopts = """
+    --tb=native -vv --doctest-modules --doctest-glob="*.rst"
+    """
+# https://iscinumpy.gitlab.io/post/bound-version-constraints/#watch-for-warnings
+filterwarnings = "error"
+# Doctest python code in docs, python code in src docstrings, test functions in tests
+testpaths = "docs src tests"
+
+[tool.coverage.run]
+patch = ["subprocess"]
+data_file = "/tmp/bluesky_nexus.coverage"
+
+[tool.coverage.paths]
+# Tests are run from installed location, map back to the src directory
+source = ["src", "**/site-packages/"]
+
+[tool.tox]
+skipsdist = true
+# envs to runs automatically with tox -p
+env_list = ["pre-commit", "type-checking", "tests", "docs"]
+
+[tool.tox.env_run_base]
+# Pass all environment variables to the test environments
+passenv = ["*"]
+
+[tool.tox.env.pre-commit]
+description = "Run pre-commit on all files"
+commands = [
+    [
+        "pre-commit",
+        "run",
+        "--all-files",
+        "--show-diff-on-failure",
+        { replace = "posargs", default = [
+        ], extend = true },
+    ],
+]
+
+[tool.tox.env.type-checking]
+description = "Run mypy"
+commands = [
+    [
+        "mypy",
+        "src",
+        "tests",
+        { replace = "posargs", default = [
+        ], extend = true },
+    ],
+]
+
+[tool.tox.env.tests]
+description = "Run tests with coverage"
+commands = [
+    [
+        "pytest",
+        "--cov=bluesky_nexus",
+        "--cov-report",
+        "term",
+        "--cov-report",
+        "xml:cov.xml",
+        { replace = "posargs", default = [
+        ], extend = true },
+    ],
+]
+
+[tool.tox.env.docs]
+description = "Run docs build with clean environment"
+commands = [
+    [
+        "sphinx-build",
+        "--fresh-env",
+        "--show-traceback",
+        "--fail-on-warning",
+        "--keep-going",
+        "docs",
+        "build/html",
+        { replace = "posargs", default = [
+        ], extend = true },
+    ],
+]
+
+[tool.tox.env.docs-autobuild]
+description = "Run docs with autobuild on change"
+commands = [
+    [
+        "sphinx-autobuild",
+        "--show-traceback",
+        "--watch",
+        "README.md",
+        "docs",
+        "build/html",
+        { replace = "posargs", default = [
+        ], extend = true },
+    ],
+]
 
 [tool.ruff]
-line-length = 99
-indent-width = 4
-target-version = "py312" # Specify python version
-exclude = [
-  "tests/functional/",
-  "tests/input",
-  "tests/**/data/",
-  "doc/",
-  "docs/",
-]
-fix = true # Enable auto-fixing (equivalent to --fix in pre-commit)
-
-[tool.ruff.lint]
-select = [
-  "B",  # flake8-bugbear - https://docs.astral.sh/ruff/rules/#flake8-bugbear-b
-  "C4", # flake8-comprehensions - https://docs.astral.sh/ruff/rules/#flake8-comprehensions-c4
-  "E",  # pycodestyle errors - https://docs.astral.sh/ruff/rules/#error-e
-  "F",  # pyflakes rules - https://docs.astral.sh/ruff/rules/#pyflakes-f
-  "W",  # pycodestyle warnings - https://docs.astral.sh/ruff/rules/#warning-w
-  "I",  # isort - https://docs.astral.sh/ruff/rules/#isort-i
-  "UP", # pyupgrade - https://docs.astral.sh/ruff/rules/#pyupgrade-up
+src = ["src", "tests"]
+line-length = 88
+lint.select = [
+    "B",   # flake8-bugbear - https://docs.astral.sh/ruff/rules/#flake8-bugbear-b
+    "C4",  # flake8-comprehensions - https://docs.astral.sh/ruff/rules/#flake8-comprehensions-c4
+    "E",   # pycodestyle errors - https://docs.astral.sh/ruff/rules/#error-e
+    "F",   # pyflakes rules - https://docs.astral.sh/ruff/rules/#pyflakes-f
+    "N",   # pep8-naming - https://docs.astral.sh/ruff/rules/#pep8-naming-n
+    "W",   # pycodestyle warnings - https://docs.astral.sh/ruff/rules/#warning-w
+    "I",   # isort - https://docs.astral.sh/ruff/rules/#isort-i
+    "UP",  # pyupgrade - https://docs.astral.sh/ruff/rules/#pyupgrade-up
+    "SLF", # self - https://docs.astral.sh/ruff/settings/#lintflake8-self
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**/*.py" = ["S101"] # Allow assert statements in tests
-
-[tool.ruff.format]
-quote-style = "double"
-docstring-code-format = true
-docstring-code-line-length = 99
-indent-style = "space"
-skip-magic-trailing-comma = false
-
-[tool.mypy]
-mypy_path = "src"
-disallow_untyped_defs = true  # Enforce typing
-warn_return_any = true        # Check that function does not return Any value
-warn_unused_configs = true
-exclude_gitignore = true      # Excludes gitignore checking
-namespace_packages = true     # Enables namespace packages
-explicit_package_bases = true # Packages will be based in either the current directory or a member of MYPYPATH environment
-ignore_missing_imports = true # Surpresses error messages about imports that cannot be resolved
-check_untyped_defs = true     # type checks the interior of functions without type annotations
-plugins = ['pydantic.mypy']
-
-[tool.pydantic-mypy]
-init_forbid_extra = false # Used to allow extra options to nx schema basemodels
-
-[tool.bandit]
-exclude_dirs = ["tests", "venv", ".venv", "build", "dist"]
-severity = "low"
-
-[tool.bandit.assert_used]
-skips = ["**/test_*.py", "**/tests/*"]
-
-[tool.coverage.run]
-data_file = ".reports/coverage/.coverage"
-omit = [
-  "tests/*",
-  "src/bluesky_nexus/__main__.py",
-  "src/bluesky_nexus/logger.py",
-  "docs/_static/tutorials",
-]
-
-[tool.coverage.paths]
-source = ["src", "**/site-packages/"]
-
-[tool.coverage.html]
-directory = ".reports/coverage"
-
-# Pytest configuration
-[tool.pytest.ini_options]
-asyncio_mode = "auto"
-testpaths = ["tests"]
-python_files = ["test_*.py"]
-python_classes = ["Test*"]
-python_functions = ["test_*"]
-addopts = [
-  "-vv",
-  "--tb=native",
-  "--strict-markers",
-  "--log-level=INFO",
-  "--log-cli-level=INFO",
-  "--log-cli-format=%(asctime)s [%(levelname)8s] %(name)s: %(message)s",
-  "--log-cli-date-format=%Y-%m-%d %H:%M:%S",
-  "--capture=no",
-]
-log_auto_indent = true
-log_cli = true
-
-# Warning in use of fork process instead of spawn in `zmq_proxy_subprocess`...
-# This isn't really a problem and spawn can't pickle objects for some reason.
-filterwarnings = [
-  "ignore:.*use of fork.*:DeprecationWarning:multiprocessing\\.popen_fork",
-]
+# By default, private member access is allowed in tests
+# See https://github.com/DiamondLightSource/python-copier-template/issues/154
+# Remove this line to forbid private member access in tests
+"tests/**/*" = ["SLF001"]

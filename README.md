@@ -1,27 +1,38 @@
-# bluesky-nexus
+[![CI](https://github.com/bluesky/bluesky-nexus/actions/workflows/ci.yml/badge.svg)](https://github.com/bluesky/bluesky-nexus/actions/workflows/ci.yml)
+[![Coverage](https://codecov.io/gh/bluesky/bluesky-nexus/branch/main/graph/badge.svg)](https://codecov.io/gh/bluesky/bluesky-nexus)
+[![PyPI](https://img.shields.io/pypi/v/bluesky-nexus.svg)](https://pypi.org/project/bluesky-nexus)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 
-[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)<!-- Project badges hosted on codebase.helmholtz.cloud -->
-[![Docs](https://img.shields.io/badge/docs-sphinx-blue)](docs/)
+# bluesky_nexus
 
-<!--- docs index include start -->
+A package for generating a standard NeXus structure for bluesky plans.
 
-[![Python Version](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
-[![Linting: Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
-[![Latest Release](https://codebase.helmholtz.cloud//bluesky_nexus/-/badges/release.svg)](https://codebase.helmholtz.cloud//bluesky_nexus/-/releases)
-[![coverage report](https://codebase.helmholtz.cloud//bluesky_nexus/badges/main/coverage.svg)](https://codebase.helmholtz.cloud//bluesky_nexus/-/commits/main)
-[![pipeline status](https://codebase.helmholtz.cloud//bluesky_nexus/badges/main/pipeline.svg)](https://codebase.helmholtz.cloud//bluesky_nexus/-/commits/main)
+This is where you should write a short paragraph that describes what your module does,
+how it does it, and why people should use it.
 
-`bluesky_nexus` is a package for generating a standard NeXus structure for bluesky plans.
+What            | Where
+:---:           | :---:
+Source          | <https://github.com/bluesky/bluesky-nexus>
+PyPI            | `pip install bluesky-nexus`
+Documentation   | <https://bluesky.github.io/bluesky-nexus>
+Releases        | <https://github.com/bluesky/bluesky-nexus/releases>
 
-## Design Philosophy
+This is where you should put some images or code snippets that illustrate
+some relevant examples. If it is a library then you might put some
+introductory code here:
 
-- [`bluesky-nexus`](#bluesky_nexus) provides a standardized nexus structure for any bluesky plan.
-- A *take it as it is* approach. [`bluesky-nexus`](#bluesky_nexus) can make a structure for any bluesky run. More structure can be imposed on top of this.
-- The nexus structure of a device can be defined on the device class. Device structure is ophyd/ophyd-async agnostic.
-- The structure can be used by callbacks by subclassing [`NexusCallback`](#bluesky_nexus.BlueskyNexusCallback).
+```python
+from bluesky_nexus import __version__
 
-<!--- docs index include end -->
+print(f"Hello bluesky_nexus {__version__}")
+```
 
-## Contributing
+Or if it is a commandline tool then you might put some example commands here:
 
-Please see the [CONTRIBUTING.md](docs/CONTRIBUTING.md) file for contribution guidelines.
+```
+python -m bluesky_nexus --version
+```
+
+<!-- README only content. Anything below this line won't be included in index.md -->
+
+See https://bluesky.github.io/bluesky-nexus for more detailed documentation.

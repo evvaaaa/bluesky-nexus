@@ -1,74 +1,56 @@
-# bluesky-nexus
-
-Welcome to the documentation for **bluesky-nexus**!
+---
+html_theme.sidebar_secondary.remove: true
+---
 
 ```{include} ../README.md
-:start-after: <!--- docs index include start -->
-:end-before: <!--- docs index include end -->
-```
-
-## Features
-
-- **Modern Python**: Built with Python 3.12+
-- **Type Safe**: Full type hints with MyPy validation
-- **Code Quality**: Ruff for fast linting and formatting
-- **Security**: Bandit security scanning
-- **Testing**: Comprehensive test suite with pytest
-- **Fast Development**: UV package manager for rapid dependency installation
-- **Professional Build System**: Hatch with VCS versioning
-
-## Technology Stack
-
-This project leverages modern Python tooling:
-
-- **[UV](https://github.com/astral-sh/uv)**: Fast Python package installer and resolver
-- **[Hatch](https://hatch.pypa.io/)**: Modern Python build system with VCS versioning
-- **[Ruff](https://github.com/astral-sh/ruff)**: Extremely fast Python linter and formatter (replaces flake8, isort, black, pyupgrade)
-- **[MyPy](https://mypy-lang.org/)**: Static type checker for Python
-- **[Bandit](https://github.com/PyCQA/bandit)**: Security issue scanner
-- **[Pytest](https://pytest.org/)**: Full-featured testing framework
-- **[Sphinx](https://www.sphinx-doc.org/)**: Documentation generator with MyST markdown support
-
-## Contents
-
-```{toctree}
-:caption: Installation
-:maxdepth: 1
-
-installation
-```
-
-```{toctree}
-:caption: Nexus Structure 
-
-nexus_structure
-using_the_nexus_structure
+:end-before: <!-- README only content
 ```
 
 
-```{toctree}
-:caption: Device Nexus Structure
+How the documentation is structured
+-----------------------------------
 
-device_nexus_structure/index
-```
+Documentation is split into [four categories](https://diataxis.fr), also accessible from links in the top bar.
 
+<!-- https://sphinx-design.readthedocs.io/en/latest/grids.html -->
+
+::::{grid} 2
+:gutter: 4
+
+:::{grid-item-card} {material-regular}`directions_walk;2em`
 ```{toctree}
 :maxdepth: 2
-:caption: API Reference
-
-api/modules
+tutorials
 ```
++++
+Tutorials for installation and typical usage. New users start here.
+:::
 
+:::{grid-item-card} {material-regular}`directions;2em`
 ```{toctree}
 :maxdepth: 2
-:caption: Contributing
-
-CONTRIBUTING
+how-to
 ```
++++
+Practical step-by-step guides for the more experienced user.
+:::
 
+:::{grid-item-card} {material-regular}`info;2em`
 ```{toctree}
 :maxdepth: 2
-:caption: Changelog
-
-CHANGELOG
+explanations
 ```
++++
+Explanations of how it works and why it works that way.
+:::
+
+:::{grid-item-card} {material-regular}`menu_book;2em`
+```{toctree}
+:maxdepth: 2
+reference
+```
++++
+Technical reference material including APIs and release notes.
+:::
+
+::::
