@@ -8,7 +8,7 @@ import pytest
 from ophyd import Component as Cpt
 from ophyd import Device, EpicsSignal
 
-from bluesky_nexus import NxDevice
+from bluesky_nexus.device import NxDevice
 from bluesky_nexus.schema import (
     NxAttribute,
     NxBaseClass,

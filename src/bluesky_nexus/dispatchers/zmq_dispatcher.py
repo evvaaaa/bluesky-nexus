@@ -7,7 +7,7 @@ It consumes Bluesky documents from a ZeroMQ publisher and forwards them to
 
 from pathlib import Path
 
-from bluesky_nexus import NexusHdfWriterCallback
+from bluesky_nexus.callbacks import NexusHdfWriterCallback
 from bluesky_nexus.logger import LOGGER
 
 

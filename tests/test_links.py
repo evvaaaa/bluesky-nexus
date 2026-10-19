@@ -4,7 +4,7 @@ from bluesky import RunEngine
 from bluesky import plans as bp
 from ophyd_async.sim import SimPointDetector
 
-from bluesky_nexus import NxDevice
+from bluesky_nexus.device import NxDevice
 from bluesky_nexus.schema import NxBaseClass
 
 from . import (

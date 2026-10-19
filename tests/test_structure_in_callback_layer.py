@@ -16,7 +16,8 @@ from ophyd_async.core import (
 from ophyd_async.core import StandardReadableFormat as Fmt
 from ophyd_async.sim import SimMotor, SimPointDetector
 
-from bluesky_nexus import NxDevice, __version__
+from bluesky_nexus import __version__
+from bluesky_nexus.device import NxDevice
 from bluesky_nexus.schema import NxBaseClass
 
 from . import (

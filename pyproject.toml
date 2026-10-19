@@ -13,11 +13,23 @@ classifiers = [
     "Programming Language :: Python :: 3.14",
 ]
 description = "A package for generating a standard NeXus structure for bluesky plans."
-dependencies = [] # Add project dependencies here, e.g. ["click", "numpy"]
+dependencies = [
+  "bluesky",
+  "nexusformat",
+  "event-model",
+  "numpy",
+  "pydantic",
+  "PyYAML",
+  "defusedxml",
+]
 dynamic = ["version"]
 license.file = "LICENSE"
 readme = "README.md"
 requires-python = ">=3.11"
+
+[project.optional-dependencies]
+zmq = ["pyzmq"]
+kafka = ["bluesky-kafka"]
 
 [dependency-groups]
 dev = [
@@ -33,15 +45,25 @@ dev = [
     "sphinx-design",
     "tox-uv",
     "types-mock",
-]
 
-[project.scripts]
-bluesky-nexus = "bluesky_nexus.__main__:main"
+    # For test devices.
+    "ophyd",
+    "ophyd-async[sim, ca]",
+    "pyepics",
+
+    # For testing dispatchers.
+    "pyzmq",
+    "bluesky-kafka"
+]
 
 [project.urls]
 GitHub = "https://github.com/bluesky/bluesky-nexus"
 
-[[project.authors]] # Further authors may be added by duplicating this section
+[[project.authors]]
+email = "daniel.tomecki@helmholtz-berlin.de"
+name = "Daniel Tomecki"
+
+[[project.authors]]
 email = "eva.lott@helmholtz-berlin.de"
 name = "Eva Lott"
 
@@ -59,7 +81,7 @@ addopts = """
 # https://iscinumpy.gitlab.io/post/bound-version-constraints/#watch-for-warnings
 filterwarnings = "error"
 # Doctest python code in docs, python code in src docstrings, test functions in tests
-testpaths = "docs src tests"
+testpaths = "src tests"
 
 [tool.coverage.run]
 patch = ["subprocess"]
@@ -151,7 +173,7 @@ commands = [
 
 [tool.ruff]
 src = ["src", "tests"]
-line-length = 88
+line-length = 100
 lint.select = [
     "B",   # flake8-bugbear - https://docs.astral.sh/ruff/rules/#flake8-bugbear-b
     "C4",  # flake8-comprehensions - https://docs.astral.sh/ruff/rules/#flake8-comprehensions-c4

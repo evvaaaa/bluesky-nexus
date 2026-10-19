@@ -18,7 +18,7 @@ from ophyd_async.core import (
 )
 from ophyd_async.plan_stubs import ensure_connected
 
-from bluesky_nexus import NxDevice
+from bluesky_nexus.device import NxDevice
 from bluesky_nexus.schema import (
     NxAttribute,
     NxBaseClass,
