@@ -48,9 +48,7 @@ class NxDevice(ABC):
         """Enforce that subclasses define the class variable at runtime."""
         super().__init_subclass__(**kwargs)
         if not hasattr(cls, "BLUESKY_NEXUS_BASE_CLASS"):
-            raise TypeError(
-                f"{cls.__name__} must define class variable 'BLUESKY_NEXUS_BASE_CLASS'"
-            )
+            raise TypeError(f"{cls.__name__} must define class variable 'BLUESKY_NEXUS_BASE_CLASS'")
         if not isinstance(cls, HasName):
             raise TypeError(
                 "Can only inherit `NxDevice` on a device which corresponds to `HasName`."

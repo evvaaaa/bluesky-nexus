@@ -8,7 +8,7 @@ these dataclasses greatly improves readability.
 import re
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
-from typing import Any, NotRequired, cast
+from typing import Any, cast
 
 from bluesky.protocols import Descriptor
 from event_model import (
