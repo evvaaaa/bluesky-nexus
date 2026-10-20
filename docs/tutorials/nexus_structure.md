@@ -11,7 +11,7 @@ There are [6 types of nexus structure](https://manual.nexusformat.org/design.htm
 This schema is loaded from NXDL with a metaclass: [`NxBaseClass`](#bluesky_nexus.schema.NxBaseClass).
 
 
-Bluesky nexus provides the [`NxDevice`](#bluesky_nexus.device._nx_device.NxDevice) decorator to add schema. It can load from one of three sources:
+Bluesky nexus provides the [`NxDevice`](#bluesky_nexus.device.NxDevice) decorator to add schema. It can load from one of three sources:
 
 1) From pydantic schema directly.
 2) A dictionary directly.

@@ -42,9 +42,7 @@ T = TypeVar("T", bound="NxGroup")
 def _nx_class_from_serialized_subgroup[T: "NxGroup"](subgroup: dict, cls: type[T]) -> type[T]:
     """Fetch the pydantic model type from the serialized dictionary with ``"$nxclass"``."""
     if (document_nx_class_name := subgroup.get("$nxclass")) is None:
-        raise TypeError(
-            f"No {NX_ATTRIBUTE_SERIALIZED_PREFIX}nxclass attrbute specified in schema."
-        )
+        raise TypeError(f"No {NX_ATTRIBUTE_SERIALIZED_PREFIX}nxclass attrbute specified in schema.")
 
     # There is probably a nicer way to do this to avoid circular import,
     # however, NxGroup needs NxBaseClass to deserialize, and NxBaseClass
@@ -67,8 +65,7 @@ def _nx_class_from_serialized_subgroup[T: "NxGroup"](subgroup: dict, cls: type[T
 
 
 class NxGroup(NxBase, ABC):
-    """The abstract base class for any NeXus base class "group".
-    This is abstract, but subclassed by the metaclass returns from `nx_base_class`."""
+    """The abstract base class for any NeXus base class "group"."""
 
     _ALLOWED_LINK_TYPE: Final[ClassVar[type[NxInternalLink]]] = pydantic.fields.ModelPrivateAttr(  # type: ignore
         NxInternalLink
@@ -351,7 +348,7 @@ class NxGroup(NxBase, ABC):
 
     @classmethod
     def from_dictionary(cls: type[T], dictionary: dict) -> T:
-        """Load the serialized `NXgroup` or subclass of `NXgroup` and initialize with it.
+        """Load the serialized ``NxGroup`` or subclass of ``NxGroup`` and initialize with it.
 
         The "$nxclass" field has to be a subclass of the class calling this method, e.g
         ``NxObject.from_dictionary`` can produce an ``NxData``, but

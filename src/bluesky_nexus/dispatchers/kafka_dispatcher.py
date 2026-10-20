@@ -24,11 +24,11 @@ def run_kafka_dispatcher(
     root_output_directory : int
         The root directory that the nexus writer should write files to.
     kafka_brokers : str
-        The kafka brokers to subscribe to, e.g `localhost:9092`.
+        The kafka brokers to subscribe to, e.g ``"localhost:9092"``.
     kafka_stream : str
-        The kafka stream to subscribe to, "host1:9092,host2:9092".
+        The kafka stream to subscribe to, e.g ``"host1:9092,host2:9092"``.
     kafka_topic : str
-        The kafka topic to subscribe to, e.g `bluesky.documents`.
+        The kafka topic to subscribe to, e.g ``bluesky.documents``.
 
     """
     try:

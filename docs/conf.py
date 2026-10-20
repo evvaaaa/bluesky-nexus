@@ -70,7 +70,25 @@ nitpick_ignore = [
     ("py:class", "'bool'"),
     ("py:class", "'object'"),
     ("py:class", "'id'"),
+    ("py:class", "T"),
+]
+
+
+# TODO: Someone with time on their hands can fix this.
+nitpick_ignore_regex = [
     ("py:class", "typing_extensions.Literal"),
+    (r"py:class", r"event_model\..*"),
+    (r"py:class", r"nexusformat\..*"),
+
+    (r"any", r"ValidationError"),
+    (r"py:class", r"pydantic_core.core_schema.ValidatorFunctionWrapHandler"),
+    (r"any", r"self"),
+    (r"any", r"nexusformat\..*"),
+    (r"any", r"NXroot"),
+    (r"py:class", r".*\.T"),
+
+    # No idea what type this is even referring to.
+    (r"py:class", r"dict\[str"),
 ]
 
 # Both the class’ and the __init__ method’s docstring are concatenated and

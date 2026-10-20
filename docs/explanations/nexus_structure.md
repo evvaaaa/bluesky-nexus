@@ -59,6 +59,6 @@ Any bluesky run produces a nexus structure:
 * The run start and run stop documents are parsed into `run_info`.
 * Streams are parsed into individual groups under `entry`.
 * The information about the stream in parsed into `stream_info`. This is the event descriptor and the NXdata for the time each seq num was read.
-* Devices read in a stream are stored in `devices`. For more on device structure see [](device_nexus_structure/nexus_structure.md)
+* Devices read in a stream are stored in `devices`. For more on device structure see [](../tutorials/nexus_structure.md)
 
 The main philosophy of bluesky nexus is to define a structure for any bluesky run and allow further structure to be imposed on top.

@@ -65,7 +65,13 @@ class _NxBaseClassMeta(type(pydantic.BaseModel)):  # type: ignore
         return pydantic_model
 
 
-class NxBaseClass(NxGroup, metaclass=_NxBaseClassMeta): ...
+class NxBaseClass(NxGroup, metaclass=_NxBaseClassMeta):
+    """Base for NeXus base classes, built from NXDL with ``NxBaseClass.build``.
+
+    .. py:method:: bluesky_nexus.schema.NxBaseClass.build(nxdl_name: str) -> type[NxBaseClass]
+       :classmethod:
+
+    """
 
 
 _already_made: WeakValueDictionary[str, type[NxBaseClass]] = WeakValueDictionary()

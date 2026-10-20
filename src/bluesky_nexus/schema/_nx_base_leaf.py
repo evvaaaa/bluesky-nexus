@@ -1,5 +1,5 @@
-"""Contains `NxBaseLeaf`, an abstract class for enforcing common rules and
-allowed elements in leaves of an ``NxGroup`` - `NxField` and `NxAttribute`.
+"""Contains ``NxBaseLeaf``, an abstract class for enforcing common rules and
+allowed elements in leaves of an ``NxGroup`` - ``NxField`` and ``NxAttribute``.
 """
 
 from __future__ import annotations
@@ -16,11 +16,11 @@ class NxBaseLeaf(BaseModel, ABC):
     field.
 
     It's value can come from one of these sources:
-        * A constant specified in the schema, e.g `constant: "eV"`.
+        * A constant specified in the schema, e.g ``constant: "eV"``.
         * A key of the hints of a device, e.g `hints_key: ["md", "description"].
-        * A bluesky data_key, e.g `"data_key": "some_data_key_on_the_object"`
+        * A bluesky data_key, e.g ``"data_key": "some_data_key_on_the_object"``
         * The timestamps of a bluesky datakey,
-            e.g `"timestamps_of_data_key": "some_data_key_on_the_object"`
+            e.g ``"timestamps_of_data_key": "some_data_key_on_the_object"``
     """
 
     data_key: str | None = None
