@@ -6,7 +6,6 @@ from __future__ import annotations
 import time
 from collections.abc import Iterable
 from enum import Enum
-from importlib.metadata import version
 from typing import Any, cast
 
 import numpy as np
@@ -20,6 +19,7 @@ from bluesky_nexus.schema import (
     NxGroup,
 )
 
+from .._version import __version__
 from ._data_extractor import (
     DataKeyData,
     ObjectData,
@@ -27,8 +27,6 @@ from ._data_extractor import (
     StreamData,
     sanitize_datakey_for_nexus,
 )
-
-__version__ = version("bluesky_nexus")
 
 type JsonSerializableScalar = str | int | bool | float | None
 # typing.Union required for future recursive references... annoooooying
