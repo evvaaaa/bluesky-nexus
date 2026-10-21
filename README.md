@@ -19,7 +19,7 @@ Releases        | <https://github.com/bluesky/bluesky-nexus/releases>
 - [`bluesky-nexus`](#bluesky_nexus) provides a standardized nexus structure for any bluesky plan.
 - A *take it as it is* approach. [`bluesky-nexus`](#bluesky_nexus) can make a structure for any bluesky run. More structure can be imposed on top of this.
 - The nexus structure of a device can be defined on the device class. Device structure is ophyd/ophyd-async agnostic.
-- The structure can be used by callbacks by subclassing [`NexusCallback`](#bluesky_nexus.callbacks.BlueskyNexusCallback).
+- The structure of can be resolved from any past run.
 
 <!-- README only content. Anything below this line won't be included in index.md -->
 

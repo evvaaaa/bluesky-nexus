@@ -429,6 +429,8 @@ def create_nexus_structure(run_data: RunData) -> nexus.NXroot:
     )
     run_info["run_stop"] = run_stop_group
     entry["run_info"] = run_info
+    streams_group = nexus.NXgroup(name="streams", nxclass="NXcollection")
+    entry["streams"] = streams_group
 
     # Add each stream.
     for stream_name, stream_data in run_data.stream_name_to_stream_data.items():
@@ -440,7 +442,7 @@ def create_nexus_structure(run_data: RunData) -> nexus.NXroot:
             continue
         try:
             new_stream_group = nexus.NXgroup(name=stream_name, nxclass="NXcollection")
-            entry[stream_name] = new_stream_group
+            streams_group[stream_name] = new_stream_group
             add_stream_data_to_group(new_stream_group, stream_data, run_data.run_start["time"])
         except Exception as _:
             LOGGER.warning(
@@ -450,7 +452,7 @@ def create_nexus_structure(run_data: RunData) -> nexus.NXroot:
             # We delete here, instead of allocating if the exception isn't raised
             # so that nexusformat can work out the NXlinks.
             if stream_name in entry:
-                del entry[stream_name]
+                del streams_group[stream_name]
 
     LOGGER.info(f"Parsed nexus structure from run in {time.perf_counter() - start_time}s.")
     return root

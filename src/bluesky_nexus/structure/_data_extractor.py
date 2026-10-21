@@ -349,9 +349,6 @@ class RunData:
 
     run_stop: RunStop | None = None
 
-    # TODO: perhaps we instead add a `streams` field at the entry level?
-    # I think it makes for nicer parsing for the scientists too because they
-    # will be able to see clearly what is a stream in their file.
     DISALLOWED_STREAM_NAMES = frozenset(["run_info"])
     """Not permitted stream names. Run info is where the start and
     stop docs are stored in the nexus structure."""

@@ -87,7 +87,7 @@ def test_constants_defined_by_python_variables_not_provided_on_class(
     device = Device("PREFIX", name="device")
     RE_directly_subscribed(ensure_connected(device, mock=True))
     RE_directly_subscribed(plans.count([device], num=3))
-    loaded = load_only_generated_nexus_file(tmpdir)["entry"]["primary"]["devices"]
+    loaded = load_only_generated_nexus_file(tmpdir)["entry"]["streams"]["primary"]["devices"]
     assert list(loaded) == ["device"]
     assert list(loaded["device"]) == ["a_map", "data"]
     assert loaded["device"]["a_map"] == "a value"

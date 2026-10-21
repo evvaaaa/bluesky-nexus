@@ -45,11 +45,12 @@ def test_example_simple_device_count(
     loaded = load_only_generated_nexus_file(tmpdir)
     captured = capsys.readouterr().out
     print(captured)
+
     assert (
-        "devices:NXinstrument\n        syn_axis:NXsubentry\n          @nxclass = 'NXsubentry'"
+        "devices:NXinstrument\n          syn_axis:NXsubentry\n            @nxclass = 'NXsubentry'"
     ) in captured
 
-    assert list(loaded["entry"]["primary"]["devices"]) == ["syn_axis"]
+    assert list(loaded["entry"]["streams"]["primary"]["devices"]) == ["syn_axis"]
 
 
 def test_example_mono_1(tmpdir: Path, globals_with_runengine: dict[str, Any]):
@@ -65,10 +66,12 @@ def test_example_mono_1(tmpdir: Path, globals_with_runengine: dict[str, Any]):
     )
 
     loaded = load_only_generated_nexus_file(tmpdir)
-    assert list(loaded["entry"]["primary"]["stream_info"]["descriptor"]["object_keys"]) == ["pgm"]
+    assert list(
+        loaded["entry"]["streams"]["primary"]["stream_info"]["descriptor"]["object_keys"]
+    ) == ["pgm"]
 
-    assert list(loaded["entry"]["primary"]["devices"]) == ["pgm"]
-    pgm = loaded["entry"]["primary"]["devices"]["pgm"]
+    assert list(loaded["entry"]["streams"]["primary"]["devices"]) == ["pgm"]
+    pgm = loaded["entry"]["streams"]["primary"]["devices"]["pgm"]
     assert pgm.nxclass == "NXsubentry"
     assert list(pgm) == [
         "alpha",
@@ -127,10 +130,12 @@ def test_example_mono_2(tmpdir: Path, globals_with_runengine: dict[str, Any]):
     )
 
     loaded = load_only_generated_nexus_file(tmpdir)
-    assert list(loaded["entry"]["primary"]["stream_info"]["descriptor"]["object_keys"]) == ["pgm"]
+    assert list(
+        loaded["entry"]["streams"]["primary"]["stream_info"]["descriptor"]["object_keys"]
+    ) == ["pgm"]
 
-    assert list(loaded["entry"]["primary"]["devices"]) == ["pgm"]
-    pgm = loaded["entry"]["primary"]["devices"]["pgm"]
+    assert list(loaded["entry"]["streams"]["primary"]["devices"]) == ["pgm"]
+    pgm = loaded["entry"]["streams"]["primary"]["devices"]["pgm"]
     assert pgm.nxclass == "NXmonochromator"
     assert list(pgm) == [
         "constant_fixed_focus",

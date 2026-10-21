@@ -99,7 +99,9 @@ def test_nx_data_multi_dimensional(RE_directly_subscribed: RunEngine, tmpdir: Pa
             cycler(detector.axis1, range(5)) * cycler(detector.axis2, range(10)),
         )
     )
-    loaded = load_only_generated_nexus_file(tmpdir)["entry"]["primary"]["devices"]["some_detector"]
+    loaded = load_only_generated_nexus_file(tmpdir)["entry"]["streams"]["primary"]["devices"][
+        "some_detector"
+    ]
     assert list(loaded) == [
         "additional_signal",
         "signal_link",
