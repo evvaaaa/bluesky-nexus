@@ -20,7 +20,7 @@ from bluesky_nexus.schema import (
 )
 
 from .._version import __version__
-from ._data_extractor import (
+from ._run_data import (
     DataKeyData,
     ObjectData,
     RunData,
