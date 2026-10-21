@@ -16,12 +16,12 @@ This class should be subclassed by other callbacks defining their own [`process_
 
 [`bluesky_nexus.NexusHdfWriterCallback`](#bluesky_nexus.callbacks.NexusHdfWriterCallback) is one callback subclassing [`BlueskyNexusCallback`](#bluesky_nexus.callbacks.BlueskyNexusCallback) which dumps the generated nexus structure into hdf5 files. On initialization it takes the argument `output_root_directory: Path = Path(".")` as the directory to dump to. One file is generated per run.
 
-This package contains a convenient `__main__` which can be used to start this callback over zmq or kafka.
+This package contains convenient `__main__` entrypoints over zmq and kafka.
 
 To start with kafka, ensure `bluesky_nexus[kafka]` has been installed and run 
 
 ``` bash
-$ python -m bluesky_nexus kafka
+$ python -m bluesky_nexus.dispatchers.kafka
 ```
 
 with the following positional arguments:
@@ -34,7 +34,7 @@ with the following positional arguments:
 To start with zmq, ensure `bluesky_nexus[zmq]` has been installed and run 
 
 ``` bash
-$ python -m bluesky_nexus zmq
+$ python -m bluesky_nexus.dispatchers.zmq
 ```
 
 with the following positional arguments:
