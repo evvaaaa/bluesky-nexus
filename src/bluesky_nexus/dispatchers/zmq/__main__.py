@@ -1,10 +1,7 @@
 """Command-line interface for the ``bluesky_nexus`` hdf writer service over zmq."""
 
 import argparse
-import threading
 from pathlib import Path
-
-import uvicorn
 
 from bluesky_nexus.logger import LOGGER, setup_logging
 

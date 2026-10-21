@@ -3,10 +3,9 @@
 from __future__ import annotations
 
 from abc import ABC
-from typing import Annotated, Any, TypeVar, cast, get_args, get_origin
+from typing import Annotated, Any, ClassVar, TypeVar, cast, get_args, get_origin
 
 from bluesky.protocols import HasHints, HasName
-from ophyd import ClassVar
 
 from bluesky_nexus.schema import NX_ATTRIBUTE_SERIALIZED_PREFIX, NxBaseClass
 
