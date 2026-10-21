@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>bluesky_nexus.structure._nexus_structure &#8212; bluesky-nexus 0.1.dev472+gbbf7bf00f documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../_static/styles/theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
+<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../../../_static/scripts/fontawesome.js?digest=18bd87630a240e9c25be"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
+<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
+
+    <script src="../../../_static/documentation_options.js?v=597e38e0"></script>
+    <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../../_static/copybutton.js?v=30646c52"></script>
+    <script src="../../../_static/design-tabs.js?v=f930bc37"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/bluesky_nexus/structure/_nexus_structure';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.23.0';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://bluesky.github.io/bluesky-nexus/switcher.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'main';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            false;
+        </script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="color-scheme" content="light dark"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="main" />
+  
+    
+    <script src="../../../_static/searchtools.js"></script>
+    <script src="../../../_static/language_data.js"></script>
+    <script src="../../../searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button type="button" class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">bluesky-nexus</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../tutorials.html">
+    Tutorials
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../how-to.html">
+    How-to Guides
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../explanations.html">
+    Explanations
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../reference.html">
+    Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/bluesky/bluesky-nexus" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/bluesky-nexus" title="PyPI" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fas fa-cube fa-lg" aria-hidden="true"></i><span class="visually-hidden">PyPI</span></a>
+        </li>
+</ul></div>
+      
+        <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../tutorials.html">
+    Tutorials
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../how-to.html">
+    How-to Guides
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../explanations.html">
+    Explanations
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../reference.html">
+    Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/bluesky/bluesky-nexus" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/bluesky-nexus" title="PyPI" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fas fa-cube fa-lg" aria-hidden="true"></i><span class="visually-hidden">PyPI</span></a>
+        </li>
+</ul></div>
+        
+          <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../../index.html" class="nav-link">Module code</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">bluesky_nexus.structure._nexus_structure</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for bluesky_nexus.structure._nexus_structure</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""Contains the method ``create_nexus_structure`` for generating the standard</span>
+<span class="sd">bluesky-nexus ``NXroot`` from plan data."""</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterable</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">enum</span><span class="w"> </span><span class="kn">import</span> <span class="n">Enum</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">cast</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">nexusformat</span><span class="w"> </span><span class="kn">import</span> <span class="n">nexus</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky_nexus.logger</span><span class="w"> </span><span class="kn">import</span> <span class="n">LOGGER</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky_nexus.schema</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">NX_ATTRIBUTE_SERIALIZED_PREFIX</span><span class="p">,</span>
+    <span class="n">NxAttribute</span><span class="p">,</span>
+    <span class="n">NxField</span><span class="p">,</span>
+    <span class="n">NxGroup</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.._version</span><span class="w"> </span><span class="kn">import</span> <span class="n">__version__</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">._data_extractor</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">DataKeyData</span><span class="p">,</span>
+    <span class="n">ObjectData</span><span class="p">,</span>
+    <span class="n">RunData</span><span class="p">,</span>
+    <span class="n">StreamData</span><span class="p">,</span>
+    <span class="n">sanitize_datakey_for_nexus</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="nb">type</span> <span class="n">JsonSerializableScalar</span> <span class="o">=</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">bool</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span>
+<span class="c1"># typing.Union required for future recursive references... annoooooying</span>
+<span class="nb">type</span> <span class="n">JsonSerializableList</span> <span class="o">=</span> <span class="nb">list</span><span class="p">[</span><span class="n">JsonSerializableScalar</span> <span class="o">|</span> <span class="s2">"JsonSerializableList"</span><span class="p">]</span>
+<span class="nb">type</span> <span class="n">JsonSerializableTuple</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">JsonSerializableScalar</span> <span class="o">|</span> <span class="s2">"JsonSerializableTuple"</span><span class="p">]</span>
+<span class="nb">type</span> <span class="n">JsonSerializableDict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">[</span>
+    <span class="nb">str</span><span class="p">,</span>
+    <span class="n">JsonSerializableScalar</span> <span class="o">|</span> <span class="n">JsonSerializableList</span> <span class="o">|</span> <span class="n">JsonSerializableTuple</span> <span class="o">|</span> <span class="s2">"JsonSerializableDict"</span><span class="p">,</span>
+<span class="p">]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_nested_shape</span><span class="p">(</span><span class="n">obj</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Give the shape tuple if obj is a regular Iterable or scalar, else None."""</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">()</span>
+    <span class="n">obj</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span><span class="mi">0</span><span class="p">,)</span>
+    <span class="n">child_shapes</span> <span class="o">=</span> <span class="p">[</span><span class="n">_nested_shape</span><span class="p">(</span><span class="n">ch</span><span class="p">)</span> <span class="k">for</span> <span class="n">ch</span> <span class="ow">in</span> <span class="n">obj</span><span class="p">]</span>
+    <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">s</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">child_shapes</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="n">first</span> <span class="o">=</span> <span class="n">child_shapes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">child_shapes</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+        <span class="k">if</span> <span class="n">s</span> <span class="o">!=</span> <span class="n">first</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>  <span class="c1"># non-homogenous</span>
+    <span class="k">return</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">obj</span><span class="p">),)</span> <span class="o">+</span> <span class="n">first</span>  <span class="c1"># type: ignore</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">add_json_serializable_dict_to_nx_group</span><span class="p">(</span>
+    <span class="n">group</span><span class="p">:</span> <span class="n">nexus</span><span class="o">.</span><span class="n">NXgroup</span><span class="p">,</span> <span class="n">dictionary</span><span class="p">:</span> <span class="n">JsonSerializableDict</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Take a json deserialized dictionary and produces a nexus group for it."""</span>
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">dictionary</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="n">sub_group</span> <span class="o">=</span> <span class="n">nexus</span><span class="o">.</span><span class="n">NXgroup</span><span class="p">(</span><span class="n">nxclass</span><span class="o">=</span><span class="s2">"NXcollection"</span><span class="p">)</span>
+            <span class="n">add_json_serializable_dict_to_nx_group</span><span class="p">(</span><span class="n">sub_group</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+            <span class="n">group</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">sub_group</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> <span class="n">_nested_shape</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># String values have to be converted to numpy arrays of string.</span>
+
+            <span class="c1"># Numpy can't handle non-homogenous shapes for arrays,</span>
+            <span class="c1"># which means nexus can't either. If we come accross one then we just</span>
+            <span class="c1"># convert to string.</span>
+            <span class="n">group</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">nexus</span><span class="o">.</span><span class="n">NXfield</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">),</span> <span class="n">name</span><span class="o">=</span><span class="n">key</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>  <span class="c1"># This data is can be transformed into a numpy array.</span>
+            <span class="n">group</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">nexus</span><span class="o">.</span><span class="n">NXfield</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">key</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_dict_recursive_get</span><span class="p">(</span><span class="n">dictionary</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="o">*</span><span class="n">keys</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Recursively get from a dictionary, e.g</span>
+<span class="sd">    ``_dict_recursive_get(dictionary, "some", "key", "here")``</span>
+<span class="sd">    is equivalent to</span>
+<span class="sd">    ``dictionary.get("some", {}).get("key", {}).get("here", None)``"""</span>
+    <span class="n">key</span><span class="p">,</span> <span class="o">*</span><span class="n">remaining_keys</span> <span class="o">=</span> <span class="n">keys</span>
+    <span class="n">value</span> <span class="o">=</span> <span class="n">dictionary</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="ow">and</span> <span class="n">remaining_keys</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_dict_recursive_get</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="o">*</span><span class="n">remaining_keys</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">value</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_nx_group_recursive_get</span><span class="p">(</span>
+    <span class="n">nx_group</span><span class="p">:</span> <span class="n">nexus</span><span class="o">.</span><span class="n">NXgroup</span><span class="p">,</span> <span class="o">*</span><span class="n">keys</span><span class="p">:</span> <span class="nb">str</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">nexus</span><span class="o">.</span><span class="n">NXgroup</span> <span class="o">|</span> <span class="n">nexus</span><span class="o">.</span><span class="n">NXfield</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Recursively get from an NXgroup, e.g</span>
+<span class="sd">    ``_nx_group_recursive_get(group, "some", "key", "here")``</span>
+<span class="sd">    is equivalent to</span>
+<span class="sd">    ``nx_group["some"]["key"]["here"]``</span>
+<span class="sd">    if any index isn't present, instead of indexing further, `None` will be</span>
+<span class="sd">    returned.</span>
+<span class="sd">    """</span>
+    <span class="n">key</span><span class="p">,</span> <span class="o">*</span><span class="n">remaining_keys</span> <span class="o">=</span> <span class="n">keys</span>
+    <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">nx_group</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="n">value</span> <span class="o">=</span> <span class="n">nx_group</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">nexus</span><span class="o">.</span><span class="n">NXgroup</span><span class="p">)</span> <span class="ow">and</span> <span class="n">remaining_keys</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_nx_group_recursive_get</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="o">*</span><span class="n">remaining_keys</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">value</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_leaf_value</span><span class="p">(</span>
+    <span class="n">attribute_or_field</span><span class="p">:</span> <span class="n">NxAttribute</span> <span class="o">|</span> <span class="n">NxField</span><span class="p">,</span> <span class="n">object_data</span><span class="p">:</span> <span class="n">ObjectData</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">nexus</span><span class="o">.</span><span class="n">NXfield</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Get the value of the leaf data from the bluesky event data, the hints field</span>
+<span class="sd">    of the stream, or the constant on the ``NxBaseLeaf``, return it as an ``nexus.NXfield``."""</span>
+
+    <span class="c1"># If it's an NXfield then add it's attributes.</span>
+    <span class="n">attrs</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">_leaf_value</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">object_data</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">attribute_or_field</span><span class="o">.</span><span class="n">nx_attributes</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">attribute_or_field</span><span class="p">,</span> <span class="n">NxField</span><span class="p">)</span>
+        <span class="k">else</span> <span class="p">{}</span>
+    <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">attribute_or_field</span><span class="o">.</span><span class="n">hints_key</span> <span class="ow">and</span> <span class="n">object_data</span><span class="o">.</span><span class="n">hint</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">nexus</span><span class="o">.</span><span class="n">NXfield</span><span class="p">(</span>
+            <span class="n">value</span><span class="o">=</span><span class="n">_dict_recursive_get</span><span class="p">(</span><span class="n">cast</span><span class="p">(</span><span class="nb">dict</span><span class="p">,</span> <span class="n">object_data</span><span class="o">.</span><span class="n">hint</span><span class="p">),</span> <span class="o">*</span><span class="n">attribute_or_field</span><span class="o">.</span><span class="n">hints_key</span><span class="p">),</span>
+            <span class="n">attrs</span><span class="o">=</span><span class="n">attrs</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="n">attribute_or_field</span><span class="o">.</span><span class="n">data_key</span> <span class="ow">and</span> <span class="p">(</span>
+        <span class="n">data_key</span> <span class="o">:=</span> <span class="n">object_data</span><span class="o">.</span><span class="n">formatted_data_key_name_to_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">attribute_or_field</span><span class="o">.</span><span class="n">data_key</span><span class="p">)</span>
+    <span class="p">):</span>
+        <span class="k">return</span> <span class="n">nexus</span><span class="o">.</span><span class="n">NXfield</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">data_key</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">attrs</span><span class="o">=</span><span class="n">attrs</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">attribute_or_field</span><span class="o">.</span><span class="n">constant</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">_NewFieldType</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Options for how _new_nx_field_from_data_key_data</span>
+<span class="sd">    should construct it's field."""</span>
+
+    <span class="n">NX_LOG_WITH_TIMESTAMPS</span> <span class="o">=</span> <span class="s2">"NX_LOG_WITH_TIMESTAMPS"</span>
+    <span class="n">VALUE_ONLY</span> <span class="o">=</span> <span class="s2">"VALUE_ONLY"</span>
+    <span class="n">TIMESTAMPS_ONLY</span> <span class="o">=</span> <span class="s2">"TIMESTAMPS_ONLY"</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_new_nx_field_from_data_key_data</span><span class="p">(</span>
+    <span class="n">nx_field_schema</span><span class="p">:</span> <span class="n">NxField</span><span class="p">,</span>
+    <span class="n">data_key_data</span><span class="p">:</span> <span class="n">DataKeyData</span><span class="p">,</span>
+    <span class="n">object_data</span><span class="p">:</span> <span class="n">ObjectData</span><span class="p">,</span>
+    <span class="n">field_type</span><span class="p">:</span> <span class="n">_NewFieldType</span><span class="p">,</span>
+    <span class="n">run_start_time</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">nexus</span><span class="o">.</span><span class="n">NXlog</span> <span class="o">|</span> <span class="n">nexus</span><span class="o">.</span><span class="n">NXfield</span> <span class="o">|</span> <span class="n">nexus</span><span class="o">.</span><span class="n">NXdata</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Method for getting a new NeXus field.</span>
+
+<span class="sd">    ``name`` is not required in the case where the field is directly add to a parent:</span>
+<span class="sd">    e.g ``group["field_name"] = _new_nx_field_from_data_key_data(...)``.</span>
+<span class="sd">    """</span>
+
+    <span class="n">attrs</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="c1"># Add the specified attributes of the field.</span>
+    <span class="k">for</span> <span class="n">nx_attribute_name</span><span class="p">,</span> <span class="n">nx_attribute</span> <span class="ow">in</span> <span class="n">nx_field_schema</span><span class="o">.</span><span class="n">nx_attributes</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">nx_attribute_name</span> <span class="o">==</span> <span class="s2">"nxclass"</span><span class="p">:</span>
+            <span class="k">continue</span>  <span class="c1"># This isn't added to fields.</span>
+        <span class="n">attribute_value</span> <span class="o">=</span> <span class="n">_leaf_value</span><span class="p">(</span><span class="n">nx_attribute</span><span class="p">,</span> <span class="n">object_data</span><span class="p">)</span>
+        <span class="n">attrs</span><span class="p">[</span><span class="n">nx_attribute_name</span><span class="o">.</span><span class="n">removeprefix</span><span class="p">(</span><span class="n">NX_ATTRIBUTE_SERIALIZED_PREFIX</span><span class="p">)]</span> <span class="o">=</span> <span class="n">nexus</span><span class="o">.</span><span class="n">NXfield</span><span class="p">(</span>
+            <span class="n">value</span><span class="o">=</span><span class="n">attribute_value</span>
+        <span class="p">)</span>
+
+    <span class="n">timestamps_field</span> <span class="o">=</span> <span class="n">nexus</span><span class="o">.</span><span class="n">NXfield</span><span class="p">(</span>
+        <span class="n">value</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">data_key_data</span><span class="o">.</span><span class="n">timestamps</span><span class="p">)</span> <span class="o">-</span> <span class="n">run_start_time</span><span class="p">,</span>
+        <span class="n">name</span><span class="o">=</span><span class="s2">"timestamps"</span><span class="p">,</span>
+        <span class="n">attrs</span><span class="o">=</span><span class="p">{</span><span class="s2">"units"</span><span class="p">:</span> <span class="n">nexus</span><span class="o">.</span><span class="n">NXfield</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="s2">"s"</span><span class="p">)},</span>
+    <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">field_type</span> <span class="ow">is</span> <span class="n">_NewFieldType</span><span class="o">.</span><span class="n">TIMESTAMPS_ONLY</span><span class="p">:</span>
+        <span class="n">timestamps_field</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">attrs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">timestamps_field</span>
+
+    <span class="c1"># Add the units from bluesky if not specified in the schema.</span>
+    <span class="k">if</span> <span class="s2">"units"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">attrs</span> <span class="ow">and</span> <span class="n">data_key_data</span><span class="o">.</span><span class="n">units</span><span class="p">:</span>
+        <span class="n">attrs</span><span class="p">[</span><span class="s2">"units"</span><span class="p">]</span> <span class="o">=</span> <span class="n">data_key_data</span><span class="o">.</span><span class="n">units</span>
+
+    <span class="c1"># If long name is not defined, make it equal to the name...</span>
+    <span class="c1"># this allows for plots of NXlog to use the signal name instead</span>
+    <span class="c1"># of "value", and NXdata to have correct signal names in plots</span>
+    <span class="c1"># using links.</span>
+    <span class="k">if</span> <span class="s2">"long_name"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">attrs</span><span class="p">:</span>
+        <span class="n">attrs</span><span class="p">[</span><span class="s2">"long_name"</span><span class="p">]</span> <span class="o">=</span> <span class="n">name</span>
+
+    <span class="c1"># NXlog is numerical so if the value is a string we give it</span>
+    <span class="c1"># without timestamps.</span>
+    <span class="k">if</span> <span class="n">field_type</span> <span class="ow">is</span> <span class="n">_NewFieldType</span><span class="o">.</span><span class="n">VALUE_ONLY</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">nexus</span><span class="o">.</span><span class="n">NXfield</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">data_key_data</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">attrs</span><span class="o">=</span><span class="n">attrs</span><span class="p">)</span>
+
+    <span class="n">new_group</span> <span class="o">=</span> <span class="n">nexus</span><span class="o">.</span><span class="n">NXlog</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+    <span class="n">new_group</span><span class="p">[</span><span class="s2">"time"</span><span class="p">]</span> <span class="o">=</span> <span class="n">timestamps_field</span>
+
+    <span class="n">new_group</span><span class="p">[</span><span class="s2">"value"</span><span class="p">]</span> <span class="o">=</span> <span class="n">nexus</span><span class="o">.</span><span class="n">NXfield</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">data_key_data</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"value"</span><span class="p">,</span> <span class="n">attrs</span><span class="o">=</span><span class="n">attrs</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">new_group</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_new_nx_group</span><span class="p">(</span>
+    <span class="n">object_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">object_data</span><span class="p">:</span> <span class="n">ObjectData</span><span class="p">,</span>
+    <span class="n">group_schema</span><span class="p">:</span> <span class="n">NxGroup</span><span class="p">,</span>
+    <span class="n">run_start_time</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">nexus</span><span class="o">.</span><span class="n">NXgroup</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Writes the bluesky object into a NeXus group and returns it."""</span>
+    <span class="c1"># We would like to use the nexus class directly, e.g nexus.NXdata...</span>
+    <span class="c1"># This has some very strange errors.</span>
+    <span class="c1"># e.g nexus.NXobject not allowing item assignment, or errors in creating an</span>
+    <span class="c1"># NXlink with nexus.NXsubentry.</span>
+    <span class="n">group</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">nexus</span><span class="p">,</span> <span class="n">group_schema</span><span class="o">.</span><span class="n">nxclass</span><span class="o">.</span><span class="n">constant</span><span class="p">,</span> <span class="n">nexus</span><span class="o">.</span><span class="n">NXgroup</span><span class="p">)()</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"nxclass"</span><span class="p">]</span> <span class="o">=</span> <span class="n">nexus</span><span class="o">.</span><span class="n">NXfield</span><span class="p">(</span><span class="n">group_schema</span><span class="o">.</span><span class="n">nxclass</span><span class="o">.</span><span class="n">constant</span><span class="p">)</span>
+
+    <span class="c1"># Add the specified attributes of the group.</span>
+    <span class="k">for</span> <span class="n">nx_attribute_name</span><span class="p">,</span> <span class="n">nx_attribute</span> <span class="ow">in</span> <span class="n">group_schema</span><span class="o">.</span><span class="n">nx_attributes</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="n">nx_attribute_name</span><span class="o">.</span><span class="n">removeprefix</span><span class="p">(</span><span class="n">NX_ATTRIBUTE_SERIALIZED_PREFIX</span><span class="p">)]</span> <span class="o">=</span> <span class="n">_leaf_value</span><span class="p">(</span>
+            <span class="n">nx_attribute</span><span class="p">,</span> <span class="n">object_data</span>
+        <span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">nx_alias</span><span class="p">,</span> <span class="n">nx_field_schema</span> <span class="ow">in</span> <span class="n">group_schema</span><span class="o">.</span><span class="n">nx_fields</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">nx_field_schema</span><span class="o">.</span><span class="n">hints_key</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">nx_field_schema</span><span class="o">.</span><span class="n">constant</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">group</span><span class="p">[</span><span class="n">nx_alias</span> <span class="ow">or</span> <span class="n">sanitize_datakey_for_nexus</span><span class="p">(</span><span class="n">object_name</span><span class="p">)]</span> <span class="o">=</span> <span class="n">_leaf_value</span><span class="p">(</span>
+                <span class="n">nx_field_schema</span><span class="p">,</span> <span class="n">object_data</span>
+            <span class="p">)</span>
+            <span class="k">continue</span>  <span class="c1"># Datakey is from hints/constant.</span>
+
+        <span class="k">if</span> <span class="n">nx_field_schema</span><span class="o">.</span><span class="n">timestamps_of_data_key</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># The schema specifies that this nexus field should come</span>
+            <span class="c1"># from a data keys timestamps.</span>
+            <span class="n">write_value_option</span> <span class="o">=</span> <span class="n">_NewFieldType</span><span class="o">.</span><span class="n">TIMESTAMPS_ONLY</span>
+            <span class="n">data_key_name</span> <span class="o">=</span> <span class="n">nx_field_schema</span><span class="o">.</span><span class="n">timestamps_of_data_key</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">write_value_option</span> <span class="o">=</span> <span class="n">_NewFieldType</span><span class="o">.</span><span class="n">NX_LOG_WITH_TIMESTAMPS</span>
+            <span class="n">data_key_name</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">nx_field_schema</span><span class="o">.</span><span class="n">data_key</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">data_key_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">object_data</span><span class="o">.</span><span class="n">formatted_data_key_name_to_data</span><span class="p">:</span>
+            <span class="c1"># Datakey in schema did not come in this stream.</span>
+            <span class="k">continue</span>
+
+        <span class="n">data_key_data</span> <span class="o">=</span> <span class="n">object_data</span><span class="o">.</span><span class="n">formatted_data_key_name_to_data</span><span class="p">[</span><span class="n">data_key_name</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">data_key_data</span><span class="o">.</span><span class="n">dtype</span> <span class="o">==</span> <span class="s2">"string"</span><span class="p">:</span>
+            <span class="c1"># NxLog is only applicable for numerical datatypes.</span>
+            <span class="c1"># TODO: Think about this more.</span>
+            <span class="n">write_value_option</span> <span class="o">=</span> <span class="n">_NewFieldType</span><span class="o">.</span><span class="n">VALUE_ONLY</span>
+
+        <span class="n">field_name</span> <span class="o">=</span> <span class="n">nx_alias</span> <span class="ow">or</span> <span class="n">sanitize_datakey_for_nexus</span><span class="p">(</span><span class="n">object_name</span><span class="p">)</span>
+        <span class="n">group</span><span class="p">[</span><span class="n">field_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">_new_nx_field_from_data_key_data</span><span class="p">(</span>
+            <span class="n">nx_field_schema</span><span class="p">,</span>
+            <span class="n">data_key_data</span><span class="p">,</span>
+            <span class="n">object_data</span><span class="p">,</span>
+            <span class="n">write_value_option</span><span class="p">,</span>
+            <span class="n">run_start_time</span><span class="p">,</span>
+            <span class="n">field_name</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">for</span> <span class="p">(</span>
+        <span class="n">sub_group_name</span><span class="p">,</span>
+        <span class="n">sub_group_schema</span><span class="p">,</span>
+    <span class="p">)</span> <span class="ow">in</span> <span class="n">group_schema</span><span class="o">.</span><span class="n">sub_nx_groups</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">group</span><span class="p">[</span><span class="n">sub_group_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">_new_nx_group</span><span class="p">(</span>
+            <span class="n">object_name</span><span class="p">,</span> <span class="n">object_data</span><span class="p">,</span> <span class="n">sub_group_schema</span><span class="p">,</span> <span class="n">run_start_time</span>
+        <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">group</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">add_stream_data_to_group</span><span class="p">(</span>
+    <span class="n">stream_group</span><span class="p">:</span> <span class="n">nexus</span><span class="o">.</span><span class="n">NXgroup</span><span class="p">,</span> <span class="n">stream_data</span><span class="p">:</span> <span class="n">StreamData</span><span class="p">,</span> <span class="n">run_start_time</span><span class="p">:</span> <span class="nb">float</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Take a given stream's parsed `StreamData` and write it to the nexus group."""</span>
+    <span class="n">stream_group</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"description"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">" A group of devices all read together."</span>
+
+    <span class="c1"># Add stream info, e.g descriptor.</span>
+    <span class="n">stream_info_group</span> <span class="o">=</span> <span class="n">nexus</span><span class="o">.</span><span class="n">NXgroup</span><span class="p">(</span><span class="n">nxclass</span><span class="o">=</span><span class="s2">"NXcollection"</span><span class="p">)</span>
+    <span class="n">stream_group</span><span class="p">[</span><span class="s2">"stream_info"</span><span class="p">]</span> <span class="o">=</span> <span class="n">stream_info_group</span>
+    <span class="n">descriptor_group</span> <span class="o">=</span> <span class="n">nexus</span><span class="o">.</span><span class="n">NXgroup</span><span class="p">(</span><span class="n">nxclass</span><span class="o">=</span><span class="s2">"NXcollection"</span><span class="p">)</span>
+    <span class="n">stream_info_group</span><span class="p">[</span><span class="s2">"descriptor"</span><span class="p">]</span> <span class="o">=</span> <span class="n">descriptor_group</span>
+    <span class="n">add_json_serializable_dict_to_nx_group</span><span class="p">(</span>
+        <span class="n">descriptor_group</span><span class="p">,</span> <span class="n">cast</span><span class="p">(</span><span class="n">JsonSerializableDict</span><span class="p">,</span> <span class="n">stream_data</span><span class="o">.</span><span class="n">descriptor</span><span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Add stream times, e.g event timestamps.</span>
+    <span class="n">stream_info_group</span><span class="p">[</span><span class="s2">"time"</span><span class="p">]</span> <span class="o">=</span> <span class="n">nexus</span><span class="o">.</span><span class="n">NXdata</span><span class="p">(</span>
+        <span class="n">signal</span><span class="o">=</span><span class="n">nexus</span><span class="o">.</span><span class="n">NXfield</span><span class="p">(</span>
+            <span class="n">value</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">stream_data</span><span class="o">.</span><span class="n">times</span><span class="p">),</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">"time"</span><span class="p">,</span>
+            <span class="n">attrs</span><span class="o">=</span><span class="p">{</span><span class="s2">"units"</span><span class="p">:</span> <span class="n">nexus</span><span class="o">.</span><span class="n">NXfield</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="s2">"S"</span><span class="p">)},</span>
+        <span class="p">),</span>
+        <span class="n">axes</span><span class="o">=</span><span class="p">(</span>
+            <span class="n">nexus</span><span class="o">.</span><span class="n">NXfield</span><span class="p">(</span>
+                <span class="n">value</span><span class="o">=</span><span class="n">stream_data</span><span class="o">.</span><span class="n">sequence_numbers</span><span class="p">,</span>
+                <span class="n">name</span><span class="o">=</span><span class="s2">"sequence_number"</span><span class="p">,</span>
+                <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">,</span>
+                <span class="c1"># Units purposefully ommited. There isn't really a nice way to quickly</span>
+                <span class="c1"># summarize this.</span>
+            <span class="p">),</span>
+        <span class="p">),</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Add devices group to the stream.</span>
+    <span class="n">devices_group</span> <span class="o">=</span> <span class="n">nexus</span><span class="o">.</span><span class="n">NXgroup</span><span class="p">(</span><span class="n">nxclass</span><span class="o">=</span><span class="s2">"NXinstrument"</span><span class="p">)</span>
+    <span class="n">stream_group</span><span class="p">[</span><span class="s2">"devices"</span><span class="p">]</span> <span class="o">=</span> <span class="n">devices_group</span>
+
+    <span class="k">for</span> <span class="n">object_name</span><span class="p">,</span> <span class="n">object_data</span> <span class="ow">in</span> <span class="n">stream_data</span><span class="o">.</span><span class="n">object_data</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">object_data</span><span class="o">.</span><span class="n">nx_schema</span><span class="p">,</span> <span class="n">NxGroup</span><span class="p">):</span>
+            <span class="n">device_group</span> <span class="o">=</span> <span class="n">_new_nx_group</span><span class="p">(</span>
+                <span class="n">object_name</span><span class="p">,</span> <span class="n">object_data</span><span class="p">,</span> <span class="n">object_data</span><span class="o">.</span><span class="n">nx_schema</span><span class="p">,</span> <span class="n">run_start_time</span>
+            <span class="p">)</span>
+
+            <span class="k">for</span> <span class="p">(</span>
+                <span class="n">nx_attribute_name</span><span class="p">,</span>
+                <span class="n">nx_attribute</span><span class="p">,</span>
+            <span class="p">)</span> <span class="ow">in</span> <span class="n">object_data</span><span class="o">.</span><span class="n">nx_schema</span><span class="o">.</span><span class="n">nx_attributes</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">device_group</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span>
+                    <span class="n">nx_attribute_name</span><span class="o">.</span><span class="n">removeprefix</span><span class="p">(</span><span class="n">NX_ATTRIBUTE_SERIALIZED_PREFIX</span><span class="p">)</span>
+                <span class="p">]</span> <span class="o">=</span> <span class="n">_leaf_value</span><span class="p">(</span><span class="n">nx_attribute</span><span class="p">,</span> <span class="n">object_data</span><span class="p">)</span>
+
+            <span class="c1"># TODO: It would be lovely to use `nexusformat.nexus.validate.GroupValidator` here,</span>
+            <span class="c1"># e.g  `group_validator = GroupValidator(object_data.nx_schema.nxclass.constant)`</span>
+            <span class="c1"># then validate the group, if it fails, then warn and make a default group.</span>
+            <span class="c1"># There would need to be changes in nexusformat for this. Mainly, there's no API</span>
+            <span class="c1"># for receiving the errors other than just logging them, but also, taking the</span>
+            <span class="c1"># taking the example from</span>
+            <span class="c1"># `test_passing_bluesky_nexus.schema_but_incorrect_nexusformat_definitions`,</span>
+            <span class="c1"># we get things like:</span>
+            <span class="c1"># 2026-08-14 11:19:29 [CRITICAL] NXValidate: NXdata: data</span>
+            <span class="c1"># "@signal" is not present in the group</span>
+            <span class="c1"># but signal is an optional argument in the schema.</span>
+            <span class="c1"># Futhermore, there isn't an exact correspondance between the NXDL and</span>
+            <span class="c1"># what we'd want in a basemodel. Some fields are defined with assumed</span>
+            <span class="c1"># logic on the writer side.</span>
+            <span class="n">devices_group</span><span class="p">[</span><span class="n">sanitize_datakey_for_nexus</span><span class="p">(</span><span class="n">object_name</span><span class="p">)]</span> <span class="o">=</span> <span class="n">device_group</span>
+
+            <span class="c1"># Add the internal links to the device. Required to do so after</span>
+            <span class="c1"># the above so that the full path can be resolved.</span>
+            <span class="n">_add_internal_links</span><span class="p">(</span><span class="n">device_group</span><span class="p">,</span> <span class="n">object_data</span><span class="o">.</span><span class="n">nx_schema</span><span class="p">)</span>
+
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">object_data</span><span class="o">.</span><span class="n">nx_schema</span><span class="p">,</span> <span class="n">NxField</span><span class="p">):</span>
+            <span class="c1"># It has a single nx_field, no group...</span>
+            <span class="n">data_key</span> <span class="o">=</span> <span class="n">object_data</span><span class="o">.</span><span class="n">formatted_data_key_name_to_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                <span class="n">cast</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">object_data</span><span class="o">.</span><span class="n">nx_schema</span><span class="o">.</span><span class="n">data_key</span><span class="p">)</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="n">data_key</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">"Datakey `</span><span class="si">{</span><span class="n">object_data</span><span class="o">.</span><span class="n">nx_schema</span><span class="o">.</span><span class="n">data_key</span><span class="si">}</span><span class="s2">` in schema not "</span>
+                    <span class="s2">"accounted for in an event stream captured... Skipping it."</span>
+                <span class="p">)</span>
+                <span class="k">continue</span>
+            <span class="n">device_name</span> <span class="o">=</span> <span class="n">sanitize_datakey_for_nexus</span><span class="p">(</span><span class="n">object_name</span><span class="p">)</span>
+            <span class="n">devices_group</span><span class="p">[</span><span class="n">device_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">_new_nx_field_from_data_key_data</span><span class="p">(</span>
+                <span class="n">object_data</span><span class="o">.</span><span class="n">nx_schema</span><span class="p">,</span>
+                <span class="n">data_key</span><span class="p">,</span>
+                <span class="n">object_data</span><span class="p">,</span>
+                <span class="n">_NewFieldType</span><span class="o">.</span><span class="n">VALUE_ONLY</span>
+                <span class="k">if</span> <span class="n">data_key</span><span class="o">.</span><span class="n">dtype</span> <span class="o">==</span> <span class="s2">"string"</span>
+                <span class="k">else</span> <span class="n">_NewFieldType</span><span class="o">.</span><span class="n">NX_LOG_WITH_TIMESTAMPS</span><span class="p">,</span>
+                <span class="n">run_start_time</span><span class="p">,</span>
+                <span class="n">device_name</span><span class="p">,</span>
+            <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_add_internal_links</span><span class="p">(</span>
+    <span class="n">group</span><span class="p">:</span> <span class="n">nexus</span><span class="o">.</span><span class="n">NXgroup</span><span class="p">,</span> <span class="n">schema</span><span class="p">:</span> <span class="n">NxGroup</span><span class="p">,</span> <span class="n">device_root</span><span class="p">:</span> <span class="n">nexus</span><span class="o">.</span><span class="n">NXgroup</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Adds nexus NXlinks for NxInternalLinks in the device."""</span>
+
+    <span class="n">device_root</span> <span class="o">=</span> <span class="n">device_root</span> <span class="ow">or</span> <span class="n">group</span>
+
+    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">nx_internal_link</span> <span class="ow">in</span> <span class="n">schema</span><span class="o">.</span><span class="n">nx_internal_links</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">referenced</span> <span class="o">=</span> <span class="n">_nx_group_recursive_get</span><span class="p">(</span><span class="n">device_root</span><span class="p">,</span> <span class="o">*</span><span class="n">nx_internal_link</span><span class="o">.</span><span class="n">link</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">referenced</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"Link in schema </span><span class="si">{</span><span class="n">nx_internal_link</span><span class="si">}</span><span class="s2"> could not be added as it "</span>
+                <span class="s2">"references a group/field not present in the final nexus structure."</span>
+            <span class="p">)</span>
+            <span class="k">continue</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">referenced</span><span class="p">,</span> <span class="n">nexus</span><span class="o">.</span><span class="n">NXlog</span><span class="p">):</span>
+            <span class="n">referenced</span> <span class="o">=</span> <span class="n">referenced</span><span class="p">[</span><span class="s2">"value"</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">referenced</span><span class="p">,</span> <span class="n">nexus</span><span class="o">.</span><span class="n">NXfield</span> <span class="o">|</span> <span class="n">nexus</span><span class="o">.</span><span class="n">NXgroup</span><span class="p">):</span>
+            <span class="n">group</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">nexus</span><span class="o">.</span><span class="n">NXlink</span><span class="p">(</span>
+                <span class="n">target</span><span class="o">=</span><span class="n">referenced</span><span class="p">,</span>
+                <span class="n">soft</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"Skipping device link </span><span class="si">{</span><span class="n">nx_internal_link</span><span class="si">}</span><span class="s2"> as it references "</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">referenced</span><span class="si">}</span><span class="s2"> which isn't an NXgroup or NXfield."</span>
+            <span class="p">)</span>
+            <span class="k">continue</span>
+
+    <span class="k">for</span> <span class="n">sub_group_name</span><span class="p">,</span> <span class="n">sub_group_schema</span> <span class="ow">in</span> <span class="n">schema</span><span class="o">.</span><span class="n">sub_nx_groups</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">sub_group_name</span> <span class="ow">in</span> <span class="n">group</span><span class="p">:</span>
+            <span class="n">_add_internal_links</span><span class="p">(</span><span class="n">group</span><span class="p">[</span><span class="n">sub_group_name</span><span class="p">],</span> <span class="n">sub_group_schema</span><span class="p">,</span> <span class="n">device_root</span><span class="o">=</span><span class="n">device_root</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="create_nexus_structure">
+<a class="viewcode-back" href="../../../_api/bluesky_nexus.structure.html#bluesky_nexus.structure.create_nexus_structure">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">create_nexus_structure</span><span class="p">(</span><span class="n">run_data</span><span class="p">:</span> <span class="n">RunData</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">nexus</span><span class="o">.</span><span class="n">NXroot</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Create a nexus structure (`NXroot`) from the data</span>
+<span class="sd">    in a bluesky plan."""</span>
+    <span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span>
+    <span class="n">root</span> <span class="o">=</span> <span class="n">nexus</span><span class="o">.</span><span class="n">NXroot</span><span class="p">()</span>
+    <span class="n">entry</span> <span class="o">=</span> <span class="n">nexus</span><span class="o">.</span><span class="n">NXentry</span><span class="p">()</span>
+    <span class="n">add_json_serializable_dict_to_nx_group</span><span class="p">(</span>
+        <span class="n">entry</span><span class="p">,</span>
+        <span class="p">{</span>
+            <span class="s2">"Application name"</span><span class="p">:</span> <span class="s2">"bluesky_nexus"</span><span class="p">,</span>
+            <span class="s2">"Application version"</span><span class="p">:</span> <span class="n">__version__</span><span class="p">,</span>
+            <span class="s2">"Content"</span><span class="p">:</span> <span class="s2">"A bluesky run's documents parsed to nexus."</span><span class="p">,</span>
+        <span class="p">},</span>
+    <span class="p">)</span>
+
+    <span class="n">root</span><span class="p">[</span><span class="s2">"entry"</span><span class="p">]</span> <span class="o">=</span> <span class="n">entry</span>
+
+    <span class="c1"># Add the run start and run stop.</span>
+    <span class="n">run_info</span> <span class="o">=</span> <span class="n">nexus</span><span class="o">.</span><span class="n">NXgroup</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"run_info"</span><span class="p">,</span> <span class="n">nxclass</span><span class="o">=</span><span class="s2">"NXcollection"</span><span class="p">)</span>
+    <span class="n">run_start_group</span> <span class="o">=</span> <span class="n">nexus</span><span class="o">.</span><span class="n">NXgroup</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"run_start"</span><span class="p">,</span> <span class="n">nxclass</span><span class="o">=</span><span class="s2">"NXcollection"</span><span class="p">)</span>
+    <span class="n">add_json_serializable_dict_to_nx_group</span><span class="p">(</span>
+        <span class="n">run_start_group</span><span class="p">,</span> <span class="n">cast</span><span class="p">(</span><span class="n">JsonSerializableDict</span><span class="p">,</span> <span class="n">run_data</span><span class="o">.</span><span class="n">run_start</span><span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">run_info</span><span class="p">[</span><span class="s2">"run_start"</span><span class="p">]</span> <span class="o">=</span> <span class="n">run_start_group</span>
+    <span class="n">run_stop_group</span> <span class="o">=</span> <span class="n">nexus</span><span class="o">.</span><span class="n">NXgroup</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"run_stop"</span><span class="p">,</span> <span class="n">nxclass</span><span class="o">=</span><span class="s2">"NXcollection"</span><span class="p">)</span>
+    <span class="n">add_json_serializable_dict_to_nx_group</span><span class="p">(</span>
+        <span class="n">run_stop_group</span><span class="p">,</span> <span class="n">cast</span><span class="p">(</span><span class="n">JsonSerializableDict</span><span class="p">,</span> <span class="n">run_data</span><span class="o">.</span><span class="n">run_stop</span><span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">run_info</span><span class="p">[</span><span class="s2">"run_stop"</span><span class="p">]</span> <span class="o">=</span> <span class="n">run_stop_group</span>
+    <span class="n">entry</span><span class="p">[</span><span class="s2">"run_info"</span><span class="p">]</span> <span class="o">=</span> <span class="n">run_info</span>
+
+    <span class="c1"># Add each stream.</span>
+    <span class="k">for</span> <span class="n">stream_name</span><span class="p">,</span> <span class="n">stream_data</span> <span class="ow">in</span> <span class="n">run_data</span><span class="o">.</span><span class="n">stream_name_to_stream_data</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">stream_name</span> <span class="ow">in</span> <span class="n">entry</span><span class="p">:</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"Cannot add stream </span><span class="si">{</span><span class="n">stream_name</span><span class="si">}</span><span class="s2"> as there is already a field named that "</span>
+                <span class="s2">"in the bluesky nexus structure."</span>
+            <span class="p">)</span>
+            <span class="k">continue</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">new_stream_group</span> <span class="o">=</span> <span class="n">nexus</span><span class="o">.</span><span class="n">NXgroup</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">stream_name</span><span class="p">,</span> <span class="n">nxclass</span><span class="o">=</span><span class="s2">"NXcollection"</span><span class="p">)</span>
+            <span class="n">entry</span><span class="p">[</span><span class="n">stream_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_stream_group</span>
+            <span class="n">add_stream_data_to_group</span><span class="p">(</span><span class="n">new_stream_group</span><span class="p">,</span> <span class="n">stream_data</span><span class="p">,</span> <span class="n">run_data</span><span class="o">.</span><span class="n">run_start</span><span class="p">[</span><span class="s2">"time"</span><span class="p">])</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">_</span><span class="p">:</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"Failed to write stream </span><span class="si">{</span><span class="n">stream_name</span><span class="si">}</span><span class="s2">, will try with the others..."</span><span class="p">,</span>
+                <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="c1"># We delete here, instead of allocating if the exception isn't raised</span>
+            <span class="c1"># so that nexusformat can work out the NXlinks.</span>
+            <span class="k">if</span> <span class="n">stream_name</span> <span class="ow">in</span> <span class="n">entry</span><span class="p">:</span>
+                <span class="k">del</span> <span class="n">entry</span><span class="p">[</span><span class="n">stream_name</span><span class="p">]</span>
+
+    <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Parsed nexus structure from run in </span><span class="si">{</span><span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">start_time</span><span class="si">}</span><span class="s2">s."</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">root</span></div>
+
+</pre></div>
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be"></script>
+<script defer src="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.23.0.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

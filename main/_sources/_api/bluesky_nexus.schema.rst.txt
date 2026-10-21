@@ -1,0 +1,31 @@
+``bluesky_nexus.schema``
+========================
+        
+        
+        
+        
+        
+        
+
+.. automodule:: bluesky_nexus.schema
+    :members:
+
+    
+    
+    
+
+    
+    
+    .. rubric:: Members
+
+    .. autosummary::
+        :nosignatures:
+    
+        NxAttribute
+        NxConstantAttribute
+        NxField
+        NxGroup
+        NxInternalLink
+        NxBaseClass
+    
+    

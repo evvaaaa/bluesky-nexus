@@ -1,0 +1,27 @@
+﻿``bluesky_nexus``
+=================
+
+.. automodule:: bluesky_nexus
+    :members:
+
+    
+    
+    .. rubric:: Submodules
+
+    .. autosummary::
+        :toctree:
+        :template: custom-module-template.rst
+        :recursive:
+    
+        callbacks
+        device
+        dispatchers
+        logger
+        schema
+        structure
+    
+    
+
+    
+    
+    

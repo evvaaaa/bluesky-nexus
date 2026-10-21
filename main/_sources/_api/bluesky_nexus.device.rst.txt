@@ -1,0 +1,29 @@
+``bluesky_nexus.device``
+========================
+        
+        
+        
+        
+        
+
+.. automodule:: bluesky_nexus.device
+    :members:
+
+    
+    
+    
+
+    
+    
+    .. rubric:: Members
+
+    .. autosummary::
+        :nosignatures:
+    
+        NxDevice
+        NxHints
+        NxConstant
+        NxDataKey
+        NxSubGroup
+    
+    

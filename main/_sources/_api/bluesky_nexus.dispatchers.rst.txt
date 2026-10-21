@@ -1,0 +1,23 @@
+``bluesky_nexus.dispatchers``
+=============================
+
+.. automodule:: bluesky_nexus.dispatchers
+    :members:
+
+    
+    
+    .. rubric:: Submodules
+
+    .. autosummary::
+        :toctree:
+        :template: custom-module-template.rst
+        :recursive:
+    
+        kafka
+        zmq
+    
+    
+
+    
+    
+    

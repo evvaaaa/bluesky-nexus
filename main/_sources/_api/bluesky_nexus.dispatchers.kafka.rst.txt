@@ -1,0 +1,21 @@
+``bluesky_nexus.dispatchers.kafka``
+===================================
+        
+
+.. automodule:: bluesky_nexus.dispatchers.kafka
+    :members:
+
+    
+    
+    
+
+    
+    
+    .. rubric:: Members
+
+    .. autosummary::
+        :nosignatures:
+    
+        run_kafka_dispatcher
+    
+    

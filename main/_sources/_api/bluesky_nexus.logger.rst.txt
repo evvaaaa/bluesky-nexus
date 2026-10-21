@@ -1,0 +1,21 @@
+``bluesky_nexus.logger``
+========================
+        
+
+.. automodule:: bluesky_nexus.logger
+    :members:
+
+    
+    
+    
+
+    
+    
+    .. rubric:: Members
+
+    .. autosummary::
+        :nosignatures:
+    
+        setup_logging
+    
+    
