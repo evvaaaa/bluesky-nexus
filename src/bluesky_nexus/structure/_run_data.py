@@ -3,26 +3,18 @@ the ``create_nexus_structure``.
 """
 
 import re
-from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
-from typing import Any, cast
+from typing import Any
 
-from bluesky.protocols import Descriptor
 from event_model import (
-    Configuration,
-    DataKey,
-    Event,
     EventDescriptor,
-    EventPage,
     PerObjectHint,
     RunStart,
     RunStop,
 )
 from event_model.documents.event_descriptor import Dtype, DtypeNumpy, DtypeNumpyItem
 
-from bluesky_nexus.logger import LOGGER
 from bluesky_nexus.schema import (
-    NxBaseClass,
     NxField,
     NxGroup,
 )

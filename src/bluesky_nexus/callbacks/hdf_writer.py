@@ -51,54 +51,10 @@ def _validate_directory(path: str | Path, name: str) -> Path:
 
 
 def _create_nx_file_path(root_directory: Path, start: RunStart) -> Path:
-    """Builds the hierarchical directory structure and the final
-     NeXus filename using metadata from the start document. It ensures that all
-     directories exist and that the filename adheres to the naming scheme used
-     by the NexusWriter.
-
-     Directory layout:
-         {root_directory}/{project_name}/{sub_project_name}/
-         {root_directory}/{project_name}/
-         {root_directory}/
-
-    The file name is generated automatically from the run start plan name and
-    plan start time.
     """
-    # Extract 'project_name' and 'sub_project_name' from metadata passed to the run
-    project_name = start.get("project_name")
-    sub_project_name = start.get("sub_project_name")
-
-    dir_path: Path = root_directory
-    if isinstance(project_name, str) and project_name.strip():
-        dir_path = dir_path / project_name.strip()
-
-        if isinstance(sub_project_name, str) and sub_project_name.strip():
-            dir_path = dir_path / sub_project_name.strip()
-        elif sub_project_name is not None:
-            LOGGER.info(
-                "Run %s contained sub_project_name=%r, but it was not a "
-                "non-empty string. Writing under project directory %s only.",
-                start.get("uid"),
-                sub_project_name,
-                dir_path,
-            )
-    elif project_name is not None:
-        LOGGER.info(
-            "Run %s contained project_name=%r, but it was not a non-empty string. "
-            "Writing under root output directory %s.",
-            start.get("uid"),
-            project_name,
-            dir_path,
-        )
-    else:
-        LOGGER.debug(
-            "Run %s did not contain project_name. Writing under root output directory %s.",
-            start.get("uid"),
-            dir_path,
-        )
-
-    # Create the directories if they do not exist
-    dir_path.mkdir(parents=True, exist_ok=True)
+    Gives the file path of the .nxs file to be created. This is the plan name along
+    with a timestampp of it's creation.
+    """
 
     file_name = (
         f"{datetime.fromtimestamp(float(start['time'])).strftime('%Y-%m-%d-%H-%M-%S')}-"
@@ -106,7 +62,7 @@ def _create_nx_file_path(root_directory: Path, start: RunStart) -> Path:
     )
     file_name = f"{file_name.lstrip(NX_FILE_EXTENSION)}{NX_FILE_EXTENSION}"
 
-    return dir_path / file_name
+    return root_directory / file_name
 
 
 class NexusHdfWriterCallback(BlueskyNexusCallback):
