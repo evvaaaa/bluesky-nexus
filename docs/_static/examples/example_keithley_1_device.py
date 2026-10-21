@@ -79,4 +79,3 @@ class Keithley(Device):
 
 keithley = Keithley("SOME-PREFIX", name="my-keithely")
 assert keithley.hints == {'fields': ['my-keithely']}
-

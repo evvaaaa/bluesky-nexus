@@ -1,12 +1,15 @@
 # Changes here will be overwritten by Copier
-_commit: v1.0.0
-_src_path: ../bessyii_python_template
+_commit: 5.4.0
+_src_path: https://github.com/DiamondLightSource/python-copier-template.git
 author_email: eva.lott@helmholtz-berlin.de
 author_name: Eva Lott
-create_docs: true
-project_description: A package for generating a standard NeXus structure for bluesky
-    plans.
-project_name: bluesky-nexus
-project_slug: bluesky_nexus
-python_version: '3.12'
-repo_url: ''
+description: A package for generating a standard NeXus structure for bluesky plans.
+distribution_name: bluesky-nexus
+docker: false
+docs_type: sphinx
+git_platform: github.com
+github_org: bluesky
+package_name: bluesky_nexus
+pypi: true
+repo_name: bluesky-nexus
+type_checker: mypy

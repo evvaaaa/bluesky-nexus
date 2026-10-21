@@ -6,13 +6,15 @@ metadata in the ``NxGroup`` it is contained in.
 
 from typing import Any, TypeVar
 
+from pydantic import Field
+
 from ._nx_base_leaf import NxBaseLeaf
 
 T = TypeVar("T", bound=Any)
 
 
 def prepend_serialized_prefix_to_nx_attributes(name: str, value: Any) -> str:
-    """Adds the serialized prefix to a given name if the value is an `NxAttribute`."""
+    """Adds the serialized prefix to a given name if the value is an ``NxAttribute``."""
     return f"{NX_ATTRIBUTE_SERIALIZED_PREFIX}{name}" if isinstance(value, NxAttribute) else name
 
 
@@ -24,14 +26,14 @@ NeXus attribute of the group or field it's in."""
 class NxAttribute(NxBaseLeaf):
     """An attribute which can be defined on any ``NxField`` or ``NxGroup``
 
-    When an `NxBase` is serialized it's `NxAttribute` keys are prepended with "$".
+    When an ``NxBase`` is serialized it's ``NxAttribute`` keys are prepended with "$".
     """
 
 
 class NxConstantAttribute[T: Any](NxAttribute):
     """An ``NxAttribute`` which has to be constant valued."""
 
-    constant: T
+    constant: T = Field(...)
     hints_key: None = None
     data_key: None = None
     timestamps_of_data_key: None = None

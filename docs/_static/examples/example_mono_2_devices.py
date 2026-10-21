@@ -1,5 +1,6 @@
-from bluesky_nexus import NxDevice
+from bluesky_nexus.device import NxDevice
 from bluesky_nexus.schema.nx_base_class import NxBaseClass
+
 
 class PlaneGratingMonochromator(NxDevice, StandardReadable):
     """A simulated plane grating monochromator."""

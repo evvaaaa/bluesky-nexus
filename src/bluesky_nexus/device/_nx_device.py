@@ -3,10 +3,9 @@
 from __future__ import annotations
 
 from abc import ABC
-from typing import Annotated, Any, TypeVar, cast, get_args, get_origin
+from typing import Annotated, Any, ClassVar, TypeVar, cast, get_args, get_origin
 
 from bluesky.protocols import HasHints, HasName
-from ophyd import ClassVar
 
 from bluesky_nexus.schema import NX_ATTRIBUTE_SERIALIZED_PREFIX, NxBaseClass
 
@@ -48,9 +47,7 @@ class NxDevice(ABC):
         """Enforce that subclasses define the class variable at runtime."""
         super().__init_subclass__(**kwargs)
         if not hasattr(cls, "BLUESKY_NEXUS_BASE_CLASS"):
-            raise TypeError(
-                f"{cls.__name__} must define class variable 'BLUESKY_NEXUS_BASE_CLASS'"
-            )
+            raise TypeError(f"{cls.__name__} must define class variable 'BLUESKY_NEXUS_BASE_CLASS'")
         if not isinstance(cls, HasName):
             raise TypeError(
                 "Can only inherit `NxDevice` on a device which corresponds to `HasName`."

@@ -10,8 +10,8 @@ import zmq
 from bluesky import RunEngine
 from bluesky.callbacks.zmq import Proxy, Publisher
 
-from bluesky_nexus import NexusHdfWriterCallback
-from bluesky_nexus.dispatchers import run_zmq_dispatcher
+from bluesky_nexus.callbacks import NexusHdfWriterCallback
+from bluesky_nexus.dispatchers.zmq import run_zmq_dispatcher
 from bluesky_nexus.logger import setup_logging
 from bluesky_nexus.schema.nx_base_class import _already_made
 

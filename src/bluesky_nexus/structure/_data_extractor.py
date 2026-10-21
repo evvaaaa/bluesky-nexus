@@ -8,7 +8,7 @@ these dataclasses greatly improves readability.
 import re
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
-from typing import Any, NotRequired, cast
+from typing import Any, cast
 
 from bluesky.protocols import Descriptor
 from event_model import (
@@ -119,11 +119,6 @@ def _data_key_to_nx_formatted_data_key(
     return data_key_name.removeprefix(object_name).removeprefix(separator or "")
 
 
-class _PerObjectHintMaybeWithNxClass(PerObjectHint):
-    NX_class: NotRequired[str]
-    NX_schema: NotRequired[dict]
-
-
 @dataclass
 class ObjectData:
     nx_schema: NxGroup | NxField
@@ -141,7 +136,7 @@ class ObjectData:
     def from_descriptor_data(
         cls,
         object_name: str,
-        hint: _PerObjectHintMaybeWithNxClass,
+        hint: PerObjectHint,
         read_data_keys: dict[str, DataKey],
         configuration: Configuration,
     ) -> "ObjectData":
@@ -270,7 +265,7 @@ class StreamData:
             hint = descriptor.get("hints", {}).get(object_name, {})
             object_data[object_name] = ObjectData.from_descriptor_data(
                 object_name,
-                cast(_PerObjectHintMaybeWithNxClass, hint),
+                cast(PerObjectHint, hint),
                 data_keys,
                 configuration,
             )

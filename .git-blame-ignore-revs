@@ -1,0 +1,8 @@
+# .git-blame-ignore-revs
+# This tells git/github which commits should be hidden from view when doing git blame
+# https://docs.github.com/en/repositories/working-with-files/using-files/viewing-a-file#ignore-commits-in-the-blame-view
+#
+# BessyII copier template adoption
+c7d4f4bd368750a2c5640f4f6b8eadd961de4b3a
+# DLS copier template adoption
+f8fb61c459390b72c84534702fe03e974823137a

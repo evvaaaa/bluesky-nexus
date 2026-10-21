@@ -6,7 +6,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from defusedxml import ElementTree as ET
+from defusedxml import ElementTree
 
 
 def _xml_tag_without_format_prefix(tag: str) -> str:
@@ -19,7 +19,7 @@ class ParsedAttribute:
     required: bool
 
     @classmethod
-    def from_xml(cls, root: ET.Element[str]) -> ParsedAttribute:
+    def from_xml(cls, root: ElementTree.Element[str]) -> ParsedAttribute:
         name = root.get("name")
         required = root.get("optional") == "false"
         if name is None:
@@ -37,7 +37,7 @@ class ParsedField:
     required: bool
 
     @classmethod
-    def from_xml(cls, root: ET.Element[str]) -> ParsedField:
+    def from_xml(cls, root: ElementTree.Element[str]) -> ParsedField:
         name = root.get("name")
         type_ = root.get("type")
         units = root.get("units")
@@ -78,7 +78,7 @@ class ParsedGroup:
     attributes: list[ParsedAttribute]
 
     @classmethod
-    def from_xml(cls, root: ET.Element[str]) -> ParsedGroup:
+    def from_xml(cls, root: ElementTree.Element[str]) -> ParsedGroup:
         type_: str | None = None
 
         name = root.get("name")
@@ -142,7 +142,7 @@ class ParsedGroup:
 
 
 def parse_schema_from_nxdl_xml(nxdl_xml: Path) -> ParsedGroup:
-    xml_schema = ET.parse(nxdl_xml)
+    xml_schema = ElementTree.parse(nxdl_xml)
     root = xml_schema.getroot()
     element = None
     for element in root.iter():

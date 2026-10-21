@@ -1,24 +1,9 @@
-"""bluesky-nexus
+"""Top level API.
 
-A package for generating a standard NeXus structure for bluesky plans.
+Version number as calculated by https://github.com/pypa/setuptools_scm
 """
 
-from importlib.metadata import version
+from . import callbacks, device, dispatchers, logger, schema, structure
+from ._version import __version__
 
-from .callbacks import BlueskyNexusCallback, NexusHdfWriterCallback
-from .device import NxDevice
-from .structure import DataKeyData, ObjectData, RunData, StreamData, create_nexus_structure
-
-__version__ = version("bluesky_nexus")
-
-__all__ = [
-    "__version__",
-    "BlueskyNexusCallback",
-    "NexusHdfWriterCallback",
-    "NxDevice",
-    "RunData",
-    "StreamData",
-    "ObjectData",
-    "DataKeyData",
-    "create_nexus_structure",
-]
+__all__ = ["__version__", "callbacks", "device", "dispatchers", "logger", "schema", "structure"]

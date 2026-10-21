@@ -43,7 +43,7 @@ class NxInternalLink(_NxLinkBase):
 
     In the group schema, the following shorthand is applied:
 
-    * `foo: NxInternalLink(link=["bar"])` -> `&foo: ["bar"]`
+    * ``foo: NxInternalLink(link=["bar"])` -> `&foo: ["bar"]``
     """
 
     link: list[str]
