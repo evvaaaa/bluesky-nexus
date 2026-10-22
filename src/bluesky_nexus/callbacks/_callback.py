@@ -19,14 +19,12 @@ from event_model.documents import Document, RunStart
 from nexusformat import nexus
 
 from bluesky_nexus.logger import LOGGER
-from bluesky_nexus.schema import NxBaseClass, NxField, NxGroup
 from bluesky_nexus.structure import (
     DataKeyData,
     ObjectData,
     RunData,
     StreamData,
     create_nexus_structure,
-    sanitize_datakey_for_nexus,
 )
 
 __version__ = version("bluesky_nexus")
@@ -34,32 +32,6 @@ __version__ = version("bluesky_nexus")
 
 def _add_lists_mutably(list1: list, list2: list) -> None:
     list1 += list2
-
-
-def new_schema_with_missing_fields(
-    data_key_data: dict[str, DataKeyData],
-    nx_schema: NxGroup,
-) -> NxGroup:
-    """Takes a nexus schema and data keys for an object. If the data key
-    isn't present in the schema then try adding them and validating again.
-    """
-    nx_alias_to_nx_field = nx_schema.all_nx_fields()
-
-    schema_specified_data_keys = {
-        nx_field.data_key: nx_field for nx_field in nx_alias_to_nx_field.values()
-    }
-
-    raw_schema = nx_schema.model_dump()
-
-    for data_key_name in data_key_data:
-        if schema_specified_data_keys.get(data_key_name):
-            continue  # Already added manually.
-
-        raw_schema[sanitize_datakey_for_nexus(data_key_name)] = {
-            "data_key": data_key_name,
-        }
-
-    return NxBaseClass.from_dictionary(raw_schema)
 
 
 def _separator_from_data_keys(
@@ -120,10 +92,8 @@ def _object_data_from_descriptor_data(
     # Parse all the data_key data.
     for data_key_name, data_key_value in all_data_keys.items():
         units = data_key_value.get("units")
-        dtype = data_key_value["dtype"]  # type: ignore
-        dtype_numpy = data_key_value.get(  # type: ignore
-            "dtype_numpy"
-        )
+        dtype = data_key_value["dtype"]
+        dtype_numpy = data_key_value.get("dtype_numpy")
         if data_key_name in configuration_data_keys and data_key_name not in read_data_keys:
             data = [configuration["data"][data_key_name]]  # type: ignore
             timestamps = [
@@ -145,56 +115,8 @@ def _object_data_from_descriptor_data(
         )
         formatted_data_key_name_to_data[formatted_data_key_name] = data_key_data
 
-    # Parse the nexus schema or make a new NXobject, add the missing keys
-    # (if possible).
-    if isinstance(raw_schema := hint.get("NX_schema"), dict):
-        try:
-            # Perform an initial validation on the provided schema.
-            # This will give back the subclass of NxGroup specified
-            # in the serialized schema.
-            # TODO: Move this logic into `create_structure`.
-            nx_schema = NxGroup.from_dictionary(raw_schema)
-
-            # Fill the specified schema with the keys which
-            # weren't specified.
-            nx_schema = new_schema_with_missing_fields(formatted_data_key_name_to_data, nx_schema)
-            return ObjectData(
-                nx_schema=nx_schema,
-                separator=separator,
-                data_key_name_to_data=data_key_name_to_data,
-                formatted_data_key_name_to_data=formatted_data_key_name_to_data,
-                hint=hint,
-            )
-
-        except Exception as exception:
-            LOGGER.warning(
-                f"Received a malformed schema in {object_name}. "
-                f"The error was:\n    {exception!s}\n"
-                "A default schema will be used instead.",
-            )
-
-    # Make a new schema. This will happen if the device didn't specify an "NX_schema",
-    # or if the above raised an exception.
-    if len(formatted_data_key_name_to_data) == 1:
-        # The device has a single key. Don't make it an `NXobject`.
-        # This is very likely if the plan throws in signals of a device,
-        # but not the device itself.
-        only_key = next(iter(formatted_data_key_name_to_data))
-        LOGGER.debug(f"Creating new NxField schema for device {object_name}.")
-        return ObjectData(
-            nx_schema=NxField(data_key=only_key),
-            data_key_name_to_data=data_key_name_to_data,
-            formatted_data_key_name_to_data=formatted_data_key_name_to_data,
-            separator=separator,
-            hint=hint,
-        )
-    else:
-        # # Make an NxSubEntry with all the fields from the data keys.
-        nx_schema = NxBaseClass.build("NXsubentry")()
-        nx_schema = new_schema_with_missing_fields(formatted_data_key_name_to_data, nx_schema)
-        LOGGER.debug(f"Creating new NxSubEntry schema for device {object_name}.")
     return ObjectData(
-        nx_schema=nx_schema,
+        raw_nx_schema=cast(dict | None, hint.get("NX_schema")),
         formatted_data_key_name_to_data=formatted_data_key_name_to_data,
         data_key_name_to_data=data_key_name_to_data,
         separator=separator,
@@ -281,14 +203,13 @@ class BlueskyNexusCallback(ABC):
         self._run_data.descriptor_uid_to_stream_name[document["uid"]] = stream_name  # type: ignore
 
         if (
-            (existing_stream_data := self._run_data.stream_name_to_stream_data.get(stream_name))  # type: ignore
-            and document["run_start"] == self._run_data.run_start["uid"]
-        ):  # type: ignore
-            # There was a redeclare on the stream. Add to the existing configuration.
+            existing_stream_data := self._run_data.stream_name_to_stream_data.get(stream_name)
+        ) and document["run_start"] == self._run_data.run_start["uid"]:
+            # There was a re-configure (second descriptor) on the stream.
+            # Add to the existing configuration.
             for object_name in cast(dict, document.get("object_keys", {})):
                 configuration = cast(
-                    PerObjectHint,
-                    document.get("configuration", {}).get(object_name, {}),  # type: ignore
+                    Configuration, document.get("configuration", {}).get(object_name, {})
                 )
                 if object_name in existing_stream_data.object_data:
                     object_data = existing_stream_data.object_data[object_name]
@@ -304,15 +225,17 @@ class BlueskyNexusCallback(ABC):
 
         else:
             # Make a new stream.
-            object_data = {}
+            object_datas: dict[str, ObjectData] = {}
             # Parse all the objects into their own objects containing their data keys.
             for object_name, data_key_names in document.get("object_keys", {}).items():
                 data_keys = {k: v for k, v in document["data_keys"].items() if k in data_key_names}
-                configuration = document.get("configuration", {}).get(object_name, {})
-                hint = document.get("hints", {}).get(object_name, {})
-                object_data[object_name] = _object_data_from_descriptor_data(
+                configuration = cast(
+                    Configuration, document.get("configuration", {}).get(object_name, {})
+                )
+                hint = cast(PerObjectHint, document.get("hints", {}).get(object_name, {}))
+                object_datas[object_name] = _object_data_from_descriptor_data(
                     object_name,
-                    cast(PerObjectHint, hint),
+                    hint,
                     data_keys,
                     configuration,
                 )
@@ -320,7 +243,7 @@ class BlueskyNexusCallback(ABC):
             self._run_data.stream_name_to_stream_data[stream_name] = StreamData(
                 document,
                 document["time"],
-                object_data=dict(sorted(object_data.items(), reverse=True)),
+                object_data=dict(sorted(object_datas.items(), reverse=True)),
             )
 
     def event(self, document: Event) -> None:

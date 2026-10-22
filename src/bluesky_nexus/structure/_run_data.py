@@ -14,11 +14,6 @@ from event_model import (
 )
 from event_model.documents.event_descriptor import Dtype, DtypeNumpy, DtypeNumpyItem
 
-from bluesky_nexus.schema import (
-    NxField,
-    NxGroup,
-)
-
 
 def sanitize_datakey_for_nexus(data_key: str) -> str:
     """NeXus doesn't allow underscores in keys.
@@ -47,8 +42,8 @@ class DataKeyData:
 
 @dataclass
 class ObjectData:
-    nx_schema: NxGroup | NxField
-    """The nexus schema for this object."""
+    raw_nx_schema: dict | None
+    """The nexus schema for this object as a dictionary."""
     data_key_name_to_data: dict[str, DataKeyData]
     """A dictionary of data key name to data key/configuration key information."""
     formatted_data_key_name_to_data: dict[str, DataKeyData]
