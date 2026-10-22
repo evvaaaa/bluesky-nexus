@@ -1,4 +1,5 @@
-"""NeXus Writer callback for bluesky plans."""
+"""NeXus Writer callback for bluesky plans creates ``RunData``
+and then creates structure after a run is over."""
 
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterable
@@ -168,7 +169,7 @@ def extract_event_page(self, event_page: EventPage) -> None:
     self._extract_event_or_event_page(event_page, _add_lists_mutably)
 
 
-class BlueskyNexusCallback(ABC):
+class BaseCallback(ABC):
     """Callback that builds a new NeXus NXroot per plan and passes it to
     process_nexus_structure."""
 

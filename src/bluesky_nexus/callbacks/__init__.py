@@ -1,6 +1,6 @@
 """Contains bluesky callbacks for collecting NeXus structure from runs."""
 
-from ._callback import BlueskyNexusCallback
-from .hdf_writer import NexusHdfWriterCallback
+from ._callback import BaseCallback
+from .hdf_writer_callback import HdfWriterCallback
 
-__all__ = ["BlueskyNexusCallback", "NexusHdfWriterCallback"]
+__all__ = ["BaseCallback", "HdfWriterCallback"]

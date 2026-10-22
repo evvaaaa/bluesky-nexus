@@ -1,3 +1,11 @@
+from abc import abstractmethod
+from threading import Event
+from tiled.client import from_uri
+from tiled.client.container import Container
+from tiled.server import SimpleTiledServer
+import subprocess
+from uuid import UUID, uuid4
+import socket
 import logging
 import time
 from collections.abc import Iterator
@@ -10,8 +18,9 @@ import zmq
 from bluesky import RunEngine
 from bluesky.callbacks.zmq import Proxy, Publisher
 
-from bluesky_nexus.callbacks import NexusHdfWriterCallback
+from bluesky_nexus.callbacks import HdfWriterCallback
 from bluesky_nexus.dispatchers.zmq import run_zmq_dispatcher
+from bluesky_nexus.dispatchers.tiled import run_tiled_dispatcher
 from bluesky_nexus.logger import setup_logging
 from bluesky_nexus.schema.nx_base_class import _already_made
 
@@ -41,7 +50,7 @@ def ensure_fresh_mutable_global_caches(monkeypatch) -> None:
 @pytest.fixture()
 def RE_directly_subscribed(tmpdir: Path) -> RunEngine:
     RE = RunEngine()
-    RE.subscribe(NexusHdfWriterCallback(tmpdir))
+    RE.subscribe(HdfWriterCallback(tmpdir))
     return RE
 
 
@@ -132,9 +141,8 @@ def zmq_callback_process(
             else:
                 raise RuntimeError("ZMQ Plot callback died during test.")
 
-        join_time = 1
         zmq_callback.terminate()
-        zmq_callback.join(timeout=join_time)
+        zmq_callback.join(timeout=1)
         zmq_callback.close()
 
 
@@ -147,3 +155,74 @@ def RE_subscribed_over_zmq(zmq_callback_process: Process) -> Iterator[RunEngine]
         yield RE
     finally:
         publisher.close()
+
+
+@pytest.fixture(scope="function")
+def tiled_client(tmpdir: Path) -> Iterator[Container]:
+    tiled_server = SimpleTiledServer(readable_storage=[tmpdir])
+    client = from_uri(tiled_server.uri.split("?")[0], api_key=tiled_server.api_key, timeout=5)
+    try:
+        yield client
+    finally:
+        time.sleep(1000000)
+        tiled_server.close()
+
+
+def _start_tiled_dispatcher(
+    tmpdir: Path,
+    exception_queue: MultiprocessingQueue,
+    log_path: Path,
+    tiled_uri: str,
+    tiled_api_key: str,
+) -> None:
+    try:
+        from bluesky_nexus.logger import LOGGER, setup_logging
+
+        setup_logging()
+
+        # Make this subprocess spit out logs into the provided directory.
+        file_handler = logging.FileHandler(
+            log_path,
+            mode="a",
+            encoding="utf-8",
+        )
+        LOGGER.addHandler(file_handler)
+        client = from_uri(tiled_uri, tiled_api_key, timeout=5)
+        run_tiled_dispatcher(tmpdir, client)
+
+    except Exception as e:
+        exception_queue.put(e)
+
+
+@pytest.fixture(scope="function")
+def tiled_subscription_process(
+    tmpdir: Path,
+    tiled_client: Container,
+    tiled_api_key: str,
+    caplog: pytest.LogCaptureFixture,
+) -> Iterator[Process]:
+    exception_queue: MultiprocessingQueue[Exception] = Queue()
+    tiled_subscription_process = Process(
+        target=_start_tiled_dispatcher,
+        args=(tmpdir, exception_queue, tmpdir / "test-log.log", tiled_client.uri, tiled_api_key),
+    )
+    try:
+        tiled_subscription_process.start()
+        time.sleep(0.1)  # Enough time for the process to start.
+        yield tiled_subscription_process
+    finally:
+        tiled_subscription_process.terminate()
+        tiled_subscription_process.join(timeout=1)
+        tiled_subscription_process.close()
+
+
+@pytest.fixture(scope="function")
+def RE_subscribed_to_tiled(
+    tiled_client: Container,
+) -> RunEngine:
+    RE = RunEngine()
+    from bluesky_tiled_plugins import TiledWriter
+
+    writer = TiledWriter(tiled_client, batch_size=1)
+    RE.subscribe(writer)
+    yield RE
