@@ -12,6 +12,11 @@ classifiers = [
   "Programming Language :: Python :: 3.14",
 ]
 description = "A package for generating a standard NeXus structure for bluesky plans."
+dynamic = ["version"]
+license.file = "LICENSE"
+readme = "README.md"
+requires-python = ">=3.12"
+
 dependencies = [
   "bluesky",
   "nexusformat",
@@ -21,15 +26,10 @@ dependencies = [
   "PyYAML",
   "defusedxml",
 ]
-dynamic = ["version"]
-license.file = "LICENSE"
-readme = "README.md"
-requires-python = ">=3.12"
 
 [project.optional-dependencies]
 zmq = ["pyzmq"]
 kafka = ["bluesky-kafka"]
-tiled = ["tiled[all]"]
 
 [dependency-groups]
 dev = [
@@ -54,9 +54,6 @@ dev = [
   # For testing dispatchers.
   "pyzmq",
   "bluesky-kafka",
-
-  # For testing structure from tiled.
-  "tiled[all]",
 ]
 
 [project.urls]
