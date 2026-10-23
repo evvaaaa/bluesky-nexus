@@ -77,6 +77,8 @@ class NxGroup(NxBase, ABC):
     ignored override in NxApplication.
     """
 
+    nxdl_schema_uri: ClassVar[str]
+
     @classmethod
     def _allowed_value_types(cls) -> tuple[type | None, ...]:
         """NxGroup may only contain further NxAttribute, NxField or the allowed link type."""

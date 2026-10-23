@@ -111,7 +111,7 @@ def test_nx_data_multi_dimensional(RE_directly_subscribed: RunEngine, tmpdir: Pa
         "some_axis2_link",
         "some_signal",
     ]
-    assert set(loaded.attrs) == {"axes", "nxclass", "signal"}
+    assert set(loaded.attrs) == {"axes", "nxclass", "nxdl_schema_uri", "signal"}
     assert loaded.attrs["nxclass"] == "NXdata"
     assert loaded.attrs["signal"] == "signal_link"
     assert loaded.attrs["axes"] == ["some_axis1_link", "some_axis2_link"]

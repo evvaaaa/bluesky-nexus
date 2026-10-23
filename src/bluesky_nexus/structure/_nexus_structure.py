@@ -62,7 +62,7 @@ def _new_schema_with_missing_fields(
             "data_key": data_key_name,
         }
 
-    return NxBaseClass.from_dictionary(raw_schema)
+    return NxGroup.from_dictionary(raw_schema)
 
 
 def _deserialize_schema(object_name: str, object_data: ObjectData):
@@ -276,12 +276,14 @@ def _new_nx_group(
     run_start_time: float,
 ) -> nexus.NXgroup:
     """Writes the bluesky object into a NeXus group and returns it."""
-    # We would like to use the nexus class directly, e.g nexus.NXdata...
-    # This has some very strange errors.
-    # e.g nexus.NXobject not allowing item assignment, or errors in creating an
-    # NXlink with nexus.NXsubentry.
-    group = getattr(nexus, group_schema.nxclass.constant, nexus.NXgroup)()
-    group.attrs["nxclass"] = nexus.NXfield(group_schema.nxclass.constant)
+    # We purposefully try to avoid using nexusformat group subclasses,
+    # e.g nexus.NXdata directly.
+    group = nexus.NXgroup()
+
+    # Only way you can set the class without changing the type of nexusformat class.
+    group._class = group_schema.nxclass.constant  # noqa
+
+    group.attrs["nxdl_schema_uri"] = nexus.NXfield(group_schema.NXDL_SCHEMA_URI)
 
     # Add the specified attributes of the group.
     for nx_attribute_name, nx_attribute in group_schema.nx_attributes().items():

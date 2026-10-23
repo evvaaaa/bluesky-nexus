@@ -66,6 +66,10 @@ def test_structure(RE_directly_subscribed: RunEngine, tmpdir: Path) -> None:
         assert devices.nxclass == "NXinstrument"
         assert list(devices) == [f"some_{stream_name}_pv_positioner"]
         assert devices[f"some_{stream_name}_pv_positioner"].nxclass == "NXsubentry"
+        assert (
+            devices[f"some_{stream_name}_pv_positioner"].attrs["nxdl_schema_uri"]
+            == "{http://definition.nexusformat.org/nxdl/3.1}definition"
+        )
 
         stream_info = stream["stream_info"]
         assert stream_info.nxclass == "NXcollection"
@@ -171,7 +175,10 @@ def test_nexus_writer_on_signals(
     assert list(loaded["another_signal"]["value"]) == [0, 0, 0]
     assert loaded["another_signal"].attrs == {}
     assert list(loaded["motor"]) == ["acceleration_time", "motor", "velocity"]
-    assert {k: str(v) for k, v in loaded["motor"].attrs.items()} == {"nxclass": "NXsubentry"}
+    assert {k: str(v) for k, v in loaded["motor"].attrs.items()} == {
+        "nxclass": "NXsubentry",
+        "nxdl_schema_uri": "{http://definition.nexusformat.org/nxdl/3.1}definition",
+    }
 
 
 def test_constant_attributes(RE_directly_subscribed: RunEngine, tmpdir) -> None:
@@ -198,10 +205,11 @@ def test_constant_attributes(RE_directly_subscribed: RunEngine, tmpdir) -> None:
         "sim_motor",
         "sim_motor_with_description",
     ]
-    assert list(loaded["sim_motor"].attrs) == ["nxclass"]
+    assert list(loaded["sim_motor"].attrs) == ["nxclass", "nxdl_schema_uri"]
     assert list(loaded["sim_motor_with_description"].attrs) == [
         "description",
         "nxclass",
+        "nxdl_schema_uri",
     ]
     assert loaded["sim_motor_with_description"].attrs["description"] == "Some constant description"
     assert list(loaded["sim_motor"]["sim_motor"]["value"].attrs) == ["long_name", "units"]

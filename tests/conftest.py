@@ -38,6 +38,20 @@ def ensure_fresh_mutable_global_caches(monkeypatch) -> None:
     )
 
 
+@pytest.fixture(scope="function")
+def use_test_nxdl_path(monkeypatch) -> None:
+    """Use the test path for searching for nxdl instead of the nexusformat install."""
+
+    monkeypatch.setattr(
+        "bluesky_nexus.schema.nx_base_class.BLUESKY_NEXUS_DEFINITIONS_DIRECTORY",
+        Path(__file__).parent / "test_nxdl",
+    )
+    monkeypatch.setattr(
+        "bluesky_nexus.schema.nx_base_class.BLUESKY_NEXUS_BASE_CLASSES_DIRECTORY",
+        Path(__file__).parent / "test_nxdl" / "definitions",
+    )
+
+
 @pytest.fixture()
 def RE_directly_subscribed(tmpdir: Path) -> RunEngine:
     RE = RunEngine()

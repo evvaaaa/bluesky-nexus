@@ -18,7 +18,9 @@ readme = "README.md"
 requires-python = ">=3.12"
 
 dependencies = [
-  "bluesky",
+  # Only really used for protocols. Can be removed once we have
+  # ophyd-abstract.
+  "bluesky", 
   "nexusformat",
   "event-model",
   "numpy",

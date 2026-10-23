@@ -1,3 +1,4 @@
+from pydantic import ValidationError
 import pytest
 
 from bluesky_nexus.schema.nx_base_class import BLUESKY_NEXUS_BASE_CLASSES_DIRECTORY, NxBaseClass
@@ -166,3 +167,9 @@ def test_acceptable_nx_data_specification():
             "some_axis_name_2": "axis_signal_2",
         }
     )
+
+
+def test_nxdl_schema_enforces_required_fields(use_test_nxdl_path):
+    NxWithRequiredField = NxBaseClass.build("NXwith_required_field")
+    with pytest.raises(ValidationError, match="required_field\n  Field required"):
+        NxWithRequiredField()

@@ -72,6 +72,7 @@ class ParsedGroup:
     name: str
     type: str
     extends: str | None
+    schema_uri: str
     sub_groups: dict[str, ParsedSubGroup]
     generic_sub_groups: list[ParsedSubGroup]
     fields: list[ParsedField]
@@ -83,13 +84,18 @@ class ParsedGroup:
 
         name = root.get("name")
         if name is None:
-            raise ValueError("No NX name on the definition found.")
+            raise ValueError("No NX `name` on the definition found.")
+
+        xmlns = root.tag
+        if xmlns is None:
+            raise ValueError(f"No NX `xmlns` on the definition {name} found.")
 
         type_ = root.get("type")
+        if type_ is None:
+            raise ValueError(f"NX group {name} doesn't define a `type`.")
+
         if extends := root.get("extends"):
             extends = f"{extends}.nxdl.xml"
-        if type_ is None:
-            raise ValueError("NX group without a name.")
 
         attributes = []
         fields = []
@@ -134,6 +140,7 @@ class ParsedGroup:
             name=name,
             type=type_,
             extends=extends,
+            schema_uri=xmlns,
             sub_groups=sub_groups,
             generic_sub_groups=generic_sub_groups,
             fields=fields,
