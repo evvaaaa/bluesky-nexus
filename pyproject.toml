@@ -78,10 +78,13 @@ ignore_missing_imports = true # Ignore missing stubs in imported modules
 addopts = """
     --tb=native -vv --doctest-modules --doctest-glob="*.rst"
     """
-# https://iscinumpy.gitlab.io/post/bound-version-constraints/#watch-for-warnings
-filterwarnings = "error"
 # Doctest python code in docs, python code in src docstrings, test functions in tests
 testpaths = "src tests"
+# https://iscinumpy.gitlab.io/post/bound-version-constraints/#watch-for-warnings
+filterwarnings = [
+  "error",
+  "ignore:Setting the shape on a NumPy array has been deprecated in NumPy 2\\.:DeprecationWarning",
+]
 
 [tool.coverage.run]
 patch = ["subprocess"]

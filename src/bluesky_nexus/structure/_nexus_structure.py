@@ -234,8 +234,9 @@ def _new_nx_field_from_data_key_data(
             value=attribute_value
         )
 
+    timestamps_from_run_start = np.array(data_key_data.timestamps) - run_start_time
     timestamps_field = nexus.NXfield(
-        value=np.array(data_key_data.timestamps) - run_start_time,
+        value=timestamps_from_run_start,
         name="timestamps",
         attrs={"units": nexus.NXfield(value="s")},
     )
@@ -509,7 +510,7 @@ def create_nexus_structure(run_data: RunData) -> nexus.NXroot:
             continue
         try:
             new_stream_group = nexus.NXgroup(name=stream_name, nxclass="NXcollection")
-            streams_group[stream_name] = new_stream_group
+            streams_group[sanitize_datakey_for_nexus(stream_name)] = new_stream_group
             add_stream_data_to_group(new_stream_group, stream_data, run_data.run_start["time"])
         except Exception as _:
             LOGGER.warning(

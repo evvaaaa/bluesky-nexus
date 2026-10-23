@@ -44,7 +44,6 @@ def test_example_simple_device_count(
 
     loaded = load_only_generated_nexus_file(tmpdir)
     captured = capsys.readouterr().out
-    print(captured)
 
     assert (
         "devices:NXinstrument\n          syn_axis:NXsubentry\n            @nxclass = 'NXsubentry'"

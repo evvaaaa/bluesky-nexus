@@ -14,7 +14,6 @@ from event_model import (
     EventPage,
     PerObjectHint,
     RunStop,
-    documents,
 )
 from event_model.documents import Document, RunStart
 from nexusformat import nexus
@@ -190,7 +189,7 @@ class BaseCallback(ABC):
         elif name == "event":
             self.event(document)  # type: ignore
         elif name == "event_page":
-            self.event_page(documents)  # type: ignore
+            self.event_page(document)  # type: ignore
         elif name == "stop":
             self.run_stop(document)  # type: ignore
 
@@ -295,4 +294,4 @@ class BaseCallback(ABC):
     @abstractmethod
     def process_nexus_structure(self, generated_structure: nexus.NXroot) -> Any:
         """Abstract method where the nexus structure generated through this callback
-        can be processed in subclasses. For an example see `NexusHdfWriterCallback`."""
+        can be processed in subclasses. For an example see `HdfWriterCallback`."""

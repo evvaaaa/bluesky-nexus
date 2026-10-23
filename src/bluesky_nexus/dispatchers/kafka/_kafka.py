@@ -1,6 +1,6 @@
 """Kafka-based RemoteDispatcher service for Bluesky NeXus writing.
 
-This module implements the Kafka backend for the ``bluesky_nexus.NexusHdfWriterCallback`` service.
+This module implements the Kafka backend for the ``bluesky_nexus.HdfWriterCallback`` service.
 It consumes Bluesky documents from a ZeroMQ publisher and forwards them to
 :class:`NexusWriter`, which produces NeXus-compatible HDF5 files.
 """
