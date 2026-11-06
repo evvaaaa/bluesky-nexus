@@ -6,7 +6,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>bluesky_nexus.dispatchers.zmq._zmq &#8212; bluesky-nexus 0.1.dev472+gbbf7bf00f documentation</title>
+    <title>bluesky_nexus.dispatchers.zmq._zmq &#8212; bluesky-nexus 0.1.dev473+gacb7d81ea documentation</title>
   
   
   
@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../../_static/documentation_options.js?v=597e38e0"></script>
+    <script src="../../../../_static/documentation_options.js?v=88f85fda"></script>
     <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -452,14 +452,14 @@
   <h1>Source code for bluesky_nexus.dispatchers.zmq._zmq</h1><div class="highlight"><pre>
 <span></span><span class="sd">"""ZeroMQ-based RemoteDispatcher service for Bluesky NeXus writing.</span>
 
-<span class="sd">This module implements the ZeroMQ backend for the ``bluesky_nexus.NexusHdfWriterCallback`` service.</span>
+<span class="sd">This module implements the ZeroMQ backend for the ``bluesky_nexus.HdfWriterCallback`` service.</span>
 <span class="sd">It consumes Bluesky documents from a ZeroMQ publisher and forwards them to</span>
 <span class="sd">:class:`NexusWriter`, which produces NeXus-compatible HDF5 files.</span>
 <span class="sd">"""</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky_nexus.callbacks</span><span class="w"> </span><span class="kn">import</span> <span class="n">NexusHdfWriterCallback</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky_nexus.callbacks</span><span class="w"> </span><span class="kn">import</span> <span class="n">HdfWriterCallback</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">bluesky_nexus.logger</span><span class="w"> </span><span class="kn">import</span> <span class="n">LOGGER</span>
 
 
@@ -488,7 +488,7 @@
             <span class="s2">"Did you install `bluesky-nexus[zmq]`?"</span>
         <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">exception</span>
 
-    <span class="n">writer</span> <span class="o">=</span> <span class="n">NexusHdfWriterCallback</span><span class="p">(</span><span class="n">root_output_directory</span><span class="p">)</span>
+    <span class="n">writer</span> <span class="o">=</span> <span class="n">HdfWriterCallback</span><span class="p">(</span><span class="n">root_output_directory</span><span class="p">)</span>
 
     <span class="c1"># ---------------------------------------------------------------------------</span>
     <span class="c1"># Create and start the RemoteDispatcher</span>
@@ -509,7 +509,7 @@
             <span class="n">dispatcher</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
         <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
             <span class="n">LOGGER</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="s2">"Error stopping ZMQ dispatcher cleanly."</span><span class="p">)</span>
-        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"ZMQ dispatcher stopped."</span><span class="p">)</span></div>
+    <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"ZMQ dispatcher stopped."</span><span class="p">)</span></div>
 
 </pre></div>
 

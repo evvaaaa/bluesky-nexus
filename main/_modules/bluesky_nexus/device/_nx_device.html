@@ -6,7 +6,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>bluesky_nexus.device._nx_device &#8212; bluesky-nexus 0.1.dev472+gbbf7bf00f documentation</title>
+    <title>bluesky_nexus.device._nx_device &#8212; bluesky-nexus 0.1.dev473+gacb7d81ea documentation</title>
   
   
   
@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=597e38e0"></script>
+    <script src="../../../_static/documentation_options.js?v=88f85fda"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -601,12 +601,12 @@
             <span class="c1"># TODO: Declarative subdevices won't work in bluesky-nexus until</span>
             <span class="c1"># https://github.com/bluesky/ophyd-async/issues/1433</span>
             <span class="c1"># is resolved.</span>
-            <span class="c1"># case NxSubGroup(nx_name=nx_name) if (</span>
-            <span class="c1">#     sub_device := getattr(device, name, None)</span>
-            <span class="c1"># ) and isinstance(sub_device, NxDevice):</span>
-            <span class="c1">#     kwargs[nx_annotation.nx_name] = _nexus_schema_from_nx_device(</span>
-            <span class="c1">#         sub_device, object_name</span>
-            <span class="c1">#     )</span>
+            <span class="k">case</span> <span class="n">NxSubGroup</span><span class="p">(</span><span class="n">nx_name</span><span class="o">=</span><span class="n">nx_name</span><span class="p">)</span> <span class="k">if</span> <span class="p">(</span>
+                <span class="n">sub_device</span> <span class="o">:=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">device</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sub_device</span><span class="p">,</span> <span class="n">NxDevice</span><span class="p">):</span>
+                <span class="n">kwargs</span><span class="p">[</span><span class="n">nx_annotation</span><span class="o">.</span><span class="n">nx_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">_nexus_schema_from_nx_device</span><span class="p">(</span>
+                    <span class="n">sub_device</span><span class="p">,</span> <span class="n">object_name</span>
+                <span class="p">)</span>
 
     <span class="k">return</span> <span class="n">schema_cls</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
 </pre></div>

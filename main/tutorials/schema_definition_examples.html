@@ -7,7 +7,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Examples &#8212; bluesky-nexus 0.1.dev472+gbbf7bf00f documentation</title>
+    <title>Examples &#8212; bluesky-nexus 0.1.dev473+gacb7d81ea documentation</title>
   
   
   
@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=597e38e0"></script>
+    <script src="../_static/documentation_options.js?v=88f85fda"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="How-to Guides" href="../how-to.html" />
-    <link rel="prev" title="NXData Linking Explanation" href="nx_data_explanation.html" />
+    <link rel="prev" title="NXdata Linking Explanation" href="nx_data_explanation.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
@@ -414,8 +414,8 @@
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
   <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="nexus_structure.html">Device Nexus Structure</a></li>
-<li class="toctree-l1"><a class="reference internal" href="nx_data_explanation.html"><code class="docutils literal notranslate"><span class="pre">NXData</span></code> Linking Explanation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="nexus_structure.html">Device Schema Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="nx_data_explanation.html"><code class="docutils literal notranslate"><span class="pre">NXdata</span></code> Linking Explanation</a></li>
 <li class="toctree-l1 current active"><a aria-current="page" class="current reference internal" href="#">Examples</a></li>
 </ul>
 </div>
@@ -481,7 +481,7 @@
 <h1>Examples<a class="headerlink" href="#examples" title="Link to this heading">#</a></h1>
 <section id="defining-an-ophyd-keithley-as-an-nxdetector">
 <h2>Defining an ophyd Keithley as an <a class="reference external" href="https://manual.nexusformat.org/classes/base_classes/NXdetector.html"><code class="docutils literal notranslate"><span class="pre">NXdetector</span></code></a><a class="headerlink" href="#defining-an-ophyd-keithley-as-an-nxdetector" title="Link to this heading">#</a></h2>
-<p>I would like to define some structure on my ophyd keithley device so that it can be understood to be an <a class="reference external" href="https://manual.nexusformat.org/classes/base_classes/NXdetector.html"><code class="docutils literal notranslate"><span class="pre">NXdetector</span></code></a>.</p>
+<p>We would like to define some structure on this ophyd Keithley device so that it can be understood to be an <a class="reference external" href="https://manual.nexusformat.org/classes/base_classes/NXdetector.html"><code class="docutils literal notranslate"><span class="pre">NXdetector</span></code></a>.</p>
 <p>This device currently has no <code class="docutils literal notranslate"><span class="pre">NX_schema</span></code></p>
 <div class="code python highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
 
@@ -566,7 +566,7 @@
 <span class="k">assert</span> <span class="n">keithley</span><span class="o">.</span><span class="n">hints</span> <span class="o">==</span> <span class="p">{</span><span class="s1">'fields'</span><span class="p">:</span> <span class="p">[</span><span class="s1">'my-keithely'</span><span class="p">]}</span>
 </pre></div>
 </div>
-<p>To define some, I’m going to create a new file <code class="docutils literal notranslate"><span class="pre">Keithely.yaml</span></code> in the same directory as where my device definition of <code class="docutils literal notranslate"><span class="pre">Keithley</span></code> is. The definition will map data keys that will be read on the device to their fields in <a class="reference external" href="https://manual.nexusformat.org/classes/base_classes/NXdetector.html"><code class="docutils literal notranslate"><span class="pre">NXdetector</span></code></a>.</p>
+<p>To define some, we create a new file <code class="docutils literal notranslate"><span class="pre">Keithely.yaml</span></code> in the same directory as where the device definition of <code class="docutils literal notranslate"><span class="pre">Keithley</span></code> is. The definition will map data keys that will be read on the device to their fields in <a class="reference external" href="https://manual.nexusformat.org/classes/base_classes/NXdetector.html"><code class="docutils literal notranslate"><span class="pre">NXdetector</span></code></a>.</p>
 <div class="code yaml highlight-default notranslate"><div class="highlight"><pre><span></span>$nxclass: "NXdetector"
 
 trigger_delay_time_set: "trigger_delay"
@@ -585,10 +585,10 @@ acquisition_mode: {"constant": "triggered"}
 </div>
 <ol class="arabic simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">$nxclass</span></code> is a NeXus attribute which has to come from a constant. <code class="docutils literal notranslate"><span class="pre">bluesky-nexus</span></code> loads NXDL XML schema from a directory in your environment. This can be supplied by the environment variable <code class="docutils literal notranslate"><span class="pre">BLUESKY_NEXUS_BASE_CLASSES_DIRECTORY</span></code>, but defaults to the <a class="reference external" href="https://mithub.com/nexpy/nexusformat/tree/main/src/nexusformat/definitions">nexusformat schema packaged as a pypi requirement</a>. <a class="reference internal" href="../_api/bluesky_nexus.schema.html#bluesky_nexus.schema.NxBaseClass.bluesky_nexus.schema.NxBaseClass.build" title="bluesky_nexus.schema.NxBaseClass.bluesky_nexus.schema.NxBaseClass.build"><span class="xref myst py py-meth"><code class="docutils literal notranslate"><span class="pre">NxBaseClass.build</span></code></span></a> then builds a schema for converting bluesky devices into a NeXus structure from that NXDL. If you supply an incorrect NXDL name for any given <a class="reference internal" href="../_api/bluesky_nexus.schema.html#bluesky_nexus.schema.NxBaseClass" title="bluesky_nexus.schema.NxBaseClass"><span class="xref myst py py-class"><code class="docutils literal notranslate"><span class="pre">NxBaseClass</span></code></span></a>, e.g <code class="docutils literal notranslate"><span class="pre">NxBaseSchema.build(&quot;NXsome_name_which_doesnt_have_an_nxdl_file&quot;)</span></code>, or a required item is missing in the supplied schema, then an error will be raised.</p></li>
-<li><p>The first four definitions simply map the data keys in the device (minus the name of the instance) to their name in the nexus schema. Since all data keys are added to the structure, it wouldn’t be strictly necessary to map these if the data key name were already equal to the name in the nexus structure… This isn’t always possible.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">data</span></code> is mapping to the <code class="docutils literal notranslate"><span class="pre">readback</span></code> data key. <code class="docutils literal notranslate"><span class="pre">readback</span></code> is given the same name as the device itself as a datakey, an so the name we use with it “” is.</p></li>
+<li><p>The first four definitions simply map the data keys in the device (minus the name of the instance) to their name in the NeXus schema. Since all data keys are added to the structure, it wouldn’t be strictly necessary to map these if the data key name were already equal to the name in the NeXus structure… This isn’t always possible.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">data</span></code> is mapping to the <code class="docutils literal notranslate"><span class="pre">readback</span></code> data key. <code class="docutils literal notranslate"><span class="pre">readback</span></code> is given the same name as the device itself as a datakey, an so the name we use with it is an empty string.</p></li>
 <li><p>{<code class="docutils literal notranslate"><span class="pre">timestamps_of_data_key</span></code>: “”} will end up as a field in NeXus which contains the timestamps of the readback.</p></li>
-<li><p>The last four are constant fields for any Keithley which you could connect to. If any subclass of this Keithley wanted to override them, then they could in their own schema.</p></li>
+<li><p>The last four are constant fields for any Keithley which you could connect to.</p></li>
 </ol>
 <div class="code python highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">bluesky_nexus.device</span><span class="w"> </span><span class="kn">import</span> <span class="n">NxDevice</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">bluesky_nexus.schema.nx_base_class</span><span class="w"> </span><span class="kn">import</span> <span class="n">NxBaseClass</span>
@@ -621,13 +621,12 @@ acquisition_mode: {"constant": "triggered"}
 <span class="p">}</span>
 </pre></div>
 </div>
-<p>Now when any instance of <code class="docutils literal notranslate"><span class="pre">Keithley</span></code> is read, <code class="docutils literal notranslate"><span class="pre">bluesky_nexus</span></code> will place the structure into an <code class="docutils literal notranslate"><span class="pre">NXdetector</span></code>. As you can see from the below image (silx viewer), all the data keys we didn’t reference in our schema are also present in the NeXus structure.</p>
+<p>Now when any instance of <code class="docutils literal notranslate"><span class="pre">Keithley</span></code> is read, <code class="docutils literal notranslate"><span class="pre">bluesky_nexus</span></code> can place the structure into an <code class="docutils literal notranslate"><span class="pre">NXdetector</span></code>. As you can see from the below image (silx viewer), all the data keys we didn’t reference in our schema are also present in the NeXus structure.</p>
 </section>
 <section id="simulated-monochromator">
 <h2>Simulated Monochromator<a class="headerlink" href="#simulated-monochromator" title="Link to this heading">#</a></h2>
 <p>A monochromator is a substantially more complicated to define than the above. Shown below is an ophyd async sim device based off a <a class="reference external" href="https://modebase.helmholtz.cloud/hzb/bluesky/core/source/bessyii-bluesky-devices/-/blob/d0ec7b2818eb48322b05d83d66236e4ddf40fc19/src/bessyii_bluesky_devices/devices/mono/energy.py#L21">monochromator class we have defined at bessyii</a>.</p>
-<div class="code python highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ophyd.signal</span><span class="w"> </span><span class="kn">import</span> <span class="n">DEFAULT_TIMEOUT</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">ophyd_async.core</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+<div class="code python highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ophyd_async.core</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">DEFAULT_TIMEOUT</span><span class="p">,</span>
     <span class="n">AsyncStatus</span><span class="p">,</span>
     <span class="n">DeviceMock</span><span class="p">,</span>
@@ -764,16 +763,16 @@ acquisition_mode: {"constant": "triggered"}
             <span class="bp">self</span><span class="o">.</span><span class="n">theta</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">soft_signal_r_and_setter</span><span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="n">initial_value</span><span class="o">=</span><span class="mf">2.4</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s2">"deg"</span><span class="p">)</span>
 </pre></div>
 </div>
-<p><a class="reference internal" href="../how-to/using_the_nexus_structure.html"><span class="std std-doc">Set up a run engine</span></a> subscribed to our nexus writer callback:</p>
+<p><a class="reference internal" href="../how-to/using_the_nexus_structure.html"><span class="std std-doc">Set up a run engine</span></a> subscribed to our NeXus writer callback:</p>
 <div class="code python highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">bluesky</span><span class="w"> </span><span class="kn">import</span> <span class="n">RunEngine</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky_nexus.callbacks</span><span class="w"> </span><span class="kn">import</span> <span class="n">NexusHdfWriterCallback</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky_nexus.callbacks</span><span class="w"> </span><span class="kn">import</span> <span class="n">HdfWriterCallback</span>
 
 <span class="n">RE</span> <span class="o">=</span> <span class="n">RunEngine</span><span class="p">()</span>
 <span class="c1"># Will output a hdf5 file for each bluesky plan.</span>
-<span class="n">RE</span><span class="o">.</span><span class="n">subscribe</span><span class="p">(</span><span class="n">NexusHdfWriterCallback</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="s2">"."</span><span class="p">)))</span>
+<span class="n">RE</span><span class="o">.</span><span class="n">subscribe</span><span class="p">(</span><span class="n">HdfWriterCallback</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="s2">"."</span><span class="p">)))</span>
 </pre></div>
 </div>
 <p>… and run the plan:</p>
@@ -785,7 +784,7 @@ acquisition_mode: {"constant": "triggered"}
 <span class="n">RE</span><span class="p">(</span><span class="n">bp</span><span class="o">.</span><span class="n">scan</span><span class="p">([</span><span class="n">mono</span><span class="p">],</span> <span class="n">mono</span><span class="o">.</span><span class="n">energy</span><span class="p">,</span> <span class="mi">545</span><span class="p">,</span> <span class="mi">550</span><span class="p">,</span> <span class="n">num</span><span class="o">=</span><span class="mi">10</span><span class="p">))</span>
 </pre></div>
 </div>
-<p>We can open the file in whatever nexus viewer. Here’s <code class="docutils literal notranslate"><span class="pre">silx</span> <span class="pre">view</span> <span class="pre">*.nxs</span></code>:</p>
+<p>We can open the file in whatever NeXus viewer. Here’s <code class="docutils literal notranslate"><span class="pre">silx</span> <span class="pre">view</span> <span class="pre">*.nxs</span></code>:</p>
 <img alt="../_images/silx_example_mono_1_1.png" src="../_images/silx_example_mono_1_1.png" />
 <p>All the data keys are present. Notice that</p>
 <ol class="arabic simple">
@@ -794,7 +793,7 @@ acquisition_mode: {"constant": "triggered"}
 <li><p>Configuration data keys and read data keys live alongside each other. <code class="docutils literal notranslate"><span class="pre">bluesky_nexus</span></code> makes no distinction between the two.</p></li>
 </ol>
 <p>It’s time to describe this as a monochromator.</p>
-<p>We make a new schema called <code class="docutils literal notranslate"><span class="pre">PlanGratingMonochromator.yaml</span></code> and include it in the directory where I’m defining my device.</p>
+<p>We make a new schema called <code class="docutils literal notranslate"><span class="pre">PlanGratingMonochromator.yaml</span></code> and include it in the directory where we’re defining the device.</p>
 <div class="code yaml highlight-default notranslate"><div class="highlight"><pre><span></span>$nxclass: NXmonochromator
 
 # This datakey would be added anyway, but I want to conform to the
@@ -856,7 +855,7 @@ transformations:
 <li><p>The readback field <code class="docutils literal notranslate"><span class="pre">energy-readback</span></code> is given the name <code class="docutils literal notranslate"><span class="pre">energy</span></code> to conform to the NeXus base class.</p></li>
 <li><p>A sub group is made for the exit slit. <code class="docutils literal notranslate"><span class="pre">NXmonochromator</span></code> expects exit slits to be defined in <a class="reference external" href="https://manual.nexusformat.org/classes/base_classes/NXmonochromator.html#nxmonochromator-exit-slit-group">a subgroup with this name</a>. The data keys relevant to exit slit are mapped here. The <code class="docutils literal notranslate"><span class="pre">$nclass:</span> <span class="pre">NXaperture</span></code> will mean that the sub group definitions will be making an <a class="reference external" href="https://manual.nexusformat.org/classes/base_classes/NXaperture.html"><code class="docutils literal notranslate"><span class="pre">NXaperture</span></code></a> and validated against <code class="docutils literal notranslate"><span class="pre">NxBaseClass.build(&quot;NXaperture&quot;)</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">diff_order</span></code> is not part of <code class="docutils literal notranslate"><span class="pre">NXmonochromator</span></code>, but we would like to give it a full name when it’s written instead of the shortened data key.</p></li>
-<li><p>We define some filters which are relevant to the monochromator. The coordinates of the transformations for both are used given as constants.</p></li>
+<li><p>We define some filters which are relevant to the monochromator. The coordinates of the transformations for both are given as constants.</p></li>
 <li><p>We give the full name of constant fixed focus, we also overwrite the units we get through EPICS to the standard that NeXus expects.</p></li>
 <li><p>The class defines <code class="docutils literal notranslate"><span class="pre">GRATING</span></code> generic sub group(s). We include one with the units we can define.</p></li>
 <li><p>Alpha beta and gamma make more sense in their own subgroup. We provide long names to better describe them.</p></li>
@@ -865,6 +864,7 @@ transformations:
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>The pydantic schema cannot validate whether the data keys specified will actually end up being read by the device. It can only verify that, should they exist, the specification given will be a correct <code class="docutils literal notranslate"><span class="pre">NXmonochromator</span></code>.</p>
+<p>Since bluesky-nexus defined a standard, device layer packages, e.g ophyd-async could be extended to allow for more strict validation, e.g against type.</p>
 </div>
 <div class="code python highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">bluesky_nexus.device</span><span class="w"> </span><span class="kn">import</span> <span class="n">NxDevice</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">bluesky_nexus.schema.nx_base_class</span><span class="w"> </span><span class="kn">import</span> <span class="n">NxBaseClass</span>
@@ -904,10 +904,10 @@ transformations:
             <span class="bp">self</span><span class="o">.</span><span class="n">theta</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">soft_signal_r_and_setter</span><span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="n">initial_value</span><span class="o">=</span><span class="mf">2.4</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s2">"deg"</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>… and run the plan again. Now viewing my file in sphinx, I can see that:</p>
+<p>Running the plan again and viewing my file in sphinx, we can see that:</p>
 <img alt="../_images/silx_example_mono_2_1.png" src="../_images/silx_example_mono_2_1.png" />
 <ol class="arabic simple">
-<li><p>All units are correct. Units taken from the signal have been parsed. The units I specified in <code class="docutils literal notranslate"><span class="pre">constant_fixed_focus</span></code> have been used instead of those from the signal.</p></li>
+<li><p>All units are correct. Units taken from the signal have been parsed. The units we specified in <code class="docutils literal notranslate"><span class="pre">constant_fixed_focus</span></code> have been used instead of those from the signal.</p></li>
 <li><p>All groups and subgroups have the correct classes.</p></li>
 <li><p>The long names I gave the transformations have been saved to their attributes. Their units have been parsed from the signal.</p></li>
 </ol>
@@ -930,7 +930,7 @@ transformations:
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title"><code class="docutils literal notranslate"><span class="pre">NXData</span></code> Linking Explanation</p>
+        <p class="prev-next-title"><code class="docutils literal notranslate"><span class="pre">NXdata</span></code> Linking Explanation</p>
       </div>
     </a>
     <a class="right-next"

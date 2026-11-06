@@ -17,7 +17,7 @@
     .. autosummary::
         :nosignatures:
     
-        BlueskyNexusCallback
-        NexusHdfWriterCallback
+        BaseCallback
+        HdfWriterCallback
     
     

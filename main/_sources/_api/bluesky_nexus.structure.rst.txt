@@ -5,6 +5,7 @@
         
         
         
+        
 
 .. automodule:: bluesky_nexus.structure
     :members:
@@ -25,5 +26,6 @@
         ObjectData
         DataKeyData
         create_nexus_structure
+        sanitize_datakey_for_nexus
     
     

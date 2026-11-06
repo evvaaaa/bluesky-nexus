@@ -7,7 +7,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Device Nexus Structure &#8212; bluesky-nexus 0.1.dev472+gbbf7bf00f documentation</title>
+    <title>Device Schema Specification &#8212; bluesky-nexus 0.1.dev473+gacb7d81ea documentation</title>
   
   
   
@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=597e38e0"></script>
+    <script src="../_static/documentation_options.js?v=88f85fda"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -57,7 +57,7 @@
     <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="NXData Linking Explanation" href="nx_data_explanation.html" />
+    <link rel="next" title="NXdata Linking Explanation" href="nx_data_explanation.html" />
     <link rel="prev" title="Installation" href="installation.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
@@ -414,8 +414,8 @@
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
   <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
-<li class="toctree-l1 current active"><a aria-current="page" class="current reference internal" href="#">Device Nexus Structure</a></li>
-<li class="toctree-l1"><a class="reference internal" href="nx_data_explanation.html"><code class="docutils literal notranslate"><span class="pre">NXData</span></code> Linking Explanation</a></li>
+<li class="toctree-l1 current active"><a aria-current="page" class="current reference internal" href="#">Device Schema Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="nx_data_explanation.html"><code class="docutils literal notranslate"><span class="pre">NXdata</span></code> Linking Explanation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="schema_definition_examples.html">Examples</a></li>
 </ul>
 </div>
@@ -460,7 +460,7 @@
     
     <li class="breadcrumb-item"><a href="../tutorials.html" class="nav-link">Tutorials</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Device Nexus Structure</span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Device Schema Specification</span></li>
   </ul>
 </nav>
 </div>
@@ -477,108 +477,115 @@
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="device-nexus-structure">
-<h1>Device Nexus Structure<a class="headerlink" href="#device-nexus-structure" title="Link to this heading">#</a></h1>
-<section id="device-schema-specification">
-<h2>Device Schema Specification<a class="headerlink" href="#device-schema-specification" title="Link to this heading">#</a></h2>
+  <section id="device-schema-specification">
+<h1>Device Schema Specification<a class="headerlink" href="#device-schema-specification" title="Link to this heading">#</a></h1>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <p>This is an explantion of the schema format. It may be confusing to some users who are less familiar with NeXus, or with ophyd/ophyd-async. For examples on how to define device schema which you can follow along with see <a class="reference internal" href="schema_definition_examples.html"><span class="std std-doc">Examples</span></a>.</p>
 </div>
-<p>There are <a class="reference external" href="https://manual.nexusformat.org/design.html#nexus-objects-and-terms">6 types of nexus structure</a> in total. <code class="docutils literal notranslate"><span class="pre">bluesky_nexus</span></code> allows for defining base classes, fields, and attributes on a bluesky device class though a schema specification. Eventually, attributes will be added. This schema should be thought of as a mapping between NXDL classes, and the data keys that will be produced by an instance of that device class when it’s read. Each schema is an instance of a pydantic class defining the nexus base class of the device.</p>
-<p>This schema is loaded from NXDL with a metaclass: <a class="reference internal" href="../_api/bluesky_nexus.schema.html#bluesky_nexus.schema.NxBaseClass" title="bluesky_nexus.schema.NxBaseClass"><span class="xref myst py py-class"><code class="docutils literal notranslate"><span class="pre">NxBaseClass</span></code></span></a>.</p>
-<p>Bluesky nexus provides the <a class="reference internal" href="../_api/bluesky_nexus.device.html#bluesky_nexus.device.NxDevice" title="bluesky_nexus.device.NxDevice"><span class="xref myst py py-class"><code class="docutils literal notranslate"><span class="pre">NxDevice</span></code></span></a> decorator to add schema. It can load from one of three sources:</p>
-<ol class="arabic simple">
-<li><p>From pydantic schema directly.</p></li>
-<li><p>A dictionary directly.</p></li>
-<li><p>A yaml path, either relative to the device class file, or absolute.</p></li>
-</ol>
+<p>There are <a class="reference external" href="https://manual.nexusformat.org/design.html#nexus-objects-and-terms">6 types of NeXus structure</a> in total.</p>
+<p><code class="docutils literal notranslate"><span class="pre">bluesky_nexus</span></code> has a schema specification for mapping the structure that bluesky <code class="docutils literal notranslate"><span class="pre">Readable</span></code> outputs into a NeXus base class structure.</p>
+<section id="making-an-nxbaseclass">
+<h2>1. Making an <a class="reference internal" href="../_api/bluesky_nexus.schema.html#bluesky_nexus.schema.NxBaseClass" title="bluesky_nexus.schema.NxBaseClass"><span class="xref myst py py-class"><code class="docutils literal notranslate"><span class="pre">NxBaseClass</span></code></span></a><a class="headerlink" href="#making-an-nxbaseclass" title="Link to this heading">#</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">bluesky_nexus</span></code> will by generate a default NeXus structure for any bluesky <code class="docutils literal notranslate"><span class="pre">Readable</span></code> over event documents. Structure can be imposed on top of this by inheriting from <a class="reference internal" href="../_api/bluesky_nexus.device.html#bluesky_nexus.device.NxDevice" title="bluesky_nexus.device.NxDevice"><span class="xref myst py py-class"><code class="docutils literal notranslate"><span class="pre">NxDevice</span></code></span></a> and supplying an <a class="reference internal" href="../_api/bluesky_nexus.schema.html#bluesky_nexus.schema.NxBaseClass" title="bluesky_nexus.schema.NxBaseClass"><span class="xref myst py py-class"><code class="docutils literal notranslate"><span class="pre">NxBaseClass</span></code></span></a> schema.</p>
+<p>This schema should be thought of as a mapping between fields, attributes, and sub-groups in the NXDL to the data keys that will be produced by an instance of that device class when it’s read.</p>
+<p>To generate the pydantic class from some NXDL, e.g <a class="reference external" href="https://github.com/nexpy/nexusformat/blob/main/src/nexusformat/definitions/base_classes/NXobject.nxdl.xml"><code class="docutils literal notranslate"><span class="pre">NXobject</span></code></a>, use <a class="reference internal" href="../_api/bluesky_nexus.schema.html#bluesky_nexus.schema.NxBaseClass.bluesky_nexus.schema.NxBaseClass.build" title="bluesky_nexus.schema.NxBaseClass.bluesky_nexus.schema.NxBaseClass.build"><span class="xref myst py py-meth"><code class="docutils literal notranslate"><span class="pre">NxBaseClass.build</span></code></span></a>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">NxObject</span> <span class="o">=</span> <span class="n">NxBaseClass</span><span class="o">.</span><span class="n">build</span><span class="p">(</span><span class="s2">"NXobject"</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This class will validate your <code class="docutils literal notranslate"><span class="pre">bluesky_nexus</span></code> specification in the device layer against the <a class="reference external" href="https://github.com/nexpy/nexusformat/blob/main/src/nexusformat/definitions/base_classes/NXobject.nxdl.xml"><code class="docutils literal notranslate"><span class="pre">NXobject</span></code></a> NXDL.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>A main goal of bluesky nexus will be to support custom schema for whichever NXDL. Currently only those in nexusformat are provided, though it is hoped that future developments will make it possible to load a custom package representing whichever NXDL your facility uses.</p>
-</div>
-<section id="groups">
-<h3>Groups<a class="headerlink" href="#groups" title="Link to this heading">#</a></h3>
-<p><a class="reference external" href="https://manual.nexusformat.org/design.html#design-groups">Groups</a> are defined by subclasses of <a class="reference internal" href="../_api/bluesky_nexus.schema.html#bluesky_nexus.schema.NxGroup" title="bluesky_nexus.schema.NxGroup"><span class="xref myst py py-class"><code class="docutils literal notranslate"><span class="pre">NxGroup</span></code></span></a>.</p>
-<p>By default, <code class="docutils literal notranslate"><span class="pre">bluesky_nexus</span></code> gives all devices and their data keys the nexus structure <code class="docutils literal notranslate"><span class="pre">NXsubentry</span></code>, corresponding to the pydantic schema<code class="docutils literal notranslate"><span class="pre">NxBaseClass.build(&quot;NXsubentry&quot;)</span></code>. There are a few different ways to define other kinds of group for a given device class instead:</p>
-<section id="from-pydantic-schema">
-<h4>From pydantic schema<a class="headerlink" href="#from-pydantic-schema" title="Link to this heading">#</a></h4>
-<p>In the pydantic schema this is defined by the type of the model itself.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@NxDevice</span><span class="o">.</span><span class="n">from_schema</span><span class="p">(</span><span class="n">NxObject</span><span class="p">())</span>
-<span class="k">class</span><span class="w"> </span><span class="nc">SomeDevice</span><span class="p">(</span><span class="n">Device</span><span class="p">):</span> <span class="o">...</span>
-</pre></div>
-</div>
-<p>In the serialized schema, this is provided by an attribute called <code class="docutils literal notranslate"><span class="pre">nxclass</span></code>. When <code class="docutils literal notranslate"><span class="pre">NxDevice</span></code> adds the schema it deserializes and instantiates, so the below two methods are equivalent to this one.</p>
-</section>
-<section id="from-dictionary">
-<h4>From dictionary<a class="headerlink" href="#from-dictionary" title="Link to this heading">#</a></h4>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@NxDevice</span><span class="o">.</span><span class="n">from_dictionary</span><span class="p">({</span><span class="s2">"$nxclass"</span><span class="p">:</span> <span class="s2">"NXobject"</span><span class="p">})</span>
-<span class="k">class</span><span class="w"> </span><span class="nc">SomeDevice</span><span class="p">(</span><span class="n">Device</span><span class="p">):</span> <span class="o">...</span>
-</pre></div>
+<p>You can toggle the local directory that your <a class="reference internal" href="../_api/bluesky_nexus.schema.html#bluesky_nexus.schema.NxBaseClass.bluesky_nexus.schema.NxBaseClass.build" title="bluesky_nexus.schema.NxBaseClass.bluesky_nexus.schema.NxBaseClass.build"><span class="xref myst py py-meth"><code class="docutils literal notranslate"><span class="pre">NxBaseClass.build</span></code></span></a> loads NXDL from by setting the <code class="docutils literal notranslate"><span class="pre">BLUESKY_NEXUS_DEFINITIONS_DIRECTORY</span></code> environment variable. This variable should contain a directory called <code class="docutils literal notranslate"><span class="pre">base_classes</span></code> containing all the <code class="docutils literal notranslate"><span class="pre">.nxdl.xml</span></code> base class definitions which you could build <code class="docutils literal notranslate"><span class="pre">NxBaseClass</span></code> type with.</p>
 </div>
 </section>
-<section id="from-yaml">
-<h4>From yaml<a class="headerlink" href="#from-yaml" title="Link to this heading">#</a></h4>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@NxDevice</span><span class="o">.</span><span class="n">from_dictionary</span><span class="p">(</span><span class="s2">"some_device.yaml"</span><span class="p">)</span>
-<span class="k">class</span><span class="w"> </span><span class="nc">SomeDevice</span><span class="p">(</span><span class="n">Device</span><span class="p">):</span> <span class="o">...</span>
+<section id="providing-schema-with-nxdevice">
+<h2>2. Providing Schema with <a class="reference internal" href="../_api/bluesky_nexus.device.html#bluesky_nexus.device.NxDevice" title="bluesky_nexus.device.NxDevice"><span class="xref myst py py-class"><code class="docutils literal notranslate"><span class="pre">NxDevice</span></code></span></a><a class="headerlink" href="#providing-schema-with-nxdevice" title="Link to this heading">#</a></h2>
+<p>The schema is supplied by inheriting from <a class="reference internal" href="../_api/bluesky_nexus.device.html#bluesky_nexus.device.NxDevice" title="bluesky_nexus.device.NxDevice"><span class="xref myst py py-class"><code class="docutils literal notranslate"><span class="pre">NxDevice</span></code></span></a> and defining the class variable <code class="docutils literal notranslate"><span class="pre">BLUESKY_NEXUS_BASE_CLASS</span></code> with either an instance, or type of <a class="reference internal" href="../_api/bluesky_nexus.schema.html#bluesky_nexus.schema.NxBaseClass" title="bluesky_nexus.schema.NxBaseClass"><span class="xref myst py py-class"><code class="docutils literal notranslate"><span class="pre">NxBaseClass</span></code></span></a>. Once this is defined, the schema will be validated and passed through the <code class="docutils literal notranslate"><span class="pre">hints</span></code> property of the device to make it available in the descriptor document. <code class="docutils literal notranslate"><span class="pre">bluesky_nexus</span></code> can then create a full NeXus structure from the output of a run.</p>
+<p>We want the following ophyd device to have a structure corresponding to <a class="reference external" href="https://github.com/nexpy/nexusformat/blob/main/src/nexusformat/definitions/base_classes/NXdetector.nxdl.xml"><code class="docutils literal notranslate"><span class="pre">NXdetector</span></code></a>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">SomeDevice</span><span class="p">(</span><span class="n">Device</span><span class="p">):</span>
+    <span class="n">some_signal</span> <span class="o">=</span> <span class="n">Cpt</span><span class="p">(</span><span class="n">EpicsSignal</span><span class="p">,</span> <span class="s2">"SIGNAL"</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>All the below methods give the same schema when <code class="docutils literal notranslate"><span class="pre">.hints</span></code> is called on an instance of the device.</p>
+<section id="as-an-instance">
+<h3>As an instance<a class="headerlink" href="#as-an-instance" title="Link to this heading">#</a></h3>
+<p>An instance of the schema can be supplied to the class:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">NxDetector</span> <span class="o">=</span> <span class="n">NxBaseClass</span><span class="o">.</span><span class="n">build</span><span class="p">(</span><span class="s2">"NXdetector"</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">SomeDevice</span><span class="p">(</span><span class="n">NxDevice</span><span class="p">,</span> <span class="n">Device</span><span class="p">):</span>
+    <span class="n">BLUESKY_NEXUS_BASE_CLASS</span> <span class="o">=</span> <span class="n">NxDetector</span><span class="p">(</span>
+        <span class="n">data</span><span class="o">=</span><span class="n">NxField</span><span class="p">(</span><span class="n">data_key</span><span class="o">=</span><span class="s2">"some_signal"</span><span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">some_signal</span> <span class="o">=</span> <span class="n">Cpt</span><span class="p">(</span><span class="n">EpicsSignal</span><span class="p">,</span> <span class="s2">"SIGNAL"</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="serialized-schema">
+<h3>Serialized schema<a class="headerlink" href="#serialized-schema" title="Link to this heading">#</a></h3>
+<p>Instances of <a class="reference internal" href="../_api/bluesky_nexus.schema.html#bluesky_nexus.schema.NxBaseClass" title="bluesky_nexus.schema.NxBaseClass"><span class="xref myst py py-class"><code class="docutils literal notranslate"><span class="pre">NxBaseClass</span></code></span></a> have their own serialized syntax. For examples of this syntax, see <a class="reference internal" href="#defining-your-schema">Defining your Schema</a>.</p>
+<p>The below two examples are equivalent to the direct instantiation provided above.</p>
+<section id="deserializing-with-nxbaseclass-from-dictionary">
+<h4>Deserializing with <a class="reference internal" href="../_api/bluesky_nexus.schema.html#bluesky_nexus.schema.NxGroup.from_dictionary" title="bluesky_nexus.schema.NxGroup.from_dictionary"><span class="xref myst py py-meth"><code class="docutils literal notranslate"><span class="pre">NxBaseClass.from_dictionary</span></code></span></a><a class="headerlink" href="#deserializing-with-nxbaseclass-from-dictionary" title="Link to this heading">#</a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">SomeDevice</span><span class="p">(</span><span class="n">NxDevice</span><span class="p">,</span> <span class="n">Device</span><span class="p">):</span>
+    <span class="n">BLUESKY_NEXUS_BASE_CLASS</span> <span class="o">=</span> <span class="n">NxBaseClass</span><span class="o">.</span><span class="n">from_dictionary</span><span class="p">(</span>
+        <span class="p">{</span><span class="s2">"$nxclass"</span><span class="p">:</span> <span class="s2">"NXdetector"</span><span class="p">,</span> <span class="s2">"data"</span><span class="p">:</span> <span class="s2">"some_signal"</span><span class="p">}</span>
+    <span class="p">)</span>
+    <span class="n">some_signal</span> <span class="o">=</span> <span class="n">Cpt</span><span class="p">(</span><span class="n">EpicsSignal</span><span class="p">,</span> <span class="s2">"SIGNAL"</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="deserializing-with-yaml-nxbaseclass-from-path">
+<h4>Deserializing with yaml - <a class="reference internal" href="../_api/bluesky_nexus.schema.html#bluesky_nexus.schema.NxGroup.from_path" title="bluesky_nexus.schema.NxGroup.from_path"><span class="xref myst py py-meth"><code class="docutils literal notranslate"><span class="pre">NxBaseClass.from_path</span></code></span></a><a class="headerlink" href="#deserializing-with-yaml-nxbaseclass-from-path" title="Link to this heading">#</a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># In some_module/some_device.py</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">SomeDevice</span><span class="p">(</span><span class="n">NxDevice</span><span class="p">,</span> <span class="n">Device</span><span class="p">):</span>
+    <span class="n">BLUESKY_NEXUS_BASE_CLASS</span> <span class="o">=</span> <span class="n">NxBaseClass</span><span class="o">.</span><span class="n">from_path</span><span class="p">(</span><span class="s2">"some_device.yaml"</span><span class="p">)</span>
+    <span class="n">some_signal</span> <span class="o">=</span> <span class="n">Cpt</span><span class="p">(</span><span class="n">EpicsSignal</span><span class="p">,</span> <span class="s2">"SIGNAL"</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># In some_module/some_device.yaml</span>
+<span class="nt">$nxclass</span><span class="p">:</span><span class="w"> </span><span class="s">"NXdetector"</span>
+<span class="nt">data</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">some_signal</span>
 </pre></div>
 </div>
 <p>where the yaml is relative to where the wrapper is being called</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>├── some_device.py
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>some_module
+├── some_device.py
 └── some_device.yaml
 </pre></div>
 </div>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">$nxclass</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">NXobject</span>
+</section>
+</section>
+<section id="as-a-type-declarative-definitions">
+<h3>As a Type (declarative definitions)<a class="headerlink" href="#as-a-type-declarative-definitions" title="Link to this heading">#</a></h3>
+<p>If a type of <a class="reference internal" href="../_api/bluesky_nexus.schema.html#bluesky_nexus.schema.NxBaseClass" title="bluesky_nexus.schema.NxBaseClass"><span class="xref myst py py-class"><code class="docutils literal notranslate"><span class="pre">NxBaseClass</span></code></span></a> is provided instead of an instance, then <code class="docutils literal notranslate"><span class="pre">bluesky_nexus</span></code> will create the schema using <a class="reference internal" href="../_api/bluesky_nexus.device.annotations.html#module-bluesky_nexus.device.annotations" title="bluesky_nexus.device.annotations"><span class="xref myst py py-mod"><code class="docutils literal notranslate"><span class="pre">annotations</span></code></span></a>.</p>
+<p>This is only recommended to be used on <a class="reference external" href="https://blueskyproject.io/ophyd-async/main/explanations/declarative-vs-procedural.html">ophyd-async declarative devices</a>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">NxDetector</span> <span class="o">=</span> <span class="n">NxBaseClass</span><span class="o">.</span><span class="n">build</span><span class="p">(</span><span class="s2">"NXdetector"</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">SomeDevice</span><span class="p">(</span><span class="n">NxDevice</span><span class="p">,</span> <span class="n">StandardReadable</span><span class="p">,</span> <span class="n">EpicsDevice</span><span class="p">):</span>
+    <span class="n">BLUESKY_NEXUS_BASE_CLASS</span> <span class="o">=</span> <span class="n">NxDetector</span>
+    <span class="n">some_signal</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">SignalRW</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="n">PvSuffix</span><span class="p">(</span><span class="s2">"SIGNAL"</span><span class="p">),</span> <span class="n">NxDataKey</span><span class="p">(</span><span class="s2">"data"</span><span class="p">)]</span>
 </pre></div>
 </div>
 </section>
 </section>
+<section id="defining-your-schema">
+<span id="id1"></span><h2>Defining your Schema<a class="headerlink" href="#defining-your-schema" title="Link to this heading">#</a></h2>
 <section id="fields">
 <h3>Fields<a class="headerlink" href="#fields" title="Link to this heading">#</a></h3>
-<p>The nexus <a class="reference external" href="https://manual.nexusformat.org/design.html#design-fields">field</a> type is defined with the <code class="docutils literal notranslate"><span class="pre">bluesky_nexus</span></code> <a class="reference internal" href="../_api/bluesky_nexus.schema.html#bluesky_nexus.schema.NxField" title="bluesky_nexus.schema.NxField"><span class="xref myst py py-class"><code class="docutils literal notranslate"><span class="pre">NxField</span></code></span></a>. This model links a nexus field in the outputted structure with:</p>
+<p>The NeXus <a class="reference external" href="https://manual.nexusformat.org/design.html#design-fields">field</a> type is defined with the <code class="docutils literal notranslate"><span class="pre">bluesky_nexus</span></code> <a class="reference internal" href="../_api/bluesky_nexus.schema.html#bluesky_nexus.schema.NxField" title="bluesky_nexus.schema.NxField"><span class="xref myst py py-class"><code class="docutils literal notranslate"><span class="pre">NxField</span></code></span></a>. This model links a NeXus field in the outputted structure with:</p>
 <ul class="simple">
 <li><p>A <code class="docutils literal notranslate"><span class="pre">data_key</span></code>, minus the name of the object at instantiation, and the initial separator.</p></li>
-<li><p>A <code class="docutils literal notranslate"><span class="pre">constant</span></code> defined in the schema. This should be used in the case of fields in the nexus format which would almost never be received through a signal, e.g location of a detector.</p></li>
-<li><p>A <code class="docutils literal notranslate"><span class="pre">hints_key</span></code> - another field in hints e.g [‘metadata’, “description”]. At bessyii, we can provide metadata to the instance through <a class="reference external" href="https://codebase.helmholtz.cloud/hzb/bluesky/core/source/device-instantiation-map">our static yaml definitions during instantiation</a>. The metadata on the instance is also added to the hints of a device. It has been decided that allowing additions from hints directly is a good general purpose solution for keys which may appear through multiple devices in the inheritance hierarchy.</p></li>
+<li><p>A <code class="docutils literal notranslate"><span class="pre">constant</span></code> defined in the schema. This should be used in the case of fields in the NeXus format which would almost never be received through a signal, e.g location of a detector.</p></li>
+<li><p>A <code class="docutils literal notranslate"><span class="pre">hints_key</span></code> - another field in hints e.g [‘metadata’, “description”]. At bessyii, we can provide metadata to the instance through <a class="reference external" href="https://codebase.helmholtz.cloud/hzb/bluesky/core/source/device-instantiation-map">our static yaml definitions during instantiation</a>.</p></li>
 </ul>
-<p>For any field defined in schema, if the field isn’t present when the data is received there is no fail state. They simply aren’t written into the structure.</p>
-<section id="id1">
-<h4>From pydantic schema<a class="headerlink" href="#id1" title="Link to this heading">#</a></h4>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@NxDevice</span><span class="o">.</span><span class="n">from_schema</span><span class="p">(</span>
-  <span class="n">NxObject</span><span class="p">(</span>
-    <span class="n">a_different_name</span><span class="o">=</span><span class="n">NxField</span><span class="p">(</span><span class="n">data_key</span><span class="o">=</span><span class="s2">"some_signal"</span><span class="p">),</span>
-    <span class="n">description</span><span class="o">=</span><span class="n">NxField</span><span class="p">(</span><span class="n">constant</span><span class="o">=</span><span class="s2">"A description..."</span><span class="p">)</span>
-  <span class="p">)</span>
-<span class="p">)</span>
-<span class="k">class</span><span class="w"> </span><span class="nc">SomeDevice</span><span class="p">(</span><span class="n">Device</span><span class="p">):</span>
-  <span class="n">some_signal</span> <span class="o">=</span> <span class="n">Cpt</span><span class="p">(</span><span class="n">EpicsSignalRO</span><span class="p">,</span> <span class="s2">"PREFIX"</span><span class="p">)</span>
-</pre></div>
-</div>
-</section>
-<section id="id2">
-<h4>From dictionary<a class="headerlink" href="#id2" title="Link to this heading">#</a></h4>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@NxDevice</span><span class="o">.</span><span class="n">from_dictionary</span><span class="p">(</span>
-  <span class="p">{</span>
-    <span class="s2">"$nxclass"</span><span class="p">:</span> <span class="s2">"NXobject"</span><span class="p">,</span> <span class="s2">"a_different_name"</span><span class="p">:</span> <span class="s2">"some_signal"</span><span class="p">,</span>
-    <span class="s2">"description"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"constant"</span><span class="p">:</span> <span class="s2">"A description..."</span><span class="p">}</span>
-  <span class="p">}</span>
-<span class="p">)</span>
-<span class="k">class</span><span class="w"> </span><span class="nc">SomeDevice</span><span class="p">(</span><span class="n">Device</span><span class="p">):</span>
-  <span class="n">some_signal</span> <span class="o">=</span> <span class="n">Cpt</span><span class="p">(</span><span class="n">EpicsSignalRO</span><span class="p">,</span> <span class="s2">"PREFIX"</span><span class="p">)</span>
-
-</pre></div>
-</div>
-</section>
-<section id="id3">
-<h4>From yaml<a class="headerlink" href="#id3" title="Link to this heading">#</a></h4>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@NxDevice</span><span class="o">.</span><span class="n">from_dictionary</span><span class="p">(</span><span class="s2">"some_device.yaml"</span><span class="p">)</span>
-<span class="k">class</span><span class="w"> </span><span class="nc">SomeDevice</span><span class="p">(</span><span class="n">Device</span><span class="p">):</span>
-  <span class="n">some_signal</span> <span class="o">=</span> <span class="n">Cpt</span><span class="p">(</span><span class="n">EpicsSignalRO</span><span class="p">,</span> <span class="s2">"PREFIX"</span><span class="p">)</span>
-</pre></div>
-</div>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">$nxclass</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">NXobject</span>
-<span class="nt">a_different_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">some_signal</span>
-<span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">constant</span><span class="p">:</span><span class="w"> </span><span class="s">"A</span><span class="nv"> </span><span class="s">description..."</span><span class="p p-Indicator">}</span>
+<p>In consumers, for any field defined in schema, if the field isn’t present when the data is received there is no fail state. They simply aren’t written into the structure.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">SomeDevice</span><span class="p">(</span><span class="n">NxDevice</span><span class="p">,</span> <span class="n">Device</span><span class="p">):</span>
+    <span class="n">NxBaseClass</span><span class="o">.</span><span class="n">from_dictionary</span><span class="p">(</span>
+        <span class="p">{</span>
+            <span class="s2">"$nxclass"</span><span class="p">:</span> <span class="s2">"NXobject"</span><span class="p">,</span> <span class="s2">"a_different_name"</span><span class="p">:</span> <span class="s2">"some_signal"</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"constant"</span><span class="p">:</span> <span class="s2">"A description..."</span><span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">)</span>
+    <span class="n">some_signal</span> <span class="o">=</span> <span class="n">Cpt</span><span class="p">(</span><span class="n">EpicsSignalRO</span><span class="p">,</span> <span class="s2">"SUFFIX"</span><span class="p">)</span>
 </pre></div>
 </div>
 <div class="admonition note">
@@ -588,64 +595,61 @@ majority of schema will not define any attributes on the field, and will come di
 we allow the shorthand <code class="docutils literal notranslate"><span class="pre">a_different_name:</span> <span class="pre">some_signal</span></code> instead of <code class="docutils literal notranslate"><span class="pre">a_different_name:</span> <span class="pre">{data_key:</span> <span class="pre">some_signal}</span></code></p>
 </div>
 </section>
-</section>
 <section id="attributes">
 <h3>Attributes<a class="headerlink" href="#attributes" title="Link to this heading">#</a></h3>
-<p><a class="reference external" href="https://manual.nexusformat.org/design.html#design-attributes">Attributes</a> define metadata on groups/fields. This isn’t data which is itself to be plotted, but relevant metadata on the field/signal which should be stored in the stucture.</p>
+<p><a class="reference external" href="https://manual.nexusformat.org/design.html#design-attributes">Attributes</a> define metadata on groups/fields. This isn’t scan data which to be plotted, but relevant metadata on the field/signal which should be stored in the structure.</p>
 <p>It has the same methods for definition as the above, with the only differences being:</p>
 <ul class="simple">
 <li><p>An attribute cannot itself contain an attribute.</p></li>
 <li><p>In the serialized schema, attributes are defined with the <code class="docutils literal notranslate"><span class="pre">$</span></code> prefix on keys.</p></li>
 <li><p>In the serialized schema the shorthand for attributes is constant.</p></li>
 </ul>
-<p>The <a class="reference internal" href="../_api/bluesky_nexus.schema.html#bluesky_nexus.schema.NxAttribute" title="bluesky_nexus.schema.NxAttribute"><span class="xref myst py py-class">NxAttribute</span></a> model links to nexus attributes in the structure.</p>
-<section id="example">
-<h4>Example<a class="headerlink" href="#example" title="Link to this heading">#</a></h4>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@NxDevice</span><span class="o">.</span><span class="n">from_schema</span><span class="p">(</span>
-  <span class="n">NxObject</span><span class="p">(</span>
-    <span class="n">a_different_name</span><span class="o">=</span><span class="n">NxField</span><span class="p">(</span>
-      <span class="n">data_key</span><span class="o">=</span><span class="s2">"some_signal"</span><span class="p">,</span>
-      <span class="n">units</span><span class="o">=</span><span class="n">NxAttribute</span><span class="p">(</span><span class="n">constant</span><span class="o">=</span><span class="s2">"yard/s"</span><span class="p">)</span>
-    <span class="p">),</span>
-    <span class="n">description</span><span class="o">=</span><span class="n">NxField</span><span class="p">(</span><span class="n">constant</span><span class="o">=</span><span class="s2">"A description..."</span><span class="p">,</span> <span class="n">long_name</span><span class="o">=</span><span class="n">NxAttribute</span><span class="p">),</span>
-    <span class="n">long_name</span><span class="o">=</span><span class="n">NxAttribute</span><span class="p">(</span><span class="n">constant</span><span class="o">=</span><span class="s2">"My very special device"</span><span class="p">)</span>
-  <span class="p">)</span>
-<span class="p">)</span>
-<span class="k">class</span><span class="w"> </span><span class="nc">SomeDevice</span><span class="p">(</span><span class="n">Device</span><span class="p">):</span>
-  <span class="n">some_signal</span> <span class="o">=</span> <span class="n">Cpt</span><span class="p">(</span><span class="n">EpicsSignalRO</span><span class="p">,</span> <span class="s2">"PREFIX"</span><span class="p">)</span>
+<p>The <a class="reference internal" href="../_api/bluesky_nexus.schema.html#bluesky_nexus.schema.NxAttribute" title="bluesky_nexus.schema.NxAttribute"><span class="xref myst py py-class"><code class="docutils literal notranslate"><span class="pre">NxAttribute</span></code></span></a> model links to NeXus attributes in the structure.</p>
+<p>Every NeXus group has the attribute <code class="docutils literal notranslate"><span class="pre">nxclass</span></code> which defines which NeXus base class it corresponds to.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">SomeDevice</span><span class="p">(</span><span class="n">NxDevice</span><span class="p">,</span> <span class="n">Device</span><span class="p">):</span>
+    <span class="n">BLUESKY_NEXUS_BASE_CLASS</span> <span class="o">=</span> <span class="n">NxObject</span><span class="p">(</span>
+        <span class="n">a_different_name</span><span class="o">=</span><span class="n">NxField</span><span class="p">(</span>
+            <span class="n">data_key</span><span class="o">=</span><span class="s2">"some_signal"</span><span class="p">,</span>
+            <span class="n">units</span><span class="o">=</span><span class="n">NxAttribute</span><span class="p">(</span><span class="n">constant</span><span class="o">=</span><span class="s2">"yard/s"</span><span class="p">)</span>
+        <span class="p">),</span>
+        <span class="n">description</span><span class="o">=</span><span class="n">NxField</span><span class="p">(</span>
+            <span class="n">constant</span><span class="o">=</span><span class="s2">"A description..."</span><span class="p">,</span>
+            <span class="n">long_name</span><span class="o">=</span><span class="n">NxAttribute</span><span class="p">(</span><span class="n">constant</span><span class="o">=</span><span class="s2">"A longer description"</span><span class="p">)</span>
+        <span class="p">),</span>
+        <span class="n">long_name</span><span class="o">=</span><span class="n">NxAttribute</span><span class="p">(</span><span class="n">constant</span><span class="o">=</span><span class="s2">"My very special device"</span><span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">some_signal</span> <span class="o">=</span> <span class="n">Cpt</span><span class="p">(</span><span class="n">EpicsSignalRO</span><span class="p">,</span> <span class="s2">"PREFIX"</span><span class="p">)</span>
 </pre></div>
 </div>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">$nxclass</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">NXobject</span>
 <span class="nt">a_different_name</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">data_key</span><span class="p">:</span><span class="w"> </span><span class="nv">some_signal</span><span class="p p-Indicator">,</span><span class="nt"> $units</span><span class="p">:</span><span class="w"> </span><span class="s">"yard/s"</span><span class="p p-Indicator">}</span>
-<span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">constant</span><span class="p">:</span><span class="w"> </span><span class="s">"A</span><span class="nv"> </span><span class="s">description..."</span><span class="p p-Indicator">}</span>
+<span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">constant</span><span class="p">:</span><span class="w"> </span><span class="s">"A</span><span class="nv"> </span><span class="s">description..."</span><span class="p p-Indicator">,</span><span class="nt"> $long_name</span><span class="p">:</span><span class="w"> </span><span class="s">"My</span><span class="nv"> </span><span class="s">very</span><span class="nv"> </span><span class="s">special</span><span class="nv"> </span><span class="s">device"</span><span class="p p-Indicator">}</span>
 <span class="nt">$long_name</span><span class="p">:</span><span class="w"> </span><span class="s">"My</span><span class="nv"> </span><span class="s">very</span><span class="nv"> </span><span class="s">special</span><span class="nv"> </span><span class="s">device"</span>
 </pre></div>
 </div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>The units attribute is accepted on every nexus field. If not specified in the schema with <code class="docutils literal notranslate"><span class="pre">$units</span></code>, this is automatically given from the units received through bluesky.</p>
+<p>The units attribute is accepted on every NeXus field. If not specified in the schema with <code class="docutils literal notranslate"><span class="pre">$units</span></code>, this is automatically given to the field from the units received through bluesky.</p>
 </div>
-</section>
 </section>
 <section id="sub-groups">
 <h3>Sub Groups<a class="headerlink" href="#sub-groups" title="Link to this heading">#</a></h3>
 <p>Sub groups can be specified through the tree structure</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@NxDevice</span><span class="o">.</span><span class="n">from_schema</span><span class="p">(</span>
-  <span class="n">NxObject</span><span class="p">(</span>
-    <span class="n">a_different_name</span><span class="o">=</span><span class="n">NxField</span><span class="p">(</span>
-      <span class="n">data_key</span><span class="o">=</span><span class="s2">"some_signal"</span><span class="p">,</span>
-      <span class="n">units</span><span class="o">=</span><span class="n">NxAttribute</span><span class="p">(</span><span class="n">constant</span><span class="o">=</span><span class="s2">"yard/s"</span><span class="p">)</span>
-    <span class="p">),</span>
-    <span class="n">description</span><span class="o">=</span><span class="n">NxField</span><span class="p">(</span><span class="n">constant</span><span class="o">=</span><span class="s2">"A description..."</span><span class="p">,</span> <span class="n">long_name</span><span class="o">=</span><span class="n">NxAttribute</span><span class="p">),</span>
-    <span class="n">long_name</span><span class="o">=</span><span class="n">NxAttribute</span><span class="p">(</span><span class="n">constant</span><span class="o">=</span><span class="s2">"My very special device"</span><span class="p">),</span>
-    <span class="n">sub_device_name_in_nexus_structure</span><span class="o">=</span><span class="n">NxObject</span><span class="p">(</span>
-      <span class="n">sub_device_signal_name_in_structure</span><span class="o">=</span><span class="n">NxField</span><span class="p">(</span><span class="n">data_key</span><span class="o">=</span><span class="s2">"some_sub_device_signal"</span><span class="p">)</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">SomeDevice</span><span class="p">(</span><span class="n">NxDevice</span><span class="p">,</span> <span class="n">Device</span><span class="p">):</span>
+    <span class="n">BLUESKY_NEXUS_BASE_CLASS</span> <span class="o">=</span> <span class="n">NxObject</span><span class="p">(</span>
+        <span class="n">a_different_name</span><span class="o">=</span><span class="n">NxField</span><span class="p">(</span>
+            <span class="n">data_key</span><span class="o">=</span><span class="s2">"some_signal"</span><span class="p">,</span>
+            <span class="n">units</span><span class="o">=</span><span class="n">NxAttribute</span><span class="p">(</span><span class="n">constant</span><span class="o">=</span><span class="s2">"yard/s"</span><span class="p">)</span>
+        <span class="p">),</span>
+        <span class="n">description</span><span class="o">=</span><span class="n">NxField</span><span class="p">(</span><span class="n">constant</span><span class="o">=</span><span class="s2">"A description..."</span><span class="p">,</span> <span class="n">long_name</span><span class="o">=</span><span class="n">NxAttribute</span><span class="p">),</span>
+        <span class="n">long_name</span><span class="o">=</span><span class="n">NxAttribute</span><span class="p">(</span><span class="n">constant</span><span class="o">=</span><span class="s2">"My very special device"</span><span class="p">),</span>
+        <span class="n">sub_device_name_in_nexus_structure</span><span class="o">=</span><span class="n">NxObject</span><span class="p">(</span>
+            <span class="n">sub_device_signal_name_in_structure</span><span class="o">=</span><span class="n">NxField</span><span class="p">(</span><span class="n">data_key</span><span class="o">=</span><span class="s2">"some_sub_device_signal"</span><span class="p">)</span>
+        <span class="p">)</span>
     <span class="p">)</span>
-  <span class="p">)</span>
-<span class="p">)</span>
-<span class="k">class</span><span class="w"> </span><span class="nc">SomeDevice</span><span class="p">(</span><span class="n">Device</span><span class="p">):</span>
-  <span class="n">some_signal</span> <span class="o">=</span> <span class="n">Cpt</span><span class="p">(</span><span class="n">EpicsSignalRO</span><span class="p">,</span> <span class="s2">"PREFIX1"</span><span class="p">)</span>
-  <span class="n">some_sub_device</span> <span class="o">=</span> <span class="n">Cpt</span><span class="p">(</span><span class="n">SomeSubDevice</span><span class="p">,</span> <span class="s2">"PREFIX2"</span><span class="p">)</span>
+
+    <span class="n">some_signal</span> <span class="o">=</span> <span class="n">Cpt</span><span class="p">(</span><span class="n">EpicsSignalRO</span><span class="p">,</span> <span class="s2">"PREFIX1"</span><span class="p">)</span>
+    <span class="n">some_sub_device_signal</span> <span class="o">=</span> <span class="n">Cpt</span><span class="p">(</span><span class="n">SomeSubDevice</span><span class="p">,</span> <span class="s2">"PREFIX2"</span><span class="p">)</span>
 </pre></div>
 </div>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">$nxclass</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">NXobject</span>
@@ -661,59 +665,93 @@ we allow the shorthand <code class="docutils literal notranslate"><span class="p
 <p class="admonition-title">Note</p>
 <p>Groups are always validated against their pydantic schema.</p>
 <ul class="simple">
-<li><p>If in the pydantic schema there is a field or attribute required and it was not provided in the serialized yaml, the decorator will raise an error.</p></li>
+<li><p>If in the pydantic schema there is a field or attribute required and it was not provided in the serialized yaml, there will be an error on <a class="reference internal" href="../_api/bluesky_nexus.schema.html#bluesky_nexus.schema.NxBaseClass" title="bluesky_nexus.schema.NxBaseClass"><span class="xref myst py py-class"><code class="docutils literal notranslate"><span class="pre">NxBaseClass</span></code></span></a> instantiation.</p></li>
 <li><p>If there is a subgroup or field which is optional, but you decide to provide it, it will be validated against the structure.</p></li>
 </ul>
 </div>
 </section>
-</section>
-<section id="inheritance">
-<h2>Inheritance<a class="headerlink" href="#inheritance" title="Link to this heading">#</a></h2>
-<section id="single-inheritance">
-<h3>Single Inheritance<a class="headerlink" href="#single-inheritance" title="Link to this heading">#</a></h3>
-<p>Unless <code class="docutils literal notranslate"><span class="pre">inherit=False</span></code> is given with</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">NxDevice</span><span class="o">.</span><span class="n">from_schema</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">inherit</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<section id="links">
+<h3>Links<a class="headerlink" href="#links" title="Link to this heading">#</a></h3>
+<p>The NeXus <a class="reference external" href="https://manual.nexusformat.org/design.html#design-links">link</a> type is defined with the <code class="docutils literal notranslate"><span class="pre">bluesky_nexus</span></code> <a class="reference internal" href="../_api/bluesky_nexus.schema.html#bluesky_nexus.schema.NxInternalLink" title="bluesky_nexus.schema.NxInternalLink"><span class="xref myst py py-class"><code class="docutils literal notranslate"><span class="pre">NxInternalLink</span></code></span></a>. This model allows for links internal to a device. It takes a list of string with the path of the NeXus type which it’s linking to relative to the root of the device’s NeXus structure.</p>
+<p>In the serialized structure links are specified with prefix <code class="docutils literal notranslate"><span class="pre">&quot;&amp;&quot;</span></code>.</p>
+<p>For example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">NxObject</span> <span class="o">=</span> <span class="n">NxBaseClass</span><span class="o">.</span><span class="n">build</span><span class="p">(</span><span class="s2">"NXobject"</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">SomeDevice</span><span class="p">(</span><span class="n">NxDevice</span><span class="p">,</span> <span class="n">Device</span><span class="p">):</span>
+    <span class="n">BLUESKY_NEXUS_BASE_CLASS</span> <span class="o">=</span> <span class="n">NxObject</span><span class="p">(</span>
+        <span class="n">some_field</span><span class="o">=</span><span class="n">NxField</span><span class="p">(</span><span class="n">data_key</span><span class="o">=</span><span class="s2">"some_signal"</span><span class="p">),</span>
+        <span class="n">some_subgroup</span><span class="o">=</span><span class="n">NxObject</span><span class="p">(</span><span class="n">some_field</span><span class="o">=</span><span class="n">NxField</span><span class="p">(</span><span class="n">data_key</span><span class="o">=</span><span class="s2">"another_signal"</span><span class="p">)),</span>
+        <span class="n">some_link</span><span class="o">=</span><span class="n">NxInternalLink</span><span class="p">(</span><span class="n">link</span><span class="o">=</span><span class="p">[</span><span class="s2">"some_subgroup"</span><span class="p">,</span> <span class="s2">"some_signal"</span><span class="p">])</span>
+    <span class="p">)</span>
+    <span class="n">some_signal</span> <span class="o">=</span> <span class="n">Cpt</span><span class="p">(</span><span class="n">EpicsSignal</span><span class="p">,</span> <span class="s2">"SIGNAL1"</span><span class="p">)</span>
+    <span class="n">another_signal</span> <span class="o">=</span> <span class="n">Cpt</span><span class="p">(</span><span class="n">EpicsSignal</span><span class="p">,</span> <span class="s2">"SIGNAL2"</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>then a given device will load the parent schema from it’s parent devices, so long as those devices are NeXus subclasses of the one being loaded into the child device.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># https://manual.nexusformat.org/classes/base_classes/NXcomponent.html</span>
-<span class="c1"># NXcomponent contains a field called description. We set any device to by default</span>
-<span class="c1"># use the hints field "description" if it's present.</span>
-<span class="nd">@NxDevice</span><span class="o">.</span><span class="n">from_schema</span><span class="p">({</span><span class="s2">"$nxclass"</span><span class="p">:</span> <span class="s2">"NXcomponent"</span><span class="p">,</span> <span class="s2">"description"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"hints_key"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"metadata"</span><span class="p">,</span> <span class="s2">"description"</span><span class="p">]}})(</span><span class="n">Device</span><span class="p">)</span>
-
-<span class="c1"># https://manual.nexusformat.org/classes/base_classes/NXaperture.html</span>
-<span class="c1"># NXaperture extends NXcomponent, so this field will inherit the schema key from it's parent device.</span>
-<span class="nd">@NxDevice</span><span class="o">.</span><span class="n">from_schema</span><span class="p">({</span><span class="s2">"$nxclass"</span><span class="p">:</span> <span class="s2">"NXaperture"</span><span class="p">,</span> <span class="o">...</span><span class="p">})</span>
-<span class="k">class</span><span class="w"> </span><span class="nc">MyAperture1</span><span class="p">(</span><span class="n">Device</span><span class="p">):</span>
-  <span class="n">some_signal</span> <span class="o">=</span> <span class="n">Cpt</span><span class="p">(</span><span class="n">EpicsSignalRO</span><span class="p">,</span> <span class="s2">"PREFIX1"</span><span class="p">)</span>
-
-<span class="c1"># As a subclass, this "description" will overwrite the parent's description on this class</span>
-<span class="nd">@NxDevice</span><span class="o">.</span><span class="n">from_schema</span><span class="p">({</span><span class="s2">"$nxclass"</span><span class="p">:</span> <span class="s2">"NXaperture"</span><span class="p">,</span> <span class="s2">"description"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"constant"</span><span class="p">:</span> <span class="s2">"Some description."</span><span class="p">},</span> <span class="o">...</span><span class="p">})</span>
-<span class="k">class</span><span class="w"> </span><span class="nc">MyAperture2</span><span class="p">(</span><span class="n">Device</span><span class="p">):</span>
-  <span class="n">some_signal</span> <span class="o">=</span> <span class="n">Cpt</span><span class="p">(</span><span class="n">EpicsSignalRO</span><span class="p">,</span> <span class="s2">"PREFIX1"</span><span class="p">)</span>
+<p>This has the corresponding serialized schema</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">some_field</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">some_signal</span>
+<span class="nt">some_subgroup</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">some_field</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">another_signal</span>
+<span class="w">  </span><span class="nt">$nxclass</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">NXobject</span>
+<span class="nt">&amp;some_link</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">'some_subgroup'</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">'some_signal'</span><span class="p p-Indicator">]</span>
+<span class="nt">$nxclass</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">NXobject</span>
 </pre></div>
 </div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>A device does not have to use the decorator in order to inherit the schema from it’s parent(s).</p>
+<p>It’s used in <a class="reference internal" href="nx_data_explanation.html"><span class="std std-doc">NXdata Linking Explanation</span></a> to link into the <code class="docutils literal notranslate"><span class="pre">value</span></code> field of a data key’s <code class="docutils literal notranslate"><span class="pre">NXlog</span></code>.</p>
 </div>
 </section>
-<section id="multi-inheritance">
-<h3>Multi-Inheritance<a class="headerlink" href="#multi-inheritance" title="Link to this heading">#</a></h3>
-<p>Devices also support multi-inheritance of subgroups, attributes, and fields. The keys in the schema are overwritten from parent to child with the same priority as ordinary inheritance through python.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@NxDevice</span><span class="o">.</span><span class="n">from_schema</span><span class="p">({</span><span class="s2">"$nxclass"</span><span class="p">:</span> <span class="s2">"NXaperture"</span><span class="p">,</span> <span class="s2">"some_key"</span><span class="p">:</span> <span class="s2">"parent_signal_1"</span><span class="p">})</span>
-<span class="k">class</span><span class="w"> </span><span class="nc">Parent1</span><span class="p">(</span><span class="n">Device</span><span class="p">):</span>
-  <span class="n">parent_signal_1</span> <span class="o">=</span> <span class="n">Cpt</span><span class="p">(</span><span class="n">EpicsSignalRO</span><span class="p">,</span> <span class="s2">"PREFIX1"</span><span class="p">)</span>
+<section id="declarative-behaviour">
+<h3>Declarative Behaviour<a class="headerlink" href="#declarative-behaviour" title="Link to this heading">#</a></h3>
+<p>With a declarative device, e.g one where <code class="docutils literal notranslate"><span class="pre">BLUESKY_NEXUS_BASE_CLASS</span></code> is a type of NXDL, the schema is built from the annotations when <code class="docutils literal notranslate"><span class="pre">hints</span></code> is called. In bluesky this happens when a stream is opened.</p>
+<p>When this happens, the device is parsed for annotations.</p>
+<p>There are three types of bluesky NeXus annotations:</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="../_api/bluesky_nexus.device.html#bluesky_nexus.device.NxDataKey" title="bluesky_nexus.device.NxDataKey"><span class="xref myst py py-class"><code class="docutils literal notranslate"><span class="pre">NxDataKey</span></code></span></a> - For attributes which are data keys.</p></li>
+<li><p><a class="reference internal" href="../_api/bluesky_nexus.device.html#bluesky_nexus.device.NxConstant" title="bluesky_nexus.device.NxConstant"><span class="xref myst py py-class"><code class="docutils literal notranslate"><span class="pre">NxConstant</span></code></span></a> - For json serializable variables on the class.</p></li>
+<li><p><a class="reference internal" href="../_api/bluesky_nexus.device.html#bluesky_nexus.device.NxSubGroup" title="bluesky_nexus.device.NxSubGroup"><span class="xref myst py py-class"><code class="docutils literal notranslate"><span class="pre">NxSubGroup</span></code></span></a> - For sub devices which should be mapped to a subgroup in the NeXus structure.</p></li>
+</ul>
+<p>Each of <a class="reference internal" href="../_api/bluesky_nexus.device.html#bluesky_nexus.device.NxDataKey" title="bluesky_nexus.device.NxDataKey"><span class="xref myst py py-class"><code class="docutils literal notranslate"><span class="pre">NxDataKey</span></code></span></a> and <a class="reference internal" href="../_api/bluesky_nexus.device.html#bluesky_nexus.device.NxConstant" title="bluesky_nexus.device.NxConstant"><span class="xref myst py py-class"><code class="docutils literal notranslate"><span class="pre">NxConstant</span></code></span></a> can take the argument <code class="docutils literal notranslate"><span class="pre">is_nx_attribute</span></code> (default <code class="docutils literal notranslate"><span class="pre">False</span></code>) to have the data key or constant map to an NeXus attribute instead of a field.</p>
+<p>As an example, this device implements all the kinds of annotations.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">NxDetector</span> <span class="o">=</span> <span class="n">NxBaseClass</span><span class="o">.</span><span class="n">build</span><span class="p">(</span><span class="s2">"NXdetector"</span><span class="p">)</span>
+<span class="n">NxObject</span> <span class="o">=</span> <span class="n">NxBaseClass</span><span class="o">.</span><span class="n">build</span><span class="p">(</span><span class="s2">"NXobject"</span><span class="p">)</span>
 
-<span class="nd">@NxDevice</span><span class="o">.</span><span class="n">from_schema</span><span class="p">({</span><span class="s2">"$nxclass"</span><span class="p">:</span> <span class="s2">"NXcomponent"</span><span class="p">,</span> <span class="s2">"some_key"</span><span class="p">:</span> <span class="s2">"parent_signal_21"</span><span class="p">,</span> <span class="s2">"another_key"</span><span class="p">:</span> <span class="s2">"parent_signal_22"</span><span class="p">})</span>
-<span class="k">class</span><span class="w"> </span><span class="nc">Parent2</span><span class="p">(</span><span class="n">Device</span><span class="p">):</span>
-  <span class="n">parent_signal_2</span> <span class="o">=</span> <span class="n">Cpt</span><span class="p">(</span><span class="n">EpicsSignalRO</span><span class="p">,</span> <span class="s2">"PREFIX2"</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">SomeSubDevice</span><span class="p">(</span><span class="n">NxDevice</span><span class="p">,</span> <span class="n">StandardReadable</span><span class="p">,</span> <span class="n">EpicsDevice</span><span class="p">):</span>
+    <span class="n">BLUESKY_NEXUS_BASE_CLASS</span> <span class="o">=</span> <span class="n">NxObject</span>
+    <span class="n">signal1</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">SignalRW</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="n">PvSuffix</span><span class="p">(</span><span class="s2">"SIGNAL1"</span><span class="p">),</span> <span class="n">NxDataKey</span><span class="p">(</span><span class="s2">"field1"</span><span class="p">)]</span>
+    <span class="n">signal2</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">SignalRW</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="n">PvSuffix</span><span class="p">(</span><span class="s2">"SIGNAL2"</span><span class="p">),</span> <span class="n">NxDataKey</span><span class="p">(</span><span class="s2">"attribute1"</span><span class="p">,</span> <span class="n">is_nx_attribute</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="p">]</span>
+    <span class="n">SOME_CONSTANT_1</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">NxConstant</span><span class="p">(</span><span class="s2">"field2"</span><span class="p">)]</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">SOME_CONSTANT_2</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">NxConstant</span><span class="p">(</span><span class="s2">"attribute2"</span><span class="p">,</span> <span class="n">is_nx_attribute</span><span class="o">=</span><span class="kc">True</span><span class="p">)]</span> <span class="o">=</span> <span class="mi">2</span>
 
-<span class="c1"># This schema has "some_key": parent_signal_1", and "another_key": "parent_signal_22".</span>
-<span class="c1"># Left hand side is treated with priority just like python inheritance.</span>
-<span class="nd">@NxDevice</span><span class="o">.</span><span class="n">from_schema</span><span class="p">({</span><span class="s2">"$nxclass"</span><span class="p">:</span> <span class="s2">"NXaperture"</span><span class="p">})</span>
-<span class="k">class</span><span class="w"> </span><span class="nc">Child</span><span class="p">(</span><span class="n">Parent1</span><span class="p">,</span> <span class="n">Parent2</span><span class="p">):</span>
-  <span class="n">child_signal</span> <span class="o">=</span> <span class="n">Cpt</span><span class="p">(</span><span class="n">EpicsSignalRO</span><span class="p">,</span> <span class="s2">"PREFIX3"</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">SomeDevice</span><span class="p">(</span><span class="n">NxDevice</span><span class="p">,</span> <span class="n">StandardReadable</span><span class="p">,</span> <span class="n">EpicsDevice</span><span class="p">):</span>
+    <span class="n">BLUESKY_NEXUS_BASE_CLASS</span> <span class="o">=</span> <span class="n">NxObject</span>
+    <span class="n">signal1</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">SignalRW</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="n">PvSuffix</span><span class="p">(</span><span class="s2">"SIGNAL1"</span><span class="p">),</span> <span class="n">NxDataKey</span><span class="p">(</span><span class="s2">"field1"</span><span class="p">)]</span>
+    <span class="n">signal2</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">SignalRW</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="n">PvSuffix</span><span class="p">(</span><span class="s2">"SIGNAL2"</span><span class="p">),</span> <span class="n">NxDataKey</span><span class="p">(</span><span class="s2">"attribute1"</span><span class="p">,</span> <span class="n">is_nx_attribute</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="p">]</span>
+    <span class="n">SOME_CONSTANT</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">NxConstant</span><span class="p">(</span><span class="s2">"field2"</span><span class="p">)]</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">SOME_CONSTANT</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">NxConstant</span><span class="p">(</span><span class="s2">"attribute2"</span><span class="p">,</span> <span class="n">is_nx_attribute</span><span class="o">=</span><span class="kc">True</span><span class="p">)]</span> <span class="o">=</span> <span class="mi">2</span>
+
+    <span class="n">some_sub_device</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">SomeSubDevice</span><span class="p">,</span> <span class="n">NxSubGroup</span><span class="p">(</span><span class="s2">"sub_group"</span><span class="p">),</span> <span class="n">PvSuffix</span><span class="p">(</span><span class="s2">"SUB"</span><span class="p">)]</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">SomeDevice</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"foo"</span><span class="p">)</span><span class="o">.</span><span class="n">hints</span><span class="p">)</span>
+<span class="c1"># {</span>
+<span class="c1">#   'NX_class': 'NXobject',</span>
+<span class="c1">#   'NX_schema': {</span>
+<span class="c1">#       'sub_group': {</span>
+<span class="c1">#           'field1': 'some_sub_device-signal1',</span>
+<span class="c1">#           'field2': {'constant': 1},</span>
+<span class="c1">#           '$attribute1': {'data_key': 'some_sub_device-signal2'},</span>
+<span class="c1">#           '$attribute2': 2,</span>
+<span class="c1">#           '$nxclass': 'NXobject'</span>
+<span class="c1">#       },</span>
+<span class="c1">#       'field1': 'signal1',</span>
+<span class="c1">#       '$attribute1': {'data_key': 'signal2'},</span>
+<span class="c1">#       '$attribute2': 2,</span>
+<span class="c1">#       '$nxclass': 'NXobject'</span>
+<span class="c1">#   }</span>
+<span class="c1"># }</span>
 </pre></div>
 </div>
 </section>
@@ -744,7 +782,7 @@ we allow the shorthand <code class="docutils literal notranslate"><span class="p
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title"><code class="docutils literal notranslate"><span class="pre">NXData</span></code> Linking Explanation</p>
+        <p class="prev-next-title"><code class="docutils literal notranslate"><span class="pre">NXdata</span></code> Linking Explanation</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -767,29 +805,23 @@ we allow the shorthand <code class="docutils literal notranslate"><span class="p
   </div>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="pst-show_toc_level nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#device-schema-specification">Device Schema Specification</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#groups">Groups</a><ul class="nav section-nav flex-column">
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#from-pydantic-schema">From pydantic schema</a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#from-dictionary">From dictionary</a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#from-yaml">From yaml</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#making-an-nxbaseclass">1. Making an <span class="xref myst"><code class="docutils literal notranslate"><span class="pre">NxBaseClass</span></code></span></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#providing-schema-with-nxdevice">2. Providing Schema with <span class="xref myst"><code class="docutils literal notranslate"><span class="pre">NxDevice</span></code></span></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#as-an-instance">As an instance</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#serialized-schema">Serialized schema</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#deserializing-with-nxbaseclass-from-dictionary">Deserializing with <span class="xref myst"><code class="docutils literal notranslate"><span class="pre">NxBaseClass.from_dictionary</span></code></span></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#deserializing-with-yaml-nxbaseclass-from-path">Deserializing with yaml - <span class="xref myst"><code class="docutils literal notranslate"><span class="pre">NxBaseClass.from_path</span></code></span></a></li>
 </ul>
 </li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#fields">Fields</a><ul class="nav section-nav flex-column">
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#id1">From pydantic schema</a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#id2">From dictionary</a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#id3">From yaml</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#as-a-type-declarative-definitions">As a Type (declarative definitions)</a></li>
 </ul>
 </li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#attributes">Attributes</a><ul class="nav section-nav flex-column">
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#example">Example</a></li>
-</ul>
-</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#defining-your-schema">Defining your Schema</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#fields">Fields</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#attributes">Attributes</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#sub-groups">Sub Groups</a></li>
-</ul>
-</li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#inheritance">Inheritance</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#single-inheritance">Single Inheritance</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#multi-inheritance">Multi-Inheritance</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#links">Links</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#declarative-behaviour">Declarative Behaviour</a></li>
 </ul>
 </li>
 </ul>

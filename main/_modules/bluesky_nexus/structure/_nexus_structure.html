@@ -6,7 +6,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>bluesky_nexus.structure._nexus_structure &#8212; bluesky-nexus 0.1.dev472+gbbf7bf00f documentation</title>
+    <title>bluesky_nexus.structure._nexus_structure &#8212; bluesky-nexus 0.1.dev473+gacb7d81ea documentation</title>
   
   
   
@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=597e38e0"></script>
+    <script src="../../../_static/documentation_options.js?v=88f85fda"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -467,12 +467,13 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">bluesky_nexus.schema</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">NX_ATTRIBUTE_SERIALIZED_PREFIX</span><span class="p">,</span>
     <span class="n">NxAttribute</span><span class="p">,</span>
+    <span class="n">NxBaseClass</span><span class="p">,</span>
     <span class="n">NxField</span><span class="p">,</span>
     <span class="n">NxGroup</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.._version</span><span class="w"> </span><span class="kn">import</span> <span class="n">__version__</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">._data_extractor</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">._run_data</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">DataKeyData</span><span class="p">,</span>
     <span class="n">ObjectData</span><span class="p">,</span>
     <span class="n">RunData</span><span class="p">,</span>
@@ -488,6 +489,73 @@
     <span class="nb">str</span><span class="p">,</span>
     <span class="n">JsonSerializableScalar</span> <span class="o">|</span> <span class="n">JsonSerializableList</span> <span class="o">|</span> <span class="n">JsonSerializableTuple</span> <span class="o">|</span> <span class="s2">"JsonSerializableDict"</span><span class="p">,</span>
 <span class="p">]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_new_schema_with_missing_fields</span><span class="p">(</span>
+    <span class="n">data_key_data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DataKeyData</span><span class="p">],</span>
+    <span class="n">nx_schema</span><span class="p">:</span> <span class="n">NxGroup</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NxGroup</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Takes a nexus schema and data keys for an object. If the data key</span>
+<span class="sd">    isn't present in the schema then try adding them and validating again.</span>
+<span class="sd">    """</span>
+    <span class="n">nx_alias_to_nx_field</span> <span class="o">=</span> <span class="n">nx_schema</span><span class="o">.</span><span class="n">all_nx_fields</span><span class="p">()</span>
+
+    <span class="n">schema_specified_data_keys</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="n">nx_field</span><span class="o">.</span><span class="n">data_key</span><span class="p">:</span> <span class="n">nx_field</span> <span class="k">for</span> <span class="n">nx_field</span> <span class="ow">in</span> <span class="n">nx_alias_to_nx_field</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+    <span class="p">}</span>
+
+    <span class="n">raw_schema</span> <span class="o">=</span> <span class="n">nx_schema</span><span class="o">.</span><span class="n">model_dump</span><span class="p">()</span>
+
+    <span class="k">for</span> <span class="n">data_key_name</span> <span class="ow">in</span> <span class="n">data_key_data</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">schema_specified_data_keys</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">data_key_name</span><span class="p">):</span>
+            <span class="k">continue</span>  <span class="c1"># Already added manually.</span>
+
+        <span class="n">raw_schema</span><span class="p">[</span><span class="n">sanitize_datakey_for_nexus</span><span class="p">(</span><span class="n">data_key_name</span><span class="p">)]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"data_key"</span><span class="p">:</span> <span class="n">data_key_name</span><span class="p">,</span>
+        <span class="p">}</span>
+
+    <span class="k">return</span> <span class="n">NxGroup</span><span class="o">.</span><span class="n">from_dictionary</span><span class="p">(</span><span class="n">raw_schema</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_deserialize_schema</span><span class="p">(</span><span class="n">object_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">object_data</span><span class="p">:</span> <span class="n">ObjectData</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">object_data</span><span class="o">.</span><span class="n">raw_nx_schema</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Perform an initial validation on the provided schema.</span>
+            <span class="c1"># This will give back the subclass of NxGroup specified</span>
+            <span class="c1"># in the serialized schema.</span>
+            <span class="c1"># TODO: Move this logic into `create_structure`.</span>
+            <span class="n">nx_schema</span> <span class="o">=</span> <span class="n">NxGroup</span><span class="o">.</span><span class="n">from_dictionary</span><span class="p">(</span><span class="n">object_data</span><span class="o">.</span><span class="n">raw_nx_schema</span><span class="p">)</span>
+
+            <span class="c1"># Fill the specified schema with the keys which</span>
+            <span class="c1"># weren't specified.</span>
+            <span class="n">nx_schema</span> <span class="o">=</span> <span class="n">_new_schema_with_missing_fields</span><span class="p">(</span>
+                <span class="n">object_data</span><span class="o">.</span><span class="n">formatted_data_key_name_to_data</span><span class="p">,</span> <span class="n">nx_schema</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="n">nx_schema</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exception</span><span class="p">:</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"Received a malformed schema in </span><span class="si">{</span><span class="n">object_name</span><span class="si">}</span><span class="s2">. "</span>
+                <span class="sa">f</span><span class="s2">"The error was:</span><span class="se">\n</span><span class="s2">    </span><span class="si">{</span><span class="n">exception</span><span class="si">!s}</span><span class="se">\n</span><span class="s2">"</span>
+                <span class="s2">"A default schema will be used instead."</span><span class="p">,</span>
+            <span class="p">)</span>
+
+    <span class="c1"># Make a new schema. This will happen if the device didn't specify an "NX_schema",</span>
+    <span class="c1"># or if the above raised an exception.</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">object_data</span><span class="o">.</span><span class="n">formatted_data_key_name_to_data</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="c1"># The device has a single key. Don't make it an `NXobject`.</span>
+        <span class="c1"># This is very likely if the plan throws in signals of a device,</span>
+        <span class="c1"># but not the device itself.</span>
+        <span class="n">only_key</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">object_data</span><span class="o">.</span><span class="n">formatted_data_key_name_to_data</span><span class="p">))</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Creating new NxField schema for device </span><span class="si">{</span><span class="n">object_name</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">NxField</span><span class="p">(</span><span class="n">data_key</span><span class="o">=</span><span class="n">only_key</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># # Make an NxSubEntry with all the fields from the data keys.</span>
+        <span class="n">nx_schema</span> <span class="o">=</span> <span class="n">NxBaseClass</span><span class="o">.</span><span class="n">build</span><span class="p">(</span><span class="s2">"NXsubentry"</span><span class="p">)()</span>
+        <span class="n">nx_schema</span> <span class="o">=</span> <span class="n">_new_schema_with_missing_fields</span><span class="p">(</span>
+            <span class="n">object_data</span><span class="o">.</span><span class="n">formatted_data_key_name_to_data</span><span class="p">,</span> <span class="n">nx_schema</span>
+        <span class="p">)</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Creating new NxSubEntry schema for device </span><span class="si">{</span><span class="n">object_name</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">nx_schema</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_nested_shape</span><span class="p">(</span><span class="n">obj</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
@@ -618,8 +686,9 @@
             <span class="n">value</span><span class="o">=</span><span class="n">attribute_value</span>
         <span class="p">)</span>
 
+    <span class="n">timestamps_from_run_start</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">data_key_data</span><span class="o">.</span><span class="n">timestamps</span><span class="p">)</span> <span class="o">-</span> <span class="n">run_start_time</span>
     <span class="n">timestamps_field</span> <span class="o">=</span> <span class="n">nexus</span><span class="o">.</span><span class="n">NXfield</span><span class="p">(</span>
-        <span class="n">value</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">data_key_data</span><span class="o">.</span><span class="n">timestamps</span><span class="p">)</span> <span class="o">-</span> <span class="n">run_start_time</span><span class="p">,</span>
+        <span class="n">value</span><span class="o">=</span><span class="n">timestamps_from_run_start</span><span class="p">,</span>
         <span class="n">name</span><span class="o">=</span><span class="s2">"timestamps"</span><span class="p">,</span>
         <span class="n">attrs</span><span class="o">=</span><span class="p">{</span><span class="s2">"units"</span><span class="p">:</span> <span class="n">nexus</span><span class="o">.</span><span class="n">NXfield</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="s2">"s"</span><span class="p">)},</span>
     <span class="p">)</span>
@@ -659,12 +728,14 @@
     <span class="n">run_start_time</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">nexus</span><span class="o">.</span><span class="n">NXgroup</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Writes the bluesky object into a NeXus group and returns it."""</span>
-    <span class="c1"># We would like to use the nexus class directly, e.g nexus.NXdata...</span>
-    <span class="c1"># This has some very strange errors.</span>
-    <span class="c1"># e.g nexus.NXobject not allowing item assignment, or errors in creating an</span>
-    <span class="c1"># NXlink with nexus.NXsubentry.</span>
-    <span class="n">group</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">nexus</span><span class="p">,</span> <span class="n">group_schema</span><span class="o">.</span><span class="n">nxclass</span><span class="o">.</span><span class="n">constant</span><span class="p">,</span> <span class="n">nexus</span><span class="o">.</span><span class="n">NXgroup</span><span class="p">)()</span>
-    <span class="n">group</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"nxclass"</span><span class="p">]</span> <span class="o">=</span> <span class="n">nexus</span><span class="o">.</span><span class="n">NXfield</span><span class="p">(</span><span class="n">group_schema</span><span class="o">.</span><span class="n">nxclass</span><span class="o">.</span><span class="n">constant</span><span class="p">)</span>
+    <span class="c1"># We purposefully try to avoid using nexusformat group subclasses,</span>
+    <span class="c1"># e.g nexus.NXdata directly.</span>
+    <span class="n">group</span> <span class="o">=</span> <span class="n">nexus</span><span class="o">.</span><span class="n">NXgroup</span><span class="p">()</span>
+
+    <span class="c1"># Only way you can set the class without changing the type of nexusformat class.</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">_class</span> <span class="o">=</span> <span class="n">group_schema</span><span class="o">.</span><span class="n">nxclass</span><span class="o">.</span><span class="n">constant</span>  <span class="c1"># noqa</span>
+
+    <span class="n">group</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"nxdl_schema_uri"</span><span class="p">]</span> <span class="o">=</span> <span class="n">nexus</span><span class="o">.</span><span class="n">NXfield</span><span class="p">(</span><span class="n">group_schema</span><span class="o">.</span><span class="n">NXDL_SCHEMA_URI</span><span class="p">)</span>
 
     <span class="c1"># Add the specified attributes of the group.</span>
     <span class="k">for</span> <span class="n">nx_attribute_name</span><span class="p">,</span> <span class="n">nx_attribute</span> <span class="ow">in</span> <span class="n">group_schema</span><span class="o">.</span><span class="n">nx_attributes</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
@@ -758,15 +829,14 @@
     <span class="n">stream_group</span><span class="p">[</span><span class="s2">"devices"</span><span class="p">]</span> <span class="o">=</span> <span class="n">devices_group</span>
 
     <span class="k">for</span> <span class="n">object_name</span><span class="p">,</span> <span class="n">object_data</span> <span class="ow">in</span> <span class="n">stream_data</span><span class="o">.</span><span class="n">object_data</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">object_data</span><span class="o">.</span><span class="n">nx_schema</span><span class="p">,</span> <span class="n">NxGroup</span><span class="p">):</span>
-            <span class="n">device_group</span> <span class="o">=</span> <span class="n">_new_nx_group</span><span class="p">(</span>
-                <span class="n">object_name</span><span class="p">,</span> <span class="n">object_data</span><span class="p">,</span> <span class="n">object_data</span><span class="o">.</span><span class="n">nx_schema</span><span class="p">,</span> <span class="n">run_start_time</span>
-            <span class="p">)</span>
+        <span class="n">nx_schema</span> <span class="o">=</span> <span class="n">_deserialize_schema</span><span class="p">(</span><span class="n">object_name</span><span class="p">,</span> <span class="n">object_data</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">nx_schema</span><span class="p">,</span> <span class="n">NxGroup</span><span class="p">):</span>
+            <span class="n">device_group</span> <span class="o">=</span> <span class="n">_new_nx_group</span><span class="p">(</span><span class="n">object_name</span><span class="p">,</span> <span class="n">object_data</span><span class="p">,</span> <span class="n">nx_schema</span><span class="p">,</span> <span class="n">run_start_time</span><span class="p">)</span>
 
             <span class="k">for</span> <span class="p">(</span>
                 <span class="n">nx_attribute_name</span><span class="p">,</span>
                 <span class="n">nx_attribute</span><span class="p">,</span>
-            <span class="p">)</span> <span class="ow">in</span> <span class="n">object_data</span><span class="o">.</span><span class="n">nx_schema</span><span class="o">.</span><span class="n">nx_attributes</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="p">)</span> <span class="ow">in</span> <span class="n">nx_schema</span><span class="o">.</span><span class="n">nx_attributes</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
                 <span class="n">device_group</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span>
                     <span class="n">nx_attribute_name</span><span class="o">.</span><span class="n">removeprefix</span><span class="p">(</span><span class="n">NX_ATTRIBUTE_SERIALIZED_PREFIX</span><span class="p">)</span>
                 <span class="p">]</span> <span class="o">=</span> <span class="n">_leaf_value</span><span class="p">(</span><span class="n">nx_attribute</span><span class="p">,</span> <span class="n">object_data</span><span class="p">)</span>
@@ -789,22 +859,22 @@
 
             <span class="c1"># Add the internal links to the device. Required to do so after</span>
             <span class="c1"># the above so that the full path can be resolved.</span>
-            <span class="n">_add_internal_links</span><span class="p">(</span><span class="n">device_group</span><span class="p">,</span> <span class="n">object_data</span><span class="o">.</span><span class="n">nx_schema</span><span class="p">)</span>
+            <span class="n">_add_internal_links</span><span class="p">(</span><span class="n">device_group</span><span class="p">,</span> <span class="n">nx_schema</span><span class="p">)</span>
 
-        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">object_data</span><span class="o">.</span><span class="n">nx_schema</span><span class="p">,</span> <span class="n">NxField</span><span class="p">):</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">nx_schema</span><span class="p">,</span> <span class="n">NxField</span><span class="p">):</span>
             <span class="c1"># It has a single nx_field, no group...</span>
             <span class="n">data_key</span> <span class="o">=</span> <span class="n">object_data</span><span class="o">.</span><span class="n">formatted_data_key_name_to_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
-                <span class="n">cast</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">object_data</span><span class="o">.</span><span class="n">nx_schema</span><span class="o">.</span><span class="n">data_key</span><span class="p">)</span>
+                <span class="n">cast</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">nx_schema</span><span class="o">.</span><span class="n">data_key</span><span class="p">)</span>
             <span class="p">)</span>
             <span class="k">if</span> <span class="n">data_key</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">"Datakey `</span><span class="si">{</span><span class="n">object_data</span><span class="o">.</span><span class="n">nx_schema</span><span class="o">.</span><span class="n">data_key</span><span class="si">}</span><span class="s2">` in schema not "</span>
+                    <span class="sa">f</span><span class="s2">"Datakey `</span><span class="si">{</span><span class="n">nx_schema</span><span class="o">.</span><span class="n">data_key</span><span class="si">}</span><span class="s2">` in schema not "</span>
                     <span class="s2">"accounted for in an event stream captured... Skipping it."</span>
                 <span class="p">)</span>
                 <span class="k">continue</span>
             <span class="n">device_name</span> <span class="o">=</span> <span class="n">sanitize_datakey_for_nexus</span><span class="p">(</span><span class="n">object_name</span><span class="p">)</span>
             <span class="n">devices_group</span><span class="p">[</span><span class="n">device_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">_new_nx_field_from_data_key_data</span><span class="p">(</span>
-                <span class="n">object_data</span><span class="o">.</span><span class="n">nx_schema</span><span class="p">,</span>
+                <span class="n">nx_schema</span><span class="p">,</span>
                 <span class="n">data_key</span><span class="p">,</span>
                 <span class="n">object_data</span><span class="p">,</span>
                 <span class="n">_NewFieldType</span><span class="o">.</span><span class="n">VALUE_ONLY</span>
@@ -883,6 +953,8 @@
     <span class="p">)</span>
     <span class="n">run_info</span><span class="p">[</span><span class="s2">"run_stop"</span><span class="p">]</span> <span class="o">=</span> <span class="n">run_stop_group</span>
     <span class="n">entry</span><span class="p">[</span><span class="s2">"run_info"</span><span class="p">]</span> <span class="o">=</span> <span class="n">run_info</span>
+    <span class="n">streams_group</span> <span class="o">=</span> <span class="n">nexus</span><span class="o">.</span><span class="n">NXgroup</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"streams"</span><span class="p">,</span> <span class="n">nxclass</span><span class="o">=</span><span class="s2">"NXcollection"</span><span class="p">)</span>
+    <span class="n">entry</span><span class="p">[</span><span class="s2">"streams"</span><span class="p">]</span> <span class="o">=</span> <span class="n">streams_group</span>
 
     <span class="c1"># Add each stream.</span>
     <span class="k">for</span> <span class="n">stream_name</span><span class="p">,</span> <span class="n">stream_data</span> <span class="ow">in</span> <span class="n">run_data</span><span class="o">.</span><span class="n">stream_name_to_stream_data</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
@@ -894,7 +966,7 @@
             <span class="k">continue</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">new_stream_group</span> <span class="o">=</span> <span class="n">nexus</span><span class="o">.</span><span class="n">NXgroup</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">stream_name</span><span class="p">,</span> <span class="n">nxclass</span><span class="o">=</span><span class="s2">"NXcollection"</span><span class="p">)</span>
-            <span class="n">entry</span><span class="p">[</span><span class="n">stream_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_stream_group</span>
+            <span class="n">streams_group</span><span class="p">[</span><span class="n">sanitize_datakey_for_nexus</span><span class="p">(</span><span class="n">stream_name</span><span class="p">)]</span> <span class="o">=</span> <span class="n">new_stream_group</span>
             <span class="n">add_stream_data_to_group</span><span class="p">(</span><span class="n">new_stream_group</span><span class="p">,</span> <span class="n">stream_data</span><span class="p">,</span> <span class="n">run_data</span><span class="o">.</span><span class="n">run_start</span><span class="p">[</span><span class="s2">"time"</span><span class="p">])</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">_</span><span class="p">:</span>
             <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
@@ -904,7 +976,7 @@
             <span class="c1"># We delete here, instead of allocating if the exception isn't raised</span>
             <span class="c1"># so that nexusformat can work out the NXlinks.</span>
             <span class="k">if</span> <span class="n">stream_name</span> <span class="ow">in</span> <span class="n">entry</span><span class="p">:</span>
-                <span class="k">del</span> <span class="n">entry</span><span class="p">[</span><span class="n">stream_name</span><span class="p">]</span>
+                <span class="k">del</span> <span class="n">streams_group</span><span class="p">[</span><span class="n">stream_name</span><span class="p">]</span>
 
     <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Parsed nexus structure from run in </span><span class="si">{</span><span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">start_time</span><span class="si">}</span><span class="s2">s."</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">root</span></div>

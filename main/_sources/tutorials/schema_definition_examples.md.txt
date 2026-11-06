@@ -2,7 +2,7 @@
 
 ## Defining an ophyd Keithley as an [`NXdetector`](https://manual.nexusformat.org/classes/base_classes/NXdetector.html)
 
-I would like to define some structure on my ophyd keithley device so that it can be understood to be an [`NXdetector`](https://manual.nexusformat.org/classes/base_classes/NXdetector.html). 
+We would like to define some structure on this ophyd Keithley device so that it can be understood to be an [`NXdetector`](https://manual.nexusformat.org/classes/base_classes/NXdetector.html). 
 
 This device currently has no `NX_schema`
 
@@ -11,7 +11,7 @@ This device currently has no `NX_schema`
 
 ```
 
-To define some, I'm going to create a new file `Keithely.yaml` in the same directory as where my device definition of `Keithley` is. The definition will map data keys that will be read on the device to their fields in [`NXdetector`](https://manual.nexusformat.org/classes/base_classes/NXdetector.html).
+To define some, we create a new file `Keithely.yaml` in the same directory as where the device definition of `Keithley` is. The definition will map data keys that will be read on the device to their fields in [`NXdetector`](https://manual.nexusformat.org/classes/base_classes/NXdetector.html).
 
 ```{include} ../_static/examples/Keithley.yaml
 :code: yaml
@@ -19,17 +19,16 @@ To define some, I'm going to create a new file `Keithely.yaml` in the same direc
 ```
 
 1) `$nxclass` is a NeXus attribute which has to come from a constant. `bluesky-nexus` loads NXDL XML schema from a directory in your environment. This can be supplied by the environment variable `BLUESKY_NEXUS_BASE_CLASSES_DIRECTORY`, but defaults to the [nexusformat schema packaged as a pypi requirement](https://mithub.com/nexpy/nexusformat/tree/main/src/nexusformat/definitions). [`NxBaseClass.build`](#bluesky_nexus.schema.NxBaseClass.build) then builds a schema for converting bluesky devices into a NeXus structure from that NXDL. If you supply an incorrect NXDL name for any given [`NxBaseClass`](#bluesky_nexus.schema.NxBaseClass), e.g `NxBaseSchema.build("NXsome_name_which_doesnt_have_an_nxdl_file")`, or a required item is missing in the supplied schema, then an error will be raised.
-2) The first four definitions simply map the data keys in the device (minus the name of the instance) to their name in the nexus schema. Since all data keys are added to the structure, it wouldn't be strictly necessary to map these if the data key name were already equal to the name in the nexus structure... This isn't always possible.
-3) `data` is mapping to the `readback` data key. `readback` is given the same name as the device itself as a datakey, an so the name we use with it "" is.
+2) The first four definitions simply map the data keys in the device (minus the name of the instance) to their name in the NeXus schema. Since all data keys are added to the structure, it wouldn't be strictly necessary to map these if the data key name were already equal to the name in the NeXus structure... This isn't always possible.
+3) `data` is mapping to the `readback` data key. `readback` is given the same name as the device itself as a datakey, an so the name we use with it is an empty string.
 4) {`timestamps_of_data_key`: ""} will end up as a field in NeXus which contains the timestamps of the readback.
-5) The last four are constant fields for any Keithley which you could connect to. If any subclass of this Keithley wanted to override them, then they could in their own schema.
+5) The last four are constant fields for any Keithley which you could connect to.
 
 ```{include} ../_static/examples/example_keithley_2_device.py
 :code: python
 
 ```
-
-Now when any instance of `Keithley` is read, `bluesky_nexus` will place the structure into an `NXdetector`. As you can see from the below image (silx viewer), all the data keys we didn't reference in our schema are also present in the NeXus structure.
+Now when any instance of `Keithley` is read, `bluesky_nexus` can place the structure into an `NXdetector`. As you can see from the below image (silx viewer), all the data keys we didn't reference in our schema are also present in the NeXus structure.
 
 ## Simulated Monochromator
 
@@ -40,7 +39,7 @@ A monochromator is a substantially more complicated to define than the above. Sh
 
 ```
 
-[Set up a run engine](../how-to/using_the_nexus_structure.md) subscribed to our nexus writer callback:
+[Set up a run engine](../how-to/using_the_nexus_structure.md) subscribed to our NeXus writer callback:
 
 ```{include} ../_static/examples/example_re_file_writer.py
 :code: python
@@ -54,7 +53,7 @@ A monochromator is a substantially more complicated to define than the above. Sh
 
 ```
 
-We can open the file in whatever nexus viewer. Here's `silx view *.nxs`:
+We can open the file in whatever NeXus viewer. Here's `silx view *.nxs`:
 
 ```{image} ../images/silx_example_mono_1_1.png
 
@@ -68,7 +67,7 @@ All the data keys are present. Notice that
 
 It's time to describe this as a monochromator.
 
-We make a new schema called `PlanGratingMonochromator.yaml` and include it in the directory where I'm defining my device.
+We make a new schema called `PlanGratingMonochromator.yaml` and include it in the directory where we're defining the device.
 
 ```{include} ../_static/examples/PlaneGratingMonochromator.yaml
 :code: yaml
@@ -78,7 +77,7 @@ We make a new schema called `PlanGratingMonochromator.yaml` and include it in th
 2) The readback field `energy-readback` is given the name `energy` to conform to the NeXus base class.
 3) A sub group is made for the exit slit. `NXmonochromator` expects exit slits to be defined in [a subgroup with this name](https://manual.nexusformat.org/classes/base_classes/NXmonochromator.html#nxmonochromator-exit-slit-group). The data keys relevant to exit slit are mapped here. The `$nclass: NXaperture` will mean that the sub group definitions will be making an [`NXaperture`](https://manual.nexusformat.org/classes/base_classes/NXaperture.html) and validated against `NxBaseClass.build("NXaperture")`
 4) `diff_order` is not part of `NXmonochromator`, but we would like to give it a full name when it's written instead of the shortened data key.
-5) We define some filters which are relevant to the monochromator. The coordinates of the transformations for both are used given as constants.
+5) We define some filters which are relevant to the monochromator. The coordinates of the transformations for both are given as constants.
 6) We give the full name of constant fixed focus, we also overwrite the units we get through EPICS to the standard that NeXus expects.
 7) The class defines `GRATING` generic sub group(s). We include one with the units we can define.
 8) Alpha beta and gamma make more sense in their own subgroup. We provide long names to better describe them.
@@ -87,6 +86,8 @@ Now we load the schema into our device. Any obvious errors we've made in our sch
 
 ```{note}
 The pydantic schema cannot validate whether the data keys specified will actually end up being read by the device. It can only verify that, should they exist, the specification given will be a correct `NXmonochromator`.
+
+Since bluesky-nexus defined a standard, device layer packages, e.g ophyd-async could be extended to allow for more strict validation, e.g against type. 
 ```
 
 ```{include} ../_static/examples/example_mono_2_devices.py
@@ -94,12 +95,12 @@ The pydantic schema cannot validate whether the data keys specified will actuall
 
 ```
 
-... and run the plan again. Now viewing my file in sphinx, I can see that:
+Running the plan again and viewing my file in sphinx, we can see that:
 
 
 ```{image} ../images/silx_example_mono_2_1.png
 ```
 
-1) All units are correct. Units taken from the signal have been parsed. The units I specified in `constant_fixed_focus` have been used instead of those from the signal.
+1) All units are correct. Units taken from the signal have been parsed. The units we specified in `constant_fixed_focus` have been used instead of those from the signal.
 2) All groups and subgroups have the correct classes.
 3) The long names I gave the transformations have been saved to their attributes. Their units have been parsed from the signal. 

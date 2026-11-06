@@ -1,0 +1,25 @@
+``bluesky_nexus.device.annotations``
+====================================
+        
+        
+        
+
+.. automodule:: bluesky_nexus.device.annotations
+    :members:
+
+    
+    
+    
+
+    
+    
+    .. rubric:: Members
+
+    .. autosummary::
+        :nosignatures:
+    
+        NxConstant
+        NxDataKey
+        NxSubGroup
+    
+    
