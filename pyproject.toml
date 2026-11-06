@@ -5,15 +5,22 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "bluesky-nexus"
 classifiers = [
-    "Development Status :: 3 - Alpha",
-    "License :: OSI Approved :: MIT Software License",
-    "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
-    "Programming Language :: Python :: 3.14",
+  "Development Status :: 3 - Alpha",
+  "License :: OSI Approved :: MIT Software License",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
 ]
 description = "A package for generating a standard NeXus structure for bluesky plans."
+dynamic = ["version"]
+license.file = "LICENSE"
+readme = "README.md"
+requires-python = ">=3.12"
+
 dependencies = [
-  "bluesky",
+  # Only really used for protocols. Can be removed once we have
+  # ophyd-abstract.
+  "bluesky", 
   "nexusformat",
   "event-model",
   "numpy",
@@ -21,10 +28,6 @@ dependencies = [
   "PyYAML",
   "defusedxml",
 ]
-dynamic = ["version"]
-license.file = "LICENSE"
-readme = "README.md"
-requires-python = ">=3.12"
 
 [project.optional-dependencies]
 zmq = ["pyzmq"]
@@ -32,27 +35,27 @@ kafka = ["bluesky-kafka"]
 
 [dependency-groups]
 dev = [
-    "mypy",
-    "myst-parser",
-    "pre-commit",
-    "pydata-sphinx-theme>=0.12",
-    "pytest",
-    "pytest-cov",
-    "ruff",
-    "sphinx-autobuild",
-    "sphinx-copybutton",
-    "sphinx-design",
-    "tox-uv",
-    "types-mock",
+  "mypy",
+  "myst-parser",
+  "pre-commit",
+  "pydata-sphinx-theme>=0.12",
+  "pytest",
+  "pytest-cov",
+  "ruff",
+  "sphinx-autobuild",
+  "sphinx-copybutton",
+  "sphinx-design",
+  "tox-uv",
+  "types-mock",
 
-    # For test devices.
-    "ophyd",
-    "ophyd-async[sim, ca]",
-    "pyepics",
+  # For test devices.
+  "ophyd",
+  "ophyd-async[sim, ca]",
+  "pyepics",
 
-    # For testing dispatchers.
-    "pyzmq",
-    "bluesky-kafka"
+  # For testing dispatchers.
+  "pyzmq",
+  "bluesky-kafka",
 ]
 
 [project.urls]
@@ -77,10 +80,13 @@ ignore_missing_imports = true # Ignore missing stubs in imported modules
 addopts = """
     --tb=native -vv --doctest-modules --doctest-glob="*.rst"
     """
-# https://iscinumpy.gitlab.io/post/bound-version-constraints/#watch-for-warnings
-filterwarnings = "error"
 # Doctest python code in docs, python code in src docstrings, test functions in tests
 testpaths = "src tests"
+# https://iscinumpy.gitlab.io/post/bound-version-constraints/#watch-for-warnings
+filterwarnings = [
+  "error",
+  "ignore:Setting the shape on a NumPy array has been deprecated in NumPy 2\\.:DeprecationWarning",
+]
 
 [tool.coverage.run]
 patch = ["subprocess"]
@@ -102,86 +108,86 @@ passenv = ["*"]
 [tool.tox.env.pre-commit]
 description = "Run pre-commit on all files"
 commands = [
-    [
-        "pre-commit",
-        "run",
-        "--all-files",
-        "--show-diff-on-failure",
-        { replace = "posargs", default = [
-        ], extend = true },
-    ],
+  [
+    "pre-commit",
+    "run",
+    "--all-files",
+    "--show-diff-on-failure",
+    { replace = "posargs", default = [
+    ], extend = true },
+  ],
 ]
 
 [tool.tox.env.type-checking]
 description = "Run mypy"
 commands = [
-    [
-        "mypy",
-        "src",
-        { replace = "posargs", default = [
-        ], extend = true },
-    ],
+  [
+    "mypy",
+    "src",
+    { replace = "posargs", default = [
+    ], extend = true },
+  ],
 ]
 
 [tool.tox.env.tests]
 description = "Run tests with coverage"
 commands = [
-    [
-        "pytest",
-        "--cov=bluesky_nexus",
-        "--cov-report",
-        "term",
-        "--cov-report",
-        "xml:cov.xml",
-        { replace = "posargs", default = [
-        ], extend = true },
-    ],
+  [
+    "pytest",
+    "--cov=bluesky_nexus",
+    "--cov-report",
+    "term",
+    "--cov-report",
+    "xml:cov.xml",
+    { replace = "posargs", default = [
+    ], extend = true },
+  ],
 ]
 
 [tool.tox.env.docs]
 description = "Run docs build with clean environment"
 commands = [
-    [
-        "sphinx-build",
-        "--fresh-env",
-        "--show-traceback",
-        "--fail-on-warning",
-        "--keep-going",
-        "docs",
-        "build/html",
-        { replace = "posargs", default = [
-        ], extend = true },
-    ],
+  [
+    "sphinx-build",
+    "--fresh-env",
+    "--show-traceback",
+    "--fail-on-warning",
+    "--keep-going",
+    "docs",
+    "build/html",
+    { replace = "posargs", default = [
+    ], extend = true },
+  ],
 ]
 
 [tool.tox.env.docs-autobuild]
 description = "Run docs with autobuild on change"
 commands = [
-    [
-        "sphinx-autobuild",
-        "--show-traceback",
-        "--watch",
-        "README.md",
-        "docs",
-        "build/html",
-        { replace = "posargs", default = [
-        ], extend = true },
-    ],
+  [
+    "sphinx-autobuild",
+    "--show-traceback",
+    "--watch",
+    "README.md",
+    "docs",
+    "build/html",
+    { replace = "posargs", default = [
+    ], extend = true },
+  ],
 ]
 
 [tool.ruff]
 src = ["src", "tests"]
 line-length = 100
 lint.select = [
-    "B",   # flake8-bugbear - https://docs.astral.sh/ruff/rules/#flake8-bugbear-b
-    "C4",  # flake8-comprehensions - https://docs.astral.sh/ruff/rules/#flake8-comprehensions-c4
-    "E",   # pycodestyle errors - https://docs.astral.sh/ruff/rules/#error-e
-    "F",   # pyflakes rules - https://docs.astral.sh/ruff/rules/#pyflakes-f
-    "N",   # pep8-naming - https://docs.astral.sh/ruff/rules/#pep8-naming-n
-    "W",   # pycodestyle warnings - https://docs.astral.sh/ruff/rules/#warning-w
-    "I",   # isort - https://docs.astral.sh/ruff/rules/#isort-i
-    "UP",  # pyupgrade - https://docs.astral.sh/ruff/rules/#pyupgrade-up
-    "SLF", # self - https://docs.astral.sh/ruff/settings/#lintflake8-self
+  "B",   # flake8-bugbear - https://docs.astral.sh/ruff/rules/#flake8-bugbear-b
+  "C4",  # flake8-comprehensions - https://docs.astral.sh/ruff/rules/#flake8-comprehensions-c4
+  "E",   # pycodestyle errors - https://docs.astral.sh/ruff/rules/#error-e
+  "F",   # pyflakes rules - https://docs.astral.sh/ruff/rules/#pyflakes-f
+  "N",   # pep8-naming - https://docs.astral.sh/ruff/rules/#pep8-naming-n
+  "W",   # pycodestyle warnings - https://docs.astral.sh/ruff/rules/#warning-w
+  "I",   # isort - https://docs.astral.sh/ruff/rules/#isort-i
+  "UP",  # pyupgrade - https://docs.astral.sh/ruff/rules/#pyupgrade-up
+  "SLF", # self - https://docs.astral.sh/ruff/settings/#lintflake8-self
 ]
 exclude = ["docs", "docs/**"]
 
@@ -189,4 +195,4 @@ exclude = ["docs", "docs/**"]
 # By default, private member access is allowed in tests
 # See https://github.com/DiamondLightSource/python-copier-template/issues/154
 # Remove this line to forbid private member access in tests
-"tests/**/*" = ["SLF001", "N803", "N806","N817", "N802",]
+"tests/**/*" = ["SLF001", "N803", "N806", "N817", "N802"]

@@ -8,6 +8,7 @@ from weakref import WeakValueDictionary
 
 import nexusformat
 import pydantic
+from ophyd import ClassVar
 
 from ._nxdl_parser import ParsedField, ParsedGroup, parse_schema_from_nxdl_xml
 from .nx_attribute import (
@@ -44,6 +45,9 @@ if (
 
 
 class _NxBaseClassMeta(type(pydantic.BaseModel)):  # type: ignore
+    NXDL_SCHEMA_URI: ClassVar[str]
+    """A uri to the nxdl schema this class was made from."""
+
     def build(cls, nxdl_name: str) -> type[NxBaseClass]:
         """Build the NxBaseClass from an NXDL name."""
 
@@ -134,7 +138,9 @@ def _pydantic_model_from_schema_nxdl(parsed_nxdl: ParsedGroup) -> type[NxBaseCla
     else:
         base_class = NxBaseClass
 
-    direct_attributes: dict[str, tuple[Any, None | EllipsisType]] = {}
+    direct_attributes: dict[str, tuple[Any, None | EllipsisType | str]] = {
+        "NXDL_SCHEMA_URI": (ClassVar[str], parsed_nxdl.schema_uri)
+    }
     for subgroup_field_name, parsed_sub_group in parsed_nxdl.sub_groups.items():
         try:
             direct_attributes[subgroup_field_name] = (

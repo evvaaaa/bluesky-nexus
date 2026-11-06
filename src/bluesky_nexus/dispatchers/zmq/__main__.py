@@ -20,7 +20,7 @@ def validate_port(port: str | int) -> int:
 # Top-level parser
 # ---------------------------------------------------------------------------
 def build_parser() -> argparse.ArgumentParser:
-    """Define top-level arguments and the zmq/kafka subcommands."""
+    """Define top-level arguments for zmq entrypoint."""
     parser = argparse.ArgumentParser(description="Bluesky NeXus writer service entry point.")
 
     parser.add_argument(

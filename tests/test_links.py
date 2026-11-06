@@ -40,7 +40,7 @@ def test_internal_device_links(RE_directly_subscribed: RunEngine, tmpdir: Path) 
     )
 
     loaded = load_only_generated_nexus_file(tmpdir)
-    device = loaded["entry"]["primary"]["devices"]["sim_point_detector_with_schema"]
+    device = loaded["entry"]["streams"]["primary"]["devices"]["sim_point_detector_with_schema"]
     assert list(device) == [
         "channel_1_mode",
         "channel_1_value",
@@ -57,7 +57,7 @@ def test_internal_device_links(RE_directly_subscribed: RunEngine, tmpdir: Path) 
 
     assert (
         device["sub_group"]["link_parent_outside_sub_group"].nxtarget
-        == "/entry/primary/devices/sim_point_detector_with_schema/channel_3_value/value"
+        == "/entry/streams/primary/devices/sim_point_detector_with_schema/channel_3_value/value"
     )
     assert list(loaded[device["sub_group"]["link_parent_outside_sub_group"].nxtarget]) == [
         290,
@@ -67,7 +67,7 @@ def test_internal_device_links(RE_directly_subscribed: RunEngine, tmpdir: Path) 
 
     assert (
         device["link_in_parent"].nxtarget
-        == "/entry/primary/devices/sim_point_detector_with_schema/channel_1_value/value"
+        == "/entry/streams/primary/devices/sim_point_detector_with_schema/channel_1_value/value"
     )
     assert list(loaded[device["link_in_parent"].nxtarget]) == [
         290,
@@ -75,9 +75,9 @@ def test_internal_device_links(RE_directly_subscribed: RunEngine, tmpdir: Path) 
         290,
     ]
 
-    assert (
-        device["link_sub_group_outside_sub_group"].nxtarget
-        == "/entry/primary/devices/sim_point_detector_with_schema/sub_group/channel_2_value/value"
+    assert device["link_sub_group_outside_sub_group"].nxtarget == (
+        "/entry/streams/primary/devices/sim_point_detector_with_schema/"
+        "sub_group/channel_2_value/value"
     )
     assert list(loaded[device["link_sub_group_outside_sub_group"].nxtarget]) == [
         290,
@@ -87,7 +87,7 @@ def test_internal_device_links(RE_directly_subscribed: RunEngine, tmpdir: Path) 
 
     assert (
         device["link_to_subgroup"].nxtarget
-        == "/entry/primary/devices/sim_point_detector_with_schema/sub_group"
+        == "/entry/streams/primary/devices/sim_point_detector_with_schema/sub_group"
     )
     assert list(loaded[device["link_to_subgroup"].nxtarget]) == [
         "channel_2_value",

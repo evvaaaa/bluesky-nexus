@@ -1,4 +1,3 @@
-from ophyd.signal import DEFAULT_TIMEOUT
 from ophyd_async.core import (
     DEFAULT_TIMEOUT,
     AsyncStatus,

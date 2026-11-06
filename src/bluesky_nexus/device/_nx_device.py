@@ -143,11 +143,11 @@ def _nexus_schema_from_nx_device(device: NxDevice, object_name: str) -> NxBaseCl
             # TODO: Declarative subdevices won't work in bluesky-nexus until
             # https://github.com/bluesky/ophyd-async/issues/1433
             # is resolved.
-            # case NxSubGroup(nx_name=nx_name) if (
-            #     sub_device := getattr(device, name, None)
-            # ) and isinstance(sub_device, NxDevice):
-            #     kwargs[nx_annotation.nx_name] = _nexus_schema_from_nx_device(
-            #         sub_device, object_name
-            #     )
+            case NxSubGroup(nx_name=nx_name) if (
+                sub_device := getattr(device, name, None)
+            ) and isinstance(sub_device, NxDevice):
+                kwargs[nx_annotation.nx_name] = _nexus_schema_from_nx_device(
+                    sub_device, object_name
+                )
 
     return schema_cls(**kwargs)  # type: ignore

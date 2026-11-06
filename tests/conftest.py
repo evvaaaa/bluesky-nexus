@@ -10,7 +10,7 @@ import zmq
 from bluesky import RunEngine
 from bluesky.callbacks.zmq import Proxy, Publisher
 
-from bluesky_nexus.callbacks import NexusHdfWriterCallback
+from bluesky_nexus.callbacks import HdfWriterCallback
 from bluesky_nexus.dispatchers.zmq import run_zmq_dispatcher
 from bluesky_nexus.logger import setup_logging
 from bluesky_nexus.schema.nx_base_class import _already_made
@@ -38,10 +38,24 @@ def ensure_fresh_mutable_global_caches(monkeypatch) -> None:
     )
 
 
+@pytest.fixture(scope="function")
+def use_test_nxdl_path(monkeypatch) -> None:
+    """Use the test path for searching for nxdl instead of the nexusformat install."""
+
+    monkeypatch.setattr(
+        "bluesky_nexus.schema.nx_base_class.BLUESKY_NEXUS_DEFINITIONS_DIRECTORY",
+        Path(__file__).parent / "test_nxdl",
+    )
+    monkeypatch.setattr(
+        "bluesky_nexus.schema.nx_base_class.BLUESKY_NEXUS_BASE_CLASSES_DIRECTORY",
+        Path(__file__).parent / "test_nxdl" / "definitions",
+    )
+
+
 @pytest.fixture()
 def RE_directly_subscribed(tmpdir: Path) -> RunEngine:
     RE = RunEngine()
-    RE.subscribe(NexusHdfWriterCallback(tmpdir))
+    RE.subscribe(HdfWriterCallback(tmpdir))
     return RE
 
 
@@ -132,9 +146,8 @@ def zmq_callback_process(
             else:
                 raise RuntimeError("ZMQ Plot callback died during test.")
 
-        join_time = 1
         zmq_callback.terminate()
-        zmq_callback.join(timeout=join_time)
+        zmq_callback.join(timeout=1)
         zmq_callback.close()
 
 

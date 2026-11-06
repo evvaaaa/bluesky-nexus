@@ -15,12 +15,13 @@ from bluesky_nexus.logger import LOGGER
 from bluesky_nexus.schema import (
     NX_ATTRIBUTE_SERIALIZED_PREFIX,
     NxAttribute,
+    NxBaseClass,
     NxField,
     NxGroup,
 )
 
 from .._version import __version__
-from ._data_extractor import (
+from ._run_data import (
     DataKeyData,
     ObjectData,
     RunData,
@@ -36,6 +37,73 @@ type JsonSerializableDict = dict[
     str,
     JsonSerializableScalar | JsonSerializableList | JsonSerializableTuple | "JsonSerializableDict",
 ]
+
+
+def _new_schema_with_missing_fields(
+    data_key_data: dict[str, DataKeyData],
+    nx_schema: NxGroup,
+) -> NxGroup:
+    """Takes a nexus schema and data keys for an object. If the data key
+    isn't present in the schema then try adding them and validating again.
+    """
+    nx_alias_to_nx_field = nx_schema.all_nx_fields()
+
+    schema_specified_data_keys = {
+        nx_field.data_key: nx_field for nx_field in nx_alias_to_nx_field.values()
+    }
+
+    raw_schema = nx_schema.model_dump()
+
+    for data_key_name in data_key_data:
+        if schema_specified_data_keys.get(data_key_name):
+            continue  # Already added manually.
+
+        raw_schema[sanitize_datakey_for_nexus(data_key_name)] = {
+            "data_key": data_key_name,
+        }
+
+    return NxGroup.from_dictionary(raw_schema)
+
+
+def _deserialize_schema(object_name: str, object_data: ObjectData):
+    if object_data.raw_nx_schema is not None:
+        try:
+            # Perform an initial validation on the provided schema.
+            # This will give back the subclass of NxGroup specified
+            # in the serialized schema.
+            # TODO: Move this logic into `create_structure`.
+            nx_schema = NxGroup.from_dictionary(object_data.raw_nx_schema)
+
+            # Fill the specified schema with the keys which
+            # weren't specified.
+            nx_schema = _new_schema_with_missing_fields(
+                object_data.formatted_data_key_name_to_data, nx_schema
+            )
+            return nx_schema
+        except Exception as exception:
+            LOGGER.warning(
+                f"Received a malformed schema in {object_name}. "
+                f"The error was:\n    {exception!s}\n"
+                "A default schema will be used instead.",
+            )
+
+    # Make a new schema. This will happen if the device didn't specify an "NX_schema",
+    # or if the above raised an exception.
+    if len(object_data.formatted_data_key_name_to_data) == 1:
+        # The device has a single key. Don't make it an `NXobject`.
+        # This is very likely if the plan throws in signals of a device,
+        # but not the device itself.
+        only_key = next(iter(object_data.formatted_data_key_name_to_data))
+        LOGGER.debug(f"Creating new NxField schema for device {object_name}.")
+        return NxField(data_key=only_key)
+    else:
+        # # Make an NxSubEntry with all the fields from the data keys.
+        nx_schema = NxBaseClass.build("NXsubentry")()
+        nx_schema = _new_schema_with_missing_fields(
+            object_data.formatted_data_key_name_to_data, nx_schema
+        )
+        LOGGER.debug(f"Creating new NxSubEntry schema for device {object_name}.")
+    return nx_schema
 
 
 def _nested_shape(obj: Any) -> tuple[int, ...] | None:
@@ -166,8 +234,9 @@ def _new_nx_field_from_data_key_data(
             value=attribute_value
         )
 
+    timestamps_from_run_start = np.array(data_key_data.timestamps) - run_start_time
     timestamps_field = nexus.NXfield(
-        value=np.array(data_key_data.timestamps) - run_start_time,
+        value=timestamps_from_run_start,
         name="timestamps",
         attrs={"units": nexus.NXfield(value="s")},
     )
@@ -207,12 +276,14 @@ def _new_nx_group(
     run_start_time: float,
 ) -> nexus.NXgroup:
     """Writes the bluesky object into a NeXus group and returns it."""
-    # We would like to use the nexus class directly, e.g nexus.NXdata...
-    # This has some very strange errors.
-    # e.g nexus.NXobject not allowing item assignment, or errors in creating an
-    # NXlink with nexus.NXsubentry.
-    group = getattr(nexus, group_schema.nxclass.constant, nexus.NXgroup)()
-    group.attrs["nxclass"] = nexus.NXfield(group_schema.nxclass.constant)
+    # We purposefully try to avoid using nexusformat group subclasses,
+    # e.g nexus.NXdata directly.
+    group = nexus.NXgroup()
+
+    # Only way you can set the class without changing the type of nexusformat class.
+    group._class = group_schema.nxclass.constant  # noqa
+
+    group.attrs["nxdl_schema_uri"] = nexus.NXfield(group_schema.NXDL_SCHEMA_URI)
 
     # Add the specified attributes of the group.
     for nx_attribute_name, nx_attribute in group_schema.nx_attributes().items():
@@ -306,15 +377,14 @@ def add_stream_data_to_group(
     stream_group["devices"] = devices_group
 
     for object_name, object_data in stream_data.object_data.items():
-        if isinstance(object_data.nx_schema, NxGroup):
-            device_group = _new_nx_group(
-                object_name, object_data, object_data.nx_schema, run_start_time
-            )
+        nx_schema = _deserialize_schema(object_name, object_data)
+        if isinstance(nx_schema, NxGroup):
+            device_group = _new_nx_group(object_name, object_data, nx_schema, run_start_time)
 
             for (
                 nx_attribute_name,
                 nx_attribute,
-            ) in object_data.nx_schema.nx_attributes().items():
+            ) in nx_schema.nx_attributes().items():
                 device_group.attrs[
                     nx_attribute_name.removeprefix(NX_ATTRIBUTE_SERIALIZED_PREFIX)
                 ] = _leaf_value(nx_attribute, object_data)
@@ -337,22 +407,22 @@ def add_stream_data_to_group(
 
             # Add the internal links to the device. Required to do so after
             # the above so that the full path can be resolved.
-            _add_internal_links(device_group, object_data.nx_schema)
+            _add_internal_links(device_group, nx_schema)
 
-        elif isinstance(object_data.nx_schema, NxField):
+        elif isinstance(nx_schema, NxField):
             # It has a single nx_field, no group...
             data_key = object_data.formatted_data_key_name_to_data.get(
-                cast(str, object_data.nx_schema.data_key)
+                cast(str, nx_schema.data_key)
             )
             if data_key is None:
                 LOGGER.warning(
-                    f"Datakey `{object_data.nx_schema.data_key}` in schema not "
+                    f"Datakey `{nx_schema.data_key}` in schema not "
                     "accounted for in an event stream captured... Skipping it."
                 )
                 continue
             device_name = sanitize_datakey_for_nexus(object_name)
             devices_group[device_name] = _new_nx_field_from_data_key_data(
-                object_data.nx_schema,
+                nx_schema,
                 data_key,
                 object_data,
                 _NewFieldType.VALUE_ONLY
@@ -429,6 +499,8 @@ def create_nexus_structure(run_data: RunData) -> nexus.NXroot:
     )
     run_info["run_stop"] = run_stop_group
     entry["run_info"] = run_info
+    streams_group = nexus.NXgroup(name="streams", nxclass="NXcollection")
+    entry["streams"] = streams_group
 
     # Add each stream.
     for stream_name, stream_data in run_data.stream_name_to_stream_data.items():
@@ -440,7 +512,7 @@ def create_nexus_structure(run_data: RunData) -> nexus.NXroot:
             continue
         try:
             new_stream_group = nexus.NXgroup(name=stream_name, nxclass="NXcollection")
-            entry[stream_name] = new_stream_group
+            streams_group[sanitize_datakey_for_nexus(stream_name)] = new_stream_group
             add_stream_data_to_group(new_stream_group, stream_data, run_data.run_start["time"])
         except Exception as _:
             LOGGER.warning(
@@ -450,7 +522,7 @@ def create_nexus_structure(run_data: RunData) -> nexus.NXroot:
             # We delete here, instead of allocating if the exception isn't raised
             # so that nexusformat can work out the NXlinks.
             if stream_name in entry:
-                del entry[stream_name]
+                del streams_group[stream_name]
 
     LOGGER.info(f"Parsed nexus structure from run in {time.perf_counter() - start_time}s.")
     return root

@@ -46,9 +46,8 @@ def test_structure(RE_directly_subscribed: RunEngine, tmpdir: Path) -> None:
         "Application name",
         "Application version",
         "Content",
-        "baseline",
-        "primary",
         "run_info",
+        "streams",
     ]
     assert entry["Application name"] == "bluesky_nexus"
     assert entry["Application version"] == __version__
@@ -59,7 +58,7 @@ def test_structure(RE_directly_subscribed: RunEngine, tmpdir: Path) -> None:
     assert list(run_info) == ["run_start", "run_stop"]
 
     for stream_name in ("primary", "baseline"):
-        stream = entry[stream_name]
+        stream = entry["streams"][stream_name]
         assert stream.nxclass == "NXcollection"
         assert list(stream) == ["devices", "stream_info"]
 
@@ -67,6 +66,10 @@ def test_structure(RE_directly_subscribed: RunEngine, tmpdir: Path) -> None:
         assert devices.nxclass == "NXinstrument"
         assert list(devices) == [f"some_{stream_name}_pv_positioner"]
         assert devices[f"some_{stream_name}_pv_positioner"].nxclass == "NXsubentry"
+        assert (
+            devices[f"some_{stream_name}_pv_positioner"].attrs["nxdl_schema_uri"]
+            == "{http://definition.nexusformat.org/nxdl/3.1}definition"
+        )
 
         stream_info = stream["stream_info"]
         assert stream_info.nxclass == "NXcollection"
@@ -99,7 +102,7 @@ def test_example_schema_and_manual_schema_with_equivalence(
         )
     )
 
-    loaded = load_only_generated_nexus_file(tmpdir)["entry"]["primary"]["devices"]
+    loaded = load_only_generated_nexus_file(tmpdir)["entry"]["streams"]["primary"]["devices"]
     sim_point_detector_with_some_schema = loaded["sim_point_detector_with_schema"]
     sim_point_detector_with_without_schema = loaded["sim_point_detector_with_schema"]
 
@@ -137,7 +140,9 @@ def test_simple_nx_detector(
         )
     )
 
-    loaded = load_only_generated_nexus_file(tmpdir)["entry"]["primary"]["devices"]["detector"]
+    loaded = load_only_generated_nexus_file(tmpdir)["entry"]["streams"]["primary"]["devices"][
+        "detector"
+    ]
 
     assert list(loaded) == [
         "channel_1_mode",
@@ -161,7 +166,7 @@ def test_nexus_writer_on_signals(
 
     RE_directly_subscribed(bp.count([some_signal, another_signal, motor], num=3))
 
-    loaded = load_only_generated_nexus_file(tmpdir)["entry"]["primary"]["devices"]
+    loaded = load_only_generated_nexus_file(tmpdir)["entry"]["streams"]["primary"]["devices"]
     assert list(loaded) == [
         "another_signal",
         "motor",
@@ -170,7 +175,10 @@ def test_nexus_writer_on_signals(
     assert list(loaded["another_signal"]["value"]) == [0, 0, 0]
     assert loaded["another_signal"].attrs == {}
     assert list(loaded["motor"]) == ["acceleration_time", "motor", "velocity"]
-    assert {k: str(v) for k, v in loaded["motor"].attrs.items()} == {"nxclass": "NXsubentry"}
+    assert {k: str(v) for k, v in loaded["motor"].attrs.items()} == {
+        "nxclass": "NXsubentry",
+        "nxdl_schema_uri": "{http://definition.nexusformat.org/nxdl/3.1}definition",
+    }
 
 
 def test_constant_attributes(RE_directly_subscribed: RunEngine, tmpdir) -> None:
@@ -192,15 +200,16 @@ def test_constant_attributes(RE_directly_subscribed: RunEngine, tmpdir) -> None:
     sim_motor = SimMotor(name="sim_motor")
     RE_directly_subscribed(bp.count([sim_motor, sim_motor_with_description], num=3))  # type: ignore
 
-    loaded = load_only_generated_nexus_file(tmpdir)["entry"]["primary"]["devices"]
+    loaded = load_only_generated_nexus_file(tmpdir)["entry"]["streams"]["primary"]["devices"]
     assert list(loaded) == [
         "sim_motor",
         "sim_motor_with_description",
     ]
-    assert list(loaded["sim_motor"].attrs) == ["nxclass"]
+    assert list(loaded["sim_motor"].attrs) == ["nxclass", "nxdl_schema_uri"]
     assert list(loaded["sim_motor_with_description"].attrs) == [
         "description",
         "nxclass",
+        "nxdl_schema_uri",
     ]
     assert loaded["sim_motor_with_description"].attrs["description"] == "Some constant description"
     assert list(loaded["sim_motor"]["sim_motor"]["value"].attrs) == ["long_name", "units"]
@@ -248,7 +257,7 @@ def test_attributes_from_hints(RE_directly_subscribed: RunEngine, tmpdir: Path):
     RE_directly_subscribed(
         bp.count([syn_axis_with_description, syn_axis_missing_metadata], num=3)  # type: ignore
     )
-    loaded = load_only_generated_nexus_file(tmpdir)["entry"]["primary"]["devices"]
+    loaded = load_only_generated_nexus_file(tmpdir)["entry"]["streams"]["primary"]["devices"]
     assert list(loaded) == [
         "syn_axis_missing_metadata",
         "syn_axis_with_description",
@@ -294,7 +303,7 @@ def test_attributes_from_data_keys(RE_directly_subscribed: RunEngine, tmpdir: Pa
             num=3,
         )
     )
-    loaded = load_only_generated_nexus_file(tmpdir)["entry"]["primary"]["devices"]
+    loaded = load_only_generated_nexus_file(tmpdir)["entry"]["streams"]["primary"]["devices"]
     # Egu is still included as a field even if it's been added as
     # an attribute to another field.
     assert list(loaded["device"]) == ["egu", "readback"]
@@ -334,7 +343,9 @@ def test_timestamps_of_data_key(RE_directly_subscribed: RunEngine, tmpdir: Path)
             return await super().read()
 
     RE_directly_subscribed(bp.count([SomeDetector(name="some_detector")], num=4))
-    loaded = load_only_generated_nexus_file(tmpdir)["entry"]["primary"]["devices"]["some_detector"]
+    loaded = load_only_generated_nexus_file(tmpdir)["entry"]["streams"]["primary"]["devices"][
+        "some_detector"
+    ]
     assert list(loaded) == [
         "signal1",
         "signal1_t",

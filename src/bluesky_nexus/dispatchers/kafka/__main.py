@@ -9,7 +9,7 @@ from ._kafka import run_kafka_dispatcher
 
 
 def build_parser() -> argparse.ArgumentParser:
-    """Define top-level arguments and the zmq/kafka subcommands."""
+    """Define top-level arguments for kafka entrypoint."""
     parser = argparse.ArgumentParser(description="Bluesky NeXus writer kafka service entry point.")
 
     parser.add_argument(
