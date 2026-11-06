@@ -6,7 +6,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>bluesky_nexus.structure._nexus_structure &#8212; bluesky-nexus 0.1.dev473+gacb7d81ea documentation</title>
+    <title>bluesky_nexus.structure._nexus_structure &#8212; bluesky-nexus 0.1.dev474+g0a07b5836 documentation</title>
   
   
   
@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=88f85fda"></script>
+    <script src="../../../_static/documentation_options.js?v=ca8d14ee"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -735,7 +735,7 @@
     <span class="c1"># Only way you can set the class without changing the type of nexusformat class.</span>
     <span class="n">group</span><span class="o">.</span><span class="n">_class</span> <span class="o">=</span> <span class="n">group_schema</span><span class="o">.</span><span class="n">nxclass</span><span class="o">.</span><span class="n">constant</span>  <span class="c1"># noqa</span>
 
-    <span class="n">group</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"nxdl_schema_uri"</span><span class="p">]</span> <span class="o">=</span> <span class="n">nexus</span><span class="o">.</span><span class="n">NXfield</span><span class="p">(</span><span class="n">group_schema</span><span class="o">.</span><span class="n">NXDL_SCHEMA_URI</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"nxdl_schema_uri"</span><span class="p">]</span> <span class="o">=</span> <span class="n">nexus</span><span class="o">.</span><span class="n">NXfield</span><span class="p">(</span><span class="n">group_schema</span><span class="o">.</span><span class="n">NXDL_SCHEMA_URI</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
 
     <span class="c1"># Add the specified attributes of the group.</span>
     <span class="k">for</span> <span class="n">nx_attribute_name</span><span class="p">,</span> <span class="n">nx_attribute</span> <span class="ow">in</span> <span class="n">group_schema</span><span class="o">.</span><span class="n">nx_attributes</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
