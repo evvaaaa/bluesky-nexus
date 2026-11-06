@@ -1,3 +1,5 @@
+# Archived and Moved to the [Community Repo](https://github.com/bluesky/bluesky-nexus)
+
 [![CI](https://github.com/bluesky/bluesky-nexus/actions/workflows/ci.yml/badge.svg)](https://github.com/bluesky/bluesky-nexus/actions/workflows/ci.yml)
 [![Coverage](https://codecov.io/gh/bluesky/bluesky-nexus/branch/main/graph/badge.svg)](https://codecov.io/gh/bluesky/bluesky-nexus)
 [![PyPI](https://img.shields.io/pypi/v/bluesky-nexus.svg)](https://pypi.org/project/bluesky-nexus)
