@@ -3,13 +3,12 @@ from __future__ import annotations
 import os
 from pathlib import Path
 from types import EllipsisType
-from typing import Any, Literal, cast
+from typing import Any, cast
 from weakref import WeakValueDictionary
 
 import nexusformat
-from ophyd import ClassVar
 import pydantic
-from pytest import Class
+from ophyd import ClassVar
 
 from ._nxdl_parser import ParsedField, ParsedGroup, parse_schema_from_nxdl_xml
 from .nx_attribute import (

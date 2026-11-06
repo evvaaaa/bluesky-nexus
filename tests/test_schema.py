@@ -1,5 +1,5 @@
-from pydantic import ValidationError
 import pytest
+from pydantic import ValidationError
 
 from bluesky_nexus.schema.nx_base_class import BLUESKY_NEXUS_BASE_CLASSES_DIRECTORY, NxBaseClass
 
