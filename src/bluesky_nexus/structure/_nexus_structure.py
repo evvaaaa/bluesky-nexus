@@ -283,7 +283,7 @@ def _new_nx_group(
     # Only way you can set the class without changing the type of nexusformat class.
     group._class = group_schema.nxclass.constant  # noqa
 
-    group.attrs["nxdl_schema_uri"] = nexus.NXfield(group_schema.NXDL_SCHEMA_URI)
+    group.attrs["nxdl_schema_uri"] = nexus.NXfield(group_schema.NXDL_SCHEMA_URI)  # type: ignore
 
     # Add the specified attributes of the group.
     for nx_attribute_name, nx_attribute in group_schema.nx_attributes().items():
