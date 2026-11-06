@@ -4,17 +4,17 @@
 This is an explantion of the schema format. It may be confusing to some users who are less familiar with NeXus, or with ophyd/ophyd-async. For examples on how to define device schema which you can follow along with see [](./schema_definition_examples.md).
 ```
 
-There are [6 types of nexus structure](https://manual.nexusformat.org/design.html#nexus-objects-and-terms) in total. `bluesky-nexus` is a package which maps bluesky specified data into NeXus data.
+There are [6 types of NeXus structure](https://manual.nexusformat.org/design.html#nexus-objects-and-terms) in total.
 
-`bluesky_nexus` has a schema specification for mapping a bluesky `Readable` into a NeXus base class structure using [`NxBaseClass`](#bluesky_nexus.schema.NxBaseClass) and [`NxDevice`](#bluesky_nexus.device.NxDevice)
+`bluesky_nexus` has a schema specification for mapping the structure that bluesky `Readable` outputs into a NeXus base class structure.
 
 ## 1. Making an [`NxBaseClass`](#bluesky_nexus.schema.NxBaseClass)
 
-`bluesky_nexus` will by generate a default NeXus structure for any bluesky `Readable` over event documents. Structure can be imposed on top of this in a `Readable` by inheriting from [`NxDevice`](#bluesky_nexus.device.NxDevice) and supplying an [`NxBaseClass`](#bluesky_nexus.schema.NxBaseClass) schema.
+`bluesky_nexus` will by generate a default NeXus structure for any bluesky `Readable` over event documents. Structure can be imposed on top of this by inheriting from [`NxDevice`](#bluesky_nexus.device.NxDevice) and supplying an [`NxBaseClass`](#bluesky_nexus.schema.NxBaseClass) schema.
 
-This schema should be thought of as a mapping between NXDL classes and the data keys that will be produced by an instance of that device class when it's read. Each schema is an instance of a pydantic class defining the nexus base class of the device.
+This schema should be thought of as a mapping between fields, attributes, and sub-groups in the NXDL to the data keys that will be produced by an instance of that device class when it's read.
 
-This schema is To generate the pydantic class from some NXDL, e.g [`NXobject`](https://github.com/nexpy/nexusformat/blob/main/src/nexusformat/definitions/base_classes/NXobject.nxdl.xml),use  [`NxBaseClass.build`](#bluesky_nexus.schema.NxBaseClass.build):
+To generate the pydantic class from some NXDL, e.g [`NXobject`](https://github.com/nexpy/nexusformat/blob/main/src/nexusformat/definitions/base_classes/NXobject.nxdl.xml), use [`NxBaseClass.build`](#bluesky_nexus.schema.NxBaseClass.build):
 
 ``` python
 NxObject = NxBaseClass.build("NXobject")
@@ -23,13 +23,13 @@ NxObject = NxBaseClass.build("NXobject")
 This class will validate your `bluesky_nexus` specification in the device layer against the [`NXobject`](https://github.com/nexpy/nexusformat/blob/main/src/nexusformat/definitions/base_classes/NXobject.nxdl.xml) NXDL.
 
 ```{note}
-You can toggle the local directory that your `NxBaseClass.build` loads NXDL from by setting the `BLUESKY_NEXUS_DEFINITIONS_DIRECTORY` environment variable. This variable should contain a directory called `base_classes` containing all the `.nxdl.xml` base class definitions which you could build `NxBaseClass` type with.
+You can toggle the local directory that your [`NxBaseClass.build`](#bluesky_nexus.schema.NxBaseClass.build) loads NXDL from by setting the `BLUESKY_NEXUS_DEFINITIONS_DIRECTORY` environment variable. This variable should contain a directory called `base_classes` containing all the `.nxdl.xml` base class definitions which you could build `NxBaseClass` type with.
 ```
 
 
 ## 2. Providing Schema with [`NxDevice`](#bluesky_nexus.device.NxDevice)
 
-The schema is supplied by inheriting from [`NxDevice`](#bluesky_nexus.device.NxDevice) and defining the class variable `BLUESKY_NEXUS_BASE_CLASS` with either an instance, or type of [`NxBaseClass`](#bluesky_nexus.schema.NxBaseClass).
+The schema is supplied by inheriting from [`NxDevice`](#bluesky_nexus.device.NxDevice) and defining the class variable `BLUESKY_NEXUS_BASE_CLASS` with either an instance, or type of [`NxBaseClass`](#bluesky_nexus.schema.NxBaseClass). Once this is defined, the schema will be validated and passed through the `hints` property of the device to make it available in the descriptor document. `bluesky_nexus` can then create a full NeXus structure from the output of a run.
 
 We want the following ophyd device to have a structure corresponding to [`NXdetector`](https://github.com/nexpy/nexusformat/blob/main/src/nexusformat/definitions/base_classes/NXdetector.nxdl.xml):
 
@@ -39,11 +39,6 @@ class SomeDevice(Device):
 ```
 
 All the below methods give the same schema when `.hints` is called on an instance of the device.
-
-``` python
-print(SomeDevice(name="meh").hints)
-# {'NX_class': 'NXdetector', 'NX_schema': {'data': 'some_signal', '$nxclass': 'NXdetector'}}
-```
 
 ### As an instance
 
@@ -58,7 +53,6 @@ class SomeDevice(NxDevice, Device):
     some_signal = Cpt(EpicsSignal, "SIGNAL")
 ```
 
-`bluesky_nexus` can now use the structure embedded in the hints of device instances to place it in the NeXus structure as an `NXdetector` 
 
 ### Serialized schema
 
@@ -97,6 +91,7 @@ data: some_signal
 where the yaml is relative to where the wrapper is being called
 
 ```
+some_module
 ├── some_device.py
 └── some_device.yaml
 ```
@@ -120,10 +115,10 @@ class SomeDevice(NxDevice, StandardReadable, EpicsDevice):
 
 ### Fields
 
-The nexus [field](https://manual.nexusformat.org/design.html#design-fields) type is defined with the `bluesky_nexus` [`NxField`](#bluesky_nexus.schema.NxField). This model links a nexus field in the outputted structure with:
+The NeXus [field](https://manual.nexusformat.org/design.html#design-fields) type is defined with the `bluesky_nexus` [`NxField`](#bluesky_nexus.schema.NxField). This model links a NeXus field in the outputted structure with:
 
 * A `data_key`, minus the name of the object at instantiation, and the initial separator.
-* A `constant` defined in the schema. This should be used in the case of fields in the nexus format which would almost never be received through a signal, e.g location of a detector.
+* A `constant` defined in the schema. This should be used in the case of fields in the NeXus format which would almost never be received through a signal, e.g location of a detector.
 * A `hints_key` - another field in hints e.g ['metadata', "description"]. At bessyii, we can provide metadata to the instance through [our static yaml definitions during instantiation](https://codebase.helmholtz.cloud/hzb/bluesky/core/source/device-instantiation-map).
 
 In consumers, for any field defined in schema, if the field isn't present when the data is received there is no fail state. They simply aren't written into the structure.
@@ -137,7 +132,6 @@ class SomeDevice(NxDevice, Device):
         }
     )
     some_signal = Cpt(EpicsSignalRO, "SUFFIX")
-
 ```
 
 ```{note}
@@ -155,11 +149,9 @@ It has the same methods for definition as the above, with the only differences b
 * In the serialized schema, attributes are defined with the `$` prefix on keys.
 * In the serialized schema the shorthand for attributes is constant.
 
-The [`NxAttribute`](#bluesky_nexus.schema.NxAttribute) model links to nexus attributes in the structure.
+The [`NxAttribute`](#bluesky_nexus.schema.NxAttribute) model links to NeXus attributes in the structure.
 
-Every nexus group has the attribute `nxclass` which defines which NeXus base class it corresponds to.
-
-#### Example
+Every NeXus group has the attribute `nxclass` which defines which NeXus base class it corresponds to.
 
 ``` python
 class SomeDevice(NxDevice, Device):
@@ -185,7 +177,7 @@ $long_name: "My very special device"
 ```
 
 ``` {note}
-The units attribute is accepted on every nexus field. If not specified in the schema with `$units`, this is automatically given to the field from the units received through bluesky.
+The units attribute is accepted on every NeXus field. If not specified in the schema with `$units`, this is automatically given to the field from the units received through bluesky.
 ```
 
 ### Sub Groups
@@ -227,13 +219,49 @@ sub_device_name_in_nexus_structure:
   * If there is a subgroup or field which is optional, but you decide to provide it, it will be validated against the structure.
 ```
 
+### Links
+
+The NeXus [link](https://manual.nexusformat.org/design.html#design-links) type is defined with the `bluesky_nexus` [`NxInternalLink`](#bluesky_nexus.schema.NxInternalLink). This model allows for links internal to a device. It takes a list of string with the path of the NeXus type which it's linking to relative to the root of the device's NeXus structure.
+
+In the serialized structure links are specified with prefix `"&"`.
+
+For example:
+
+``` python
+NxObject = NxBaseClass.build("NXobject")
+class SomeDevice(NxDevice, Device):
+    BLUESKY_NEXUS_BASE_CLASS = NxObject(
+        some_field=NxField(data_key="some_signal"),
+        some_subgroup=NxObject(some_field=NxField(data_key="another_signal")),
+        some_link=NxInternalLink(link=["some_subgroup", "some_signal"])
+    )
+    some_signal = Cpt(EpicsSignal, "SIGNAL1")
+    another_signal = Cpt(EpicsSignal, "SIGNAL2")
+```
+
+This has the corresponding serialized schema
+
+``` yaml
+some_field: some_signal
+some_subgroup:
+  some_field: another_signal
+  $nxclass: NXobject
+&some_link: ['some_subgroup', 'some_signal']
+$nxclass: NXobject
+```
+
+``` {note}
+It's used in [](./nx_data_explanation.md) to link into the `value` field of a data key's `NXlog`.
+```
+
+
 ### Declarative Behaviour
 
-With a declarative device, e.g one where `BLUESKY_NEXUS_BASE_CLASS` is a type of NXDL, the schema is built from the annotations when `hints` is called. In bluesky this happens when the stream is opened.
+With a declarative device, e.g one where `BLUESKY_NEXUS_BASE_CLASS` is a type of NXDL, the schema is built from the annotations when `hints` is called. In bluesky this happens when a stream is opened.
 
 When this happens, the device is parsed for annotations.
 
-There are three types of bluesky nexus annotations:
+There are three types of bluesky NeXus annotations:
 
 * [`NxDataKey`](#bluesky_nexus.device.NxDataKey) - For attributes which are data keys.
 * [`NxConstant`](#bluesky_nexus.device.NxConstant) - For json serializable variables on the class.
